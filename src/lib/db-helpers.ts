@@ -24,7 +24,7 @@ export async function createChat(userId: string, title: string, id?: string) {
 }
 
 export async function updateChatTitle(chatId: string, title: string) {
-  await db.update(chats).set({ title, updatedAt: new Date().toISOString() }).where(eq(chats.id, chatId));
+  await db.update(chats).set({ title, updatedAt: new Date() }).where(eq(chats.id, chatId));
 }
 
 export async function getMessagesByChatId(chatId: string) {

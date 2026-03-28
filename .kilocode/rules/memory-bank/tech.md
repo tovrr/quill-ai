@@ -9,6 +9,8 @@
 | TypeScript   | 5.9.x   | Type-safe JavaScript            |
 | Tailwind CSS | 4.x     | Utility-first CSS               |
 | Bun          | Latest  | Package manager & runtime       |
+| Neon         | -       | Serverless PostgreSQL database  |
+| Drizzle ORM  | 0.45.x  | Type-safe database ORM          |
 
 ## Development Environment
 
@@ -26,6 +28,9 @@ bun build          # Production build
 bun start          # Start production server
 bun lint           # Run ESLint
 bun typecheck      # Run TypeScript type checking
+bun db:generate    # Generate Drizzle migrations
+bun db:push        # Push schema to Neon database
+bun db:studio      # Open Drizzle Studio
 ```
 
 ## Project Configuration
@@ -59,7 +64,14 @@ bun typecheck      # Run TypeScript type checking
 {
   "next": "^16.1.3", // Framework
   "react": "^19.2.3", // UI library
-  "react-dom": "^19.2.3" // React DOM
+  "react-dom": "^19.2.3", // React DOM
+  "drizzle-orm": "^0.45.2", // Database ORM
+  "@neondatabase/serverless": "^1.0.2", // Neon PostgreSQL driver
+  "next-auth": "^5.0.0-beta.30", // Authentication
+  "@auth/drizzle-adapter": "^1.11.1", // Auth Drizzle adapter
+  "@ai-sdk/google": "^3.0.53", // AI SDK (Google)
+  "@ai-sdk/react": "^3.0.143", // AI SDK (React)
+  "ai": "^6.0.141" // AI SDK core
 }
 ```
 
@@ -73,6 +85,7 @@ bun typecheck      # Run TypeScript type checking
   "@types/react-dom": "^19.2.3",
   "@tailwindcss/postcss": "^4.1.17",
   "tailwindcss": "^4.1.17",
+  "drizzle-kit": "^0.31.10",
   "eslint": "^9.39.1",
   "eslint-config-next": "^16.0.0"
 }
@@ -138,6 +151,5 @@ bun typecheck      # Run TypeScript type checking
 
 ### Environment Variables
 
-- None required for base template
-- Add as needed for features
+- `DATABASE_URL` — Neon PostgreSQL connection string (required)
 - Use `.env.local` for local development

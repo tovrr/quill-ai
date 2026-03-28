@@ -22,6 +22,8 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] **Agent simulator** — realistic multi-step responses for research/write/code/analyze tasks
 - [x] Custom design system: dark theme (#0a0a0f), purple accent (#7c6af7), animations, glassmorphism
 - [x] Inter font, gradient text, glow borders, typing indicator, custom scrollbars
+- [x] **Migrated database from SQLite to Neon PostgreSQL** — updated schema (pg-core), driver (@neondatabase/serverless), drizzle config, and db helpers
+- [x] Added db scripts: `db:generate`, `db:push`, `db:studio`
 
 ## Current Structure
 
@@ -45,7 +47,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 App is complete. Potential next steps:
 1. Connect real AI API (OpenAI, Anthropic, etc.)
 2. Add authentication (login/signup)
-3. Add database for conversation history
+3. Database (Neon PostgreSQL) is set up with Drizzle ORM
 4. Build Settings and History pages
 
 ## Quick Start Guide
@@ -102,3 +104,4 @@ export async function GET() {
 |------|---------|
 | Initial | Template created with base setup |
 | 2026-03-28 | Built Quill AI — full personal AI agent app with landing page, agent chat UI, tool call cards, and mock simulator |
+| 2026-03-28 | Migrated database from SQLite to Neon PostgreSQL with @neondatabase/serverless driver |
