@@ -18,8 +18,23 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ── Reset ───────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
+  /* Remove tap flash on mobile (iOS/Android) */
+  -webkit-tap-highlight-color: transparent;
+  /* Prevent text selection on buttons/interactive elements */
+  -webkit-touch-callout: none;
+}
+
+/* Fast tap — eliminates 300ms click delay on mobile */
+button, a, [role="button"], [role="switch"] {
+  touch-action: manipulation;
+}
+
+html {
+  /* Prevent overscroll/bounce on mobile */
+  overscroll-behavior: none;
 }
 
 html,
@@ -27,9 +42,26 @@ body {
   background-color: #0a0a0f;
   color: #e8e8f0;
   height: 100%;
+  /* iOS text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
+/* ── Safe area utilities ─────────────────────────────────────────────────────── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -45,104 +77,62 @@ body {
   background: #3a3a5e;
 }
 
-/* Custom animations */
+/* ── Animations ──────────────────────────────────────────────────────────────── */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(124, 106, 247, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(124, 106, 247, 0.6);
-  }
+  0%, 100% { box-shadow: 0 0 8px rgba(124, 106, 247, 0.3); }
+  50%       { box-shadow: 0 0 20px rgba(124, 106, 247, 0.6); }
 }
 
 @keyframes typing-dot {
-  0%,
-  60%,
-  100% {
-    opacity: 0.2;
-    transform: translateY(0);
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-4px);
-  }
+  0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-4px); }
 }
 
 @keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  animation: slide-in-left 0.25s ease-out forwards;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-typing-dot {
-  animation: typing-dot 1.2s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 2s linear infinite;
-}
+.animate-fade-in        { animation: fade-in 0.25s ease-out forwards; }
+.animate-slide-in-left  { animation: slide-in-left 0.25s ease-out forwards; }
+.animate-slide-up       { animation: slide-up 0.25s ease-out forwards; }
+.animate-pulse-glow     { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-typing-dot     { animation: typing-dot 1.2s ease-in-out infinite; }
+.animate-spin-slow      { animation: spin-slow 2s linear infinite; }
 
 .animate-shimmer {
   background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(124, 106, 247, 0.1) 50%,
-    transparent 100%
+    90deg, transparent 0%, rgba(124, 106, 247, 0.1) 50%, transparent 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
+/* ── Utility classes ─────────────────────────────────────────────────────────── */
+
 /* Glass morphism */
 .glass {
-  background: rgba(17, 17, 24, 0.8);
+  background: rgba(17, 17, 24, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -159,5 +149,22 @@ body {
 .glow-border {
   border: 1px solid rgba(124, 106, 247, 0.4);
   box-shadow: 0 0 16px rgba(124, 106, 247, 0.1),
-    inset 0 0 16px rgba(124, 106, 247, 0.05);
+              inset 0 0 16px rgba(124, 106, 247, 0.05);
+}
+
+/* ── Mobile: minimum tap target 44×44px ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  button, a, [role="button"], [role="switch"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* But inline icon buttons should use padding, not min-size */
+  .icon-btn {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }

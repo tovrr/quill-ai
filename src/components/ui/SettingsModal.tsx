@@ -50,12 +50,31 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className="relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0"
-      style={{ background: on ? "#7c6af7" : "#2a2a3e" }}
+      style={{
+        position: "relative",
+        width: "40px",
+        height: "22px",
+        borderRadius: "11px",
+        background: on ? "#7c6af7" : "#2a2a3e",
+        transition: "background 0.2s",
+        flexShrink: 0,
+        cursor: "pointer",
+        border: "none",
+        padding: 0,
+      }}
     >
       <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
-        style={{ transform: on ? "translateX(18px)" : "translateX(2px)" }}
+        style={{
+          position: "absolute",
+          top: "3px",
+          left: on ? "21px" : "3px",
+          width: "16px",
+          height: "16px",
+          borderRadius: "50%",
+          background: "white",
+          transition: "left 0.18s ease",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+        }}
       />
     </button>
   );

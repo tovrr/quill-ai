@@ -253,7 +253,8 @@ export function TaskInput({
 
             {/* Dropdown menu — opens upward */}
             {dropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-56 bg-[#111118] border border-[#1e1e2e] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 animate-fade-in">
+              <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#111118] border border-[#1e1e2e] rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
+              <div className="overflow-y-auto" style={{ maxHeight: "min(420px, calc(100vh - 140px))" }}>
                 {/* Attach file */}
                 <button
                   onClick={() => {
@@ -363,6 +364,7 @@ export function TaskInput({
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
                   )}
                 </button>
+              </div>
               </div>
             )}
           </div>

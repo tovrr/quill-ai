@@ -5,13 +5,9 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KILLERS } from "@/lib/killers";
 import { SettingsModal } from "@/components/ui/SettingsModal";
 
-const recentChats = [
-  { id: "1", title: "Research competitors for SaaS product" },
-  { id: "2", title: "Write blog post about AI trends 2026" },
-  { id: "3", title: "Build a full landing page mockup" },
-  { id: "4", title: "Analyze sales data from Q1 CSV" },
-  { id: "5", title: "Draft cold email campaign" },
-];
+// Chat history is loaded from the DB via the API in production.
+// For now this is empty — real data will populate once auth + DB are wired to the sidebar.
+const recentChats: { id: string; title: string }[] = [];
 
 const PINNED_KEY = "quill-pinned-chats";
 
@@ -162,6 +158,11 @@ export function Sidebar() {
           style={{ maxHeight: historyOpen ? "600px" : "0px", opacity: historyOpen ? 1 : 0 }}
         >
           <div className="flex flex-col gap-0.5 pt-1 pb-3">
+            {sortedChats.length === 0 && (
+              <p className="px-3 py-2 text-xs text-[#6b6b8a] italic">
+                No conversations yet
+              </p>
+            )}
             {sortedChats.map((chat) => {
               const isPinned = pinned.includes(chat.id);
               const isHovered = hoveredChat === chat.id;

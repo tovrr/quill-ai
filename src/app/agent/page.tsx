@@ -215,13 +215,22 @@ export default function AgentPage() {
   return (
     <div className="relative flex h-screen bg-[#0a0a0f] overflow-hidden">
 
-      {/* ── Auto-hide sidebar overlay ────────────────────────────────── */}
+      {/* ── Sidebar: hover-overlay on desktop, full-screen drawer on mobile ── */}
+
+      {/* Mobile: dark backdrop when sidebar open */}
+      {sidebarVisible && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60"
+          onClick={() => { clearTimeout(sidebarHideTimer.current); setSidebarHovered(false); }}
+        />
+      )}
+
+      {/* Desktop hover trigger strip (hidden on mobile) */}
       <div
         ref={sidebarZoneRef}
-        className="absolute left-0 top-0 h-full z-50 flex"
+        className="hidden md:flex absolute left-0 top-0 h-full z-50"
         onMouseLeave={hideSidebar}
       >
-        {/* Thin hover trigger strip */}
         <div
           className="w-2 h-full shrink-0 cursor-pointer"
           onMouseEnter={showSidebar}
@@ -231,7 +240,6 @@ export default function AgentPage() {
               : "linear-gradient(to right, rgba(124,106,247,0.2), transparent)",
           }}
         />
-        {/* Sidebar panel — pointer-events:none when collapsed prevents invisible hit-testing */}
         <div
           className="h-full overflow-hidden"
           style={{
@@ -241,19 +249,33 @@ export default function AgentPage() {
           }}
           onMouseEnter={showSidebar}
         >
-          <div className="w-64 h-full">
-            <Sidebar />
-          </div>
+          <div className="w-64 h-full"><Sidebar /></div>
         </div>
+      </div>
+
+      {/* Mobile: fixed full-screen sidebar drawer */}
+      <div
+        className="md:hidden fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-out"
+        style={{ transform: sidebarVisible ? "translateX(0)" : "translateX(-100%)" }}
+      >
+        <Sidebar />
       </div>
 
       {/* ── Main content ─────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <header className="flex items-center gap-3 px-4 py-3 border-b border-[#1e1e2e] bg-[#0a0a0f] shrink-0">
+          {/* Hamburger: pin on desktop, toggle drawer on mobile */}
           <button
-            onClick={() => setSidebarPinned((v) => !v)}
-            className={`p-1.5 rounded-lg transition-all ${sidebarPinned ? "text-[#a78bfa] bg-[rgba(124,106,247,0.08)]" : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"}`}
+            onClick={() => {
+              if (typeof window !== "undefined" && window.innerWidth < 768) {
+                // Mobile: toggle drawer
+                setSidebarHovered((v) => !v);
+              } else {
+                setSidebarPinned((v) => !v);
+              }
+            }}
+            className={`icon-btn p-1.5 rounded-lg transition-all ${sidebarPinned ? "text-[#a78bfa] bg-[rgba(124,106,247,0.08)]" : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"}`}
             aria-label="Toggle sidebar"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -336,7 +358,7 @@ export default function AgentPage() {
         <div className="flex flex-1 min-h-0">
           <div className="flex flex-col flex-1 min-w-0">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-5">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
@@ -394,8 +416,8 @@ export default function AgentPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <div className="shrink-0 px-6 pb-6 pt-3 border-t border-[#1e1e2e] bg-[#0a0a0f]">
+            {/* Input — safe-area bottom padding for iPhone home indicator */}
+            <div className="shrink-0 px-4 md:px-6 pb-6 pt-3 border-t border-[#1e1e2e] bg-[#0a0a0f] pb-safe">
               <div className="max-w-3xl mx-auto">
                 <TaskInput
                   onSend={handleSend}
@@ -414,13 +436,21 @@ export default function AgentPage() {
             </div>
           </div>
 
-          {/* Canvas panel — smooth slide */}
+          {/* Canvas panel — side panel on desktop, full-screen overlay on mobile */}
+          {/* Desktop: smooth slide-in from right */}
           <div
-            className="shrink-0 overflow-hidden"
+            className="hidden md:block shrink-0 overflow-hidden"
             style={{ width: canvasMode ? "520px" : "0px", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)" }}
           >
             <CanvasPanel content={canvasContent} onClose={() => setCanvasMode(false)} />
           </div>
+
+          {/* Mobile: full-screen canvas overlay */}
+          {canvasMode && (
+            <div className="md:hidden fixed inset-0 z-40 animate-slide-up">
+              <CanvasPanel content={canvasContent} onClose={() => setCanvasMode(false)} />
+            </div>
+          )}
         </div>
       </div>
     </div>
