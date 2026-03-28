@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KILLERS } from "@/lib/killers";
+import { SettingsModal } from "@/components/ui/SettingsModal";
 
 const recentChats = [
   { id: "1", title: "Research competitors for SaaS product" },
@@ -31,6 +32,7 @@ function KillerIcon({ accent }: { accent: string }) {
 export function Sidebar() {
   const [killersOpen, setKillersOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pinned, setPinned] = useState<string[]>(() => {
     // Read from localStorage on initial render (client only)
     if (typeof window === "undefined") return [];
@@ -250,18 +252,53 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* User profile */}
-      <div className="px-3 py-3 border-t border-[#1e1e2e] shrink-0">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#16161f] transition-all cursor-pointer">
+      {/* User profile + usage + settings */}
+      <div className="px-3 py-3 border-t border-[#1e1e2e] shrink-0 space-y-2">
+        {/* Profile row */}
+        <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0">
             U
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[#e8e8f0] truncate">User</p>
-            <p className="text-xs text-[#6b6b8a] truncate">Free plan</p>
+            <p className="text-sm font-medium text-[#e8e8f0] truncate leading-tight">User</p>
+            <p className="text-[11px] text-[#6b6b8a] truncate leading-tight">Free plan</p>
           </div>
+          {/* Settings button */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="Settings"
+            className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all shrink-0"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Usage bar */}
+        <div className="px-2 pb-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-[#6b6b8a]">2,340 / 10,000 messages</span>
+            <span className="text-[11px] font-medium text-[#a78bfa]">23%</span>
+          </div>
+          <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: "23%",
+                background: "linear-gradient(to right, #7c6af7, #a78bfa)",
+              }}
+            />
+          </div>
+          <button className="mt-1.5 text-[11px] text-[#7c6af7] hover:text-[#a78bfa] transition-colors">
+            Upgrade for unlimited
+          </button>
         </div>
       </div>
+
+      {/* Settings modal */}
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </aside>
   );
 }
