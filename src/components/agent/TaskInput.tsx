@@ -197,7 +197,8 @@ export function TaskInput({
 
         {/* Toolbar */}
         <div className="flex items-center justify-between px-3 pb-3 pt-0">
-          {/* Left: + dropdown button */}
+          {/* Left: dropdown + web search */}
+          <div className="flex items-center gap-1">
           <div className="relative" ref={dropdownRef}>
             {/* Hidden file input */}
             <input
@@ -357,7 +358,7 @@ export function TaskInput({
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <line x1="9" y1="3" x2="9" y2="21" />
+                    <line x1="15" y1="3" x2="15" y2="21" />
                   </svg>
                   Canvas view
                   {canvasMode && (
@@ -367,7 +368,28 @@ export function TaskInput({
               </div>
               </div>
             )}
-          </div>
+          </div>{/* end dropdown relative wrapper */}
+
+          {/* Web search standalone button — right next to dropdown */}
+          <button
+            onClick={onWebSearchToggle}
+            disabled={isDisabled}
+            title={webSearchEnabled ? "Web search on — click to disable" : "Enable web search"}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+              webSearchEnabled
+                ? "text-[#34d399] bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
+                : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span>Search</span>
+          </button>
+
+          </div>{/* end left group */}
 
           {/* Right: send button */}
           <button
