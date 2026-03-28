@@ -197,9 +197,7 @@ export default function AgentPage() {
 
           {/* Active mode badge */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#111118] border border-[#1e1e2e]">
-            <span className="text-[11px] text-[#6b6b8a]">
-              {selectedMode === "fast" ? "⚡" : selectedMode === "thinking" ? "💭" : "✦"}
-            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7c6af7] shrink-0" />
             <span className="text-[11px] font-medium text-[#a8a8c0]">
               {modeLabels[selectedMode]}
             </span>
@@ -257,23 +255,6 @@ export default function AgentPage() {
                       Your personal AI agent. Choose a mode, attach files, or generate images — then give me a task.
                     </p>
                   </div>
-                  {/* Feature chips */}
-                  <div className="flex flex-wrap gap-2 justify-center mt-2">
-                    {[
-                      { icon: "⚡", label: "Fast responses" },
-                      { icon: "💭", label: "Deep reasoning" },
-                      { icon: "📎", label: "File upload" },
-                      { icon: "🖼", label: "Image generation" },
-                      { icon: "📄", label: "Canvas view" },
-                    ].map((f) => (
-                      <span
-                        key={f.label}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#111118] border border-[#1e1e2e] text-xs text-[#6b6b8a]"
-                      >
-                        {f.icon} {f.label}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -307,7 +288,7 @@ export default function AgentPage() {
                     <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round">
                       <path d="M21 12a9 9 0 1 1-6.22-8.56" />
                     </svg>
-                    <span className="text-xs text-[#a78bfa]">Generating image with Imagen 4...</span>
+                    <span className="text-xs text-[#a78bfa]">Generating image...</span>
                   </div>
                 </div>
               )}

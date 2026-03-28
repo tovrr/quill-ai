@@ -14,19 +14,18 @@ interface TaskInputProps {
   placeholder?: string;
 }
 
-const MODES: { id: Mode; label: string; icon: string; desc: string }[] = [
-  { id: "fast", label: "Fast", icon: "⚡", desc: "Gemini Flash — quick responses" },
-  { id: "thinking", label: "Think", icon: "💭", desc: "Gemini 2.5 Pro — deep reasoning" },
-  { id: "advanced", label: "Pro", icon: "✦", desc: "Gemini 1.5 Pro — best quality" },
+const MODES: { id: Mode; label: string; desc: string }[] = [
+  { id: "fast", label: "Fast", desc: "Quill Flash — quick responses" },
+  { id: "thinking", label: "Think", desc: "Quill Think — deep reasoning" },
+  { id: "advanced", label: "Pro", desc: "Quill Pro — best quality" },
 ];
 
-const suggestions = [
-  "Research the top 10 AI companies in 2026",
-  "Write a professional bio for my LinkedIn",
-  "Create a marketing plan for my app launch",
-  "Analyze and summarize this document",
-  "Find competitors for my SaaS product",
-  "Draft a cold email campaign for B2B leads",
+const FEATURE_CHIPS = [
+  "Fast responses",
+  "Deep reasoning",
+  "File upload",
+  "Image generation",
+  "Canvas view",
 ];
 
 export function TaskInput({
@@ -124,9 +123,9 @@ export function TaskInput({
                 key={i}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e1e2e] border border-[#2a2a3e] text-xs text-[#a8a8c0]"
               >
-                <span className="text-[10px]">
-                  {file.type.startsWith("image/") ? "🖼" : "📎"}
-                </span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
                 <span className="max-w-[100px] truncate">{file.name}</span>
                 <button
                   onClick={() => removeFile(i)}
@@ -201,7 +200,7 @@ export function TaskInput({
               <button
                 onClick={toggleImageMode}
                 disabled={isDisabled}
-                title={imageMode ? "Exit image mode" : "Generate image with Imagen 4"}
+                title={imageMode ? "Exit image mode" : "Generate image"}
                 className={`p-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                   imageMode
                     ? "text-[#a78bfa] bg-[rgba(124,106,247,0.12)] hover:bg-[rgba(124,106,247,0.2)]"
@@ -227,14 +226,13 @@ export function TaskInput({
                   onClick={() => onModeChange(m.id)}
                   disabled={isDisabled}
                   title={m.desc}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-[11px] font-medium transition-all duration-150 disabled:cursor-not-allowed ${
+                  className={`px-2.5 py-1 rounded-[10px] text-[11px] font-medium transition-all duration-150 disabled:cursor-not-allowed ${
                     mode === m.id
                       ? "bg-[#7c6af7] text-white shadow-sm"
                       : "text-[#6b6b8a] hover:text-[#a8a8c0]"
                   }`}
                 >
-                  <span>{m.icon}</span>
-                  <span className="hidden sm:inline">{m.label}</span>
+                  {m.label}
                 </button>
               ))}
             </div>
@@ -283,17 +281,16 @@ export function TaskInput({
         )}
       </p>
 
-      {/* Quick suggestions (show only when empty and not in special mode) */}
+      {/* Feature chips — shown below input when idle */}
       {!value && !isDisabled && !imageMode && !attachedFiles && (
         <div className="flex flex-wrap gap-2 justify-center">
-          {suggestions.slice(0, 3).map((s) => (
-            <button
-              key={s}
-              onClick={() => setValue(s)}
-              className="text-[12px] px-3 py-1.5 rounded-full border border-[#1e1e2e] text-[#6b6b8a] hover:border-[#7c6af7] hover:text-[#a78bfa] hover:bg-[rgba(124,106,247,0.05)] transition-all duration-150"
+          {FEATURE_CHIPS.map((label) => (
+            <span
+              key={label}
+              className="text-[12px] px-3 py-1.5 rounded-full border border-[#1e1e2e] text-[#6b6b8a]"
             >
-              {s}
-            </button>
+              {label}
+            </span>
           ))}
         </div>
       )}
