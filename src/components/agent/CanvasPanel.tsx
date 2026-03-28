@@ -2,6 +2,31 @@
 
 import { useState } from "react";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function extractHTML(content: string): string {
+  const trimmed = content.trim();
+  // Strip markdown code fences if the model wrapped the output
+  const fenceMatch = trimmed.match(/^```(?:html)?\n([\s\S]*?)```\s*$/i);
+  if (fenceMatch) return fenceMatch[1].trim();
+  return trimmed;
+}
+
+export function isHTMLContent(content: string): boolean {
+  const src = extractHTML(content).toLowerCase();
+  return (
+    src.startsWith("<!doctype html") ||
+    src.startsWith("<html") ||
+    (src.includes("<html") && src.includes("</html>"))
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Markdown document renderer (for non-HTML responses)
+// ---------------------------------------------------------------------------
+
 function renderInlineCanvas(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((part, i) => {
@@ -99,10 +124,7 @@ function MarkdownDocument({ text }: { text: string }) {
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote
-          key={i}
-          className="pl-4 border-l-4 border-[#7c6af7] text-[#5a5a8a] italic my-2 py-1"
-        >
+        <blockquote key={i} className="pl-4 border-l-4 border-[#7c6af7] text-[#5a5a8a] italic my-2 py-1">
           {renderInlineCanvas(line.slice(2))}
         </blockquote>
       );
@@ -122,84 +144,169 @@ function MarkdownDocument({ text }: { text: string }) {
   return <div className="space-y-1">{elements}</div>;
 }
 
+// ---------------------------------------------------------------------------
+// Main CanvasPanel
+// ---------------------------------------------------------------------------
+
 interface CanvasPanelProps {
   content: string;
   onClose: () => void;
 }
 
+type Tab = "preview" | "code";
+
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
+  const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
 
+  const isHTML = isHTMLContent(content);
+  const htmlSrc = isHTML ? extractHTML(content) : "";
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(content).then(() => {
+    const text = isHTML ? htmlSrc : content;
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
   const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/markdown" });
+    const text = isHTML ? htmlSrc : content;
+    const mime = isHTML ? "text/html" : "text/markdown";
+    const ext = isHTML ? "html" : "md";
+    const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "quill-document.md";
+    a.download = `quill-${isHTML ? "page" : "document"}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  const handleOpenInTab = () => {
+    const blob = new Blob([htmlSrc], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
+  const dark = isHTML;
+
   return (
-    <div className="flex flex-col h-full" style={{ width: "460px", minWidth: "320px", borderLeft: "1px solid #1e1e2e", background: "#fafafe" }}>
+    <div
+      className="flex flex-col h-full shrink-0"
+      style={{
+        width: "520px",
+        minWidth: "320px",
+        borderLeft: "1px solid #1e1e2e",
+        background: dark ? "#0a0a0f" : "#fafafe",
+      }}
+    >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-3 shrink-0"
-        style={{ borderBottom: "1px solid #e8e6ff", background: "#fff" }}
+        className="flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{
+          borderBottom: `1px solid ${dark ? "#1e1e2e" : "#e8e6ff"}`,
+          background: dark ? "#0d0d15" : "#fff",
+        }}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#7c6af7] to-[#a78bfa] flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
+        {/* Left: icon + title + tabs */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#7c6af7] to-[#a78bfa] flex items-center justify-center shrink-0">
+              {isHTML ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              )}
+            </div>
+            <span className={`text-sm font-semibold ${dark ? "text-[#e8e8f0]" : "text-[#1a1a2e]"}`}>
+              Canvas
+            </span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-[#1e1e2e] text-[#7c6af7]" : "bg-[#f0f0ff] text-[#7c6af7]"}`}>
+              {isHTML ? "page" : "document"}
+            </span>
           </div>
-          <span className="text-sm font-semibold text-[#1a1a2e]">Canvas</span>
-          <span className="text-xs text-[#9090b0] bg-[#f0f0ff] px-2 py-0.5 rounded-full">document</span>
+
+          {/* Preview / Code tabs — HTML only */}
+          {isHTML && content && (
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-[#111118] border border-[#1e1e2e]">
+              <button
+                onClick={() => setTab("preview")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                  tab === "preview" ? "bg-[#7c6af7] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                }`}
+              >
+                Preview
+              </button>
+              <button
+                onClick={() => setTab("code")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                  tab === "code" ? "bg-[#7c6af7] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                }`}
+              >
+                Code
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Right: actions */}
+        <div className="flex items-center gap-0.5">
+          {/* Open in new tab — HTML only */}
+          {isHTML && content && (
+            <button
+              onClick={handleOpenInTab}
+              title="Open in new tab"
+              className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e] transition-all"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </button>
+          )}
+
           {/* Copy */}
           <button
             onClick={handleCopy}
             disabled={!content}
-            title="Copy to clipboard"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7] transition-all disabled:opacity-40"
+            title="Copy source"
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
+              dark
+                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7]"
+            }`}
           >
             {copied ? (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Copied
-              </>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             ) : (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-                Copy
-              </>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
             )}
+            {copied ? "Copied" : "Copy"}
           </button>
 
           {/* Download */}
           <button
             onClick={handleDownload}
             disabled={!content}
-            title="Download as Markdown"
-            className="p-1.5 rounded-lg text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7] transition-all disabled:opacity-40"
+            title={`Download .${isHTML ? "html" : "md"}`}
+            className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
+              dark
+                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7]"
+            }`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -212,7 +319,11 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
           <button
             onClick={onClose}
             title="Close canvas"
-            className="p-1.5 rounded-lg text-[#9090b0] hover:bg-[#f0f0ff] hover:text-[#5a5a8a] transition-all"
+            className={`p-1.5 rounded-lg transition-all ${
+              dark
+                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                : "text-[#9090b0] hover:bg-[#f0f0ff] hover:text-[#5a5a8a]"
+            }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -222,27 +333,49 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
         </div>
       </div>
 
-      {/* Document content */}
-      <div className="flex-1 overflow-y-auto">
-        {content ? (
-          <div className="max-w-none px-10 py-8">
-            <MarkdownDocument text={content} />
-          </div>
-        ) : (
+      {/* Content */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {!content ? (
+          /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-            <div className="w-12 h-12 rounded-2xl bg-[#f0f0ff] flex items-center justify-center">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-[#111118]" : "bg-[#f0f0ff]"}`}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6af7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-[#2a2a4e]">Canvas is empty</p>
-              <p className="text-xs text-[#9090b0] mt-1 max-w-[200px]">
-                Ask Quill to write a document, report, or blog post to see it here.
+              <p className={`text-sm font-medium ${dark ? "text-[#e8e8f0]" : "text-[#2a2a4e]"}`}>
+                Canvas is empty
               </p>
+              <p className={`text-xs mt-1 max-w-[220px] ${dark ? "text-[#6b6b8a]" : "text-[#9090b0]"}`}>
+                Ask Quill to build a landing page, UI component, or write a document to see it rendered here.
+              </p>
+            </div>
+          </div>
+        ) : isHTML ? (
+          tab === "preview" ? (
+            /* Live iframe */
+            <iframe
+              key={htmlSrc}
+              srcDoc={htmlSrc}
+              sandbox="allow-scripts allow-forms allow-popups"
+              className="w-full h-full border-0"
+              title="Page preview"
+            />
+          ) : (
+            /* Code view */
+            <div className="h-full overflow-auto bg-[#0d0d15]">
+              <pre className="p-6 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+                {htmlSrc}
+              </pre>
+            </div>
+          )
+        ) : (
+          /* Markdown document */
+          <div className="h-full overflow-y-auto">
+            <div className="px-10 py-8">
+              <MarkdownDocument text={content} />
             </div>
           </div>
         )}

@@ -9,7 +9,7 @@ import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatus
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
-import { CanvasPanel } from "@/components/agent/CanvasPanel";
+import { CanvasPanel, isHTMLContent } from "@/components/agent/CanvasPanel";
 
 export default function AgentPage() {
   const [chatId] = useState(() => crypto.randomUUID());
@@ -59,7 +59,7 @@ export default function AgentPage() {
     return () => clearTimeout(timer);
   }, [status, messages.length]);
 
-  // Update canvas content from last assistant message
+  // Update canvas content from last assistant message; auto-open for HTML output
   useEffect(() => {
     const lastAssistant = [...messages]
       .reverse()
@@ -69,7 +69,13 @@ export default function AgentPage() {
         .filter((p): p is { type: "text"; text: string } => p.type === "text")
         .map((p) => p.text)
         .join("\n");
-      if (text) setCanvasContent(text);
+      if (text) {
+        setCanvasContent(text);
+        // Auto-open canvas when the AI produces a full HTML page
+        if (isHTMLContent(text)) {
+          setCanvasMode(true);
+        }
+      }
     }
   }, [messages]);
 
