@@ -13,12 +13,27 @@ import { CanvasPanel, isHTMLContent } from "@/components/agent/CanvasPanel";
 
 export default function AgentPage() {
   const [chatId] = useState(() => crypto.randomUUID());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("idle");
   const [selectedMode, setSelectedMode] = useState<Mode>("advanced");
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasContent, setCanvasContent] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  // Sidebar: pinned = stays open; hovered = temporarily visible
+  const [sidebarPinned, setSidebarPinned] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const sidebarHideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sidebarVisible = sidebarPinned || sidebarHovered;
+
+  const showSidebar = useCallback(() => {
+    clearTimeout(sidebarHideTimer.current);
+    setSidebarHovered(true);
+  }, []);
+
+  const hideSidebar = useCallback(() => {
+    sidebarHideTimer.current = setTimeout(() => setSidebarHovered(false), 180);
+  }, []);
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Keep a ref so prepareSendMessagesRequest always sees the latest mode
@@ -59,7 +74,7 @@ export default function AgentPage() {
     return () => clearTimeout(timer);
   }, [status, messages.length]);
 
-  // Update canvas content from last assistant message; auto-open for HTML output
+  // Update canvas content; auto-open for HTML
   useEffect(() => {
     const lastAssistant = [...messages]
       .reverse()
@@ -71,7 +86,6 @@ export default function AgentPage() {
         .join("\n");
       if (text) {
         setCanvasContent(text);
-        // Auto-open canvas when the AI produces a full HTML page
         if (isHTMLContent(text)) {
           setCanvasMode(true);
         }
@@ -101,7 +115,6 @@ export default function AgentPage() {
       setIsGeneratingImage(true);
       setAgentStatus("thinking");
 
-      // Append user message immediately
       setMessages((msgs: UIMessage[]) => [
         ...msgs,
         {
@@ -118,29 +131,18 @@ export default function AgentPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt }),
         });
-
         const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error ?? "Image generation failed");
 
-        if (!res.ok || data.error) {
-          throw new Error(data.error ?? "Image generation failed");
-        }
-
-        // Append assistant message with generated image
         setMessages((msgs: UIMessage[]) => [
           ...msgs,
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: `![${prompt}](${data.url})`,
-              },
-            ],
+            parts: [{ type: "text" as const, text: `![${prompt}](${data.url})` }],
             metadata: {},
           },
         ]);
-
         setAgentStatus("done");
         setTimeout(() => setAgentStatus("idle"), 3000);
       } catch (err) {
@@ -150,12 +152,7 @@ export default function AgentPage() {
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: `Image generation failed: ${msg}. Please try again.`,
-              },
-            ],
+            parts: [{ type: "text" as const, text: `Image generation failed: ${msg}.` }],
             metadata: {},
           },
         ]);
@@ -177,19 +174,55 @@ export default function AgentPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
-      {sidebarOpen && <Sidebar />}
+    <div className="relative flex h-screen bg-[#0a0a0f] overflow-hidden">
 
-      {/* Main area */}
+      {/* ── Auto-hide sidebar overlay ─────────────────────────────────── */}
+      {/* Trigger strip — always present on the left edge */}
+      <div
+        className="absolute left-0 top-0 h-full z-50 flex"
+        onMouseLeave={hideSidebar}
+      >
+        {/* Thin hover trigger */}
+        <div
+          className="w-1.5 h-full shrink-0 cursor-pointer"
+          onMouseEnter={showSidebar}
+          style={{
+            background: sidebarVisible
+              ? "transparent"
+              : "linear-gradient(to right, rgba(124,106,247,0.18), transparent)",
+          }}
+        />
+
+        {/* Sidebar panel — animates in/out */}
+        <div
+          className="h-full overflow-hidden"
+          style={{
+            width: sidebarVisible ? "256px" : "0px",
+            transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)",
+          }}
+          onMouseEnter={showSidebar}
+        >
+          <div className="w-64 h-full">
+            <Sidebar />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main content ──────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <header className="flex items-center gap-3 px-4 py-3 border-b border-[#1e1e2e] bg-[#0a0a0f] shrink-0">
+          {/* Hamburger — pins/unpins sidebar */}
           <button
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all"
+            onClick={() => setSidebarPinned((v) => !v)}
+            className={`p-1.5 rounded-lg transition-all ${
+              sidebarPinned
+                ? "text-[#a78bfa] bg-[rgba(124,106,247,0.08)]"
+                : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"
+            }`}
             aria-label="Toggle sidebar"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -209,25 +242,7 @@ export default function AgentPage() {
             </span>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {/* Canvas toggle */}
-            <button
-              onClick={() => setCanvasMode((v) => !v)}
-              title="Toggle canvas view"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                canvasMode
-                  ? "border-[#7c6af7] text-[#a78bfa] bg-[rgba(124,106,247,0.08)]"
-                  : "border-[#1e1e2e] text-[#6b6b8a] hover:text-[#e8e8f0] hover:border-[#2a2a3e]"
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              Canvas
-            </button>
-
-            {/* New chat */}
+          <div className="ml-auto">
             <button
               onClick={() => window.location.reload()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e1e2e] text-xs text-[#6b6b8a] hover:text-[#e8e8f0] hover:border-[#2a2a3e] transition-all"
@@ -244,7 +259,7 @@ export default function AgentPage() {
         {/* Status bar */}
         <AgentStatusBar status={agentStatus} />
 
-        {/* Content area with optional canvas */}
+        {/* Content area */}
         <div className="flex flex-1 min-h-0">
           {/* Chat column */}
           <div className="flex flex-col flex-1 min-w-0">
@@ -258,7 +273,7 @@ export default function AgentPage() {
                   <div>
                     <h2 className="text-lg font-semibold gradient-text">Quill AI</h2>
                     <p className="text-sm text-[#6b6b8a] mt-1 max-w-sm">
-                      Your personal AI agent. Choose a mode, attach files, or generate images — then give me a task.
+                      Your personal AI agent. Ask anything, attach files, generate images, or build a page.
                     </p>
                   </div>
                 </div>
@@ -310,6 +325,8 @@ export default function AgentPage() {
                   onGenerateImage={handleGenerateImage}
                   mode={selectedMode}
                   onModeChange={setSelectedMode}
+                  canvasMode={canvasMode}
+                  onCanvasToggle={() => setCanvasMode((v) => !v)}
                   disabled={isLoading}
                   isGeneratingImage={isGeneratingImage}
                   placeholder="Give Quill a task to execute..."
@@ -318,13 +335,19 @@ export default function AgentPage() {
             </div>
           </div>
 
-          {/* Canvas panel */}
-          {canvasMode && (
+          {/* ── Canvas panel — smooth slide-in from right ─────────────── */}
+          <div
+            className="shrink-0 overflow-hidden"
+            style={{
+              width: canvasMode ? "520px" : "0px",
+              transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)",
+            }}
+          >
             <CanvasPanel
               content={canvasContent}
               onClose={() => setCanvasMode(false)}
             />
-          )}
+          </div>
         </div>
       </div>
     </div>

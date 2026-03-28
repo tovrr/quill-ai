@@ -193,10 +193,9 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   return (
     <div
-      className="flex flex-col h-full shrink-0"
+      className="flex flex-col h-full"
       style={{
         width: "520px",
-        minWidth: "320px",
         borderLeft: "1px solid #1e1e2e",
         background: dark ? "#0a0a0f" : "#fafafe",
       }}
