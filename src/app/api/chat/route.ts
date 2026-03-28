@@ -2,6 +2,7 @@ import { google } from "@ai-sdk/google";
 import { streamText, stepCountIs } from "ai";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { getKillerById } from "@/lib/killers";
 import {
   createChat,
   saveMessage,
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
     chatId,
     id: rawChatId,
     mode,
+    killerId,
   } = await req.json();
 
   // Allow guest mode
@@ -117,9 +119,13 @@ export async function POST(req: Request) {
 
   const selectedMode: Mode = (mode as Mode) || "advanced";
 
+  // Use killer's system prompt if a killer agent is selected
+  const killer = killerId ? getKillerById(killerId as string) : undefined;
+  const activeSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
+
   const result = streamText({
     model: getModel(selectedMode),
-    system: SYSTEM_PROMPT,
+    system: activeSystemPrompt,
     messages: incomingMessages,
     stopWhen: stepCountIs(5),
     ...(selectedMode === "thinking"
