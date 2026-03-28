@@ -11,6 +11,19 @@ import {
 
 export const maxDuration = 60;
 
+type Mode = "fast" | "thinking" | "advanced";
+
+function getModel(mode: Mode) {
+  switch (mode) {
+    case "fast":
+      return google("gemini-2.0-flash-lite");
+    case "thinking":
+      return google("gemini-2.5-pro");
+    default:
+      return google("gemini-1.5-pro");
+  }
+}
+
 const SYSTEM_PROMPT = `You are Quill, a highly capable personal AI agent — like a brilliant, tireless assistant that can research, write, analyze, plan, and execute complex multi-step tasks.
 
 Your personality:
@@ -25,6 +38,7 @@ Your capabilities:
 - Data analysis and insights
 - Planning and task decomposition
 - Answering complex questions with detailed reasoning
+- Analyzing uploaded images and files
 
 When given a task:
 1. Briefly confirm what you understood
@@ -35,17 +49,25 @@ Always be helpful, direct, and get things done.`;
 
 export async function POST(req: Request) {
   const session = await auth();
-  const { messages: incomingMessages, chatId } = await req.json();
+  const {
+    messages: incomingMessages,
+    chatId,
+    id: rawChatId,
+    mode,
+  } = await req.json();
 
   // Allow guest mode
   const userId = session?.user?.id ?? "guest";
 
+  // Support both chatId (legacy) and id (AI SDK default) field names
+  const chatIdInput: string = chatId || rawChatId || "";
+
   // Ensure chat exists in DB
-  let resolvedChatId: string = chatId ?? "";
-  if (chatId) {
-    const existing = await getChatById(chatId);
+  let resolvedChatId: string = chatIdInput;
+  if (chatIdInput) {
+    const existing = await getChatById(chatIdInput);
     if (!existing) {
-      await createChat(userId, "New chat", chatId);
+      await createChat(userId, "New chat", chatIdInput);
     }
   } else {
     const chat = await createChat(userId, "New chat");
@@ -81,11 +103,16 @@ export async function POST(req: Request) {
     }
   }
 
+  const selectedMode: Mode = (mode as Mode) || "advanced";
+
   const result = streamText({
-    model: google("gemini-1.5-pro"),
+    model: getModel(selectedMode),
     system: SYSTEM_PROMPT,
     messages: incomingMessages,
     stopWhen: stepCountIs(5),
+    ...(selectedMode === "thinking"
+      ? { providerOptions: { google: { thinkingConfig: { thinkingBudget: 8000 } } } }
+      : {}),
     tools: {
       webSearch: {
         description:

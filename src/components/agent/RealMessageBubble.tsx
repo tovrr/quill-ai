@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import Image from "next/image";
 
 function ToolCallBadge({
   toolName,
@@ -68,64 +69,7 @@ function ToolCallBadge({
   );
 }
 
-function MarkdownText({ text }: { text: string }) {
-  // Very simple inline markdown: bold, code, line breaks
-  const lines = text.split("\n");
-  return (
-    <div className="text-sm leading-relaxed space-y-1">
-      {lines.map((line, i) => {
-        if (line.startsWith("# ")) {
-          return (
-            <h1 key={i} className="text-base font-bold text-[#e8e8f0] mt-2">
-              {line.slice(2)}
-            </h1>
-          );
-        }
-        if (line.startsWith("## ")) {
-          return (
-            <h2 key={i} className="text-sm font-bold text-[#e8e8f0] mt-2">
-              {line.slice(3)}
-            </h2>
-          );
-        }
-        if (line.startsWith("### ")) {
-          return (
-            <h3 key={i} className="text-sm font-semibold text-[#c8c8e0] mt-1.5">
-              {line.slice(4)}
-            </h3>
-          );
-        }
-        if (line.startsWith("- ") || line.startsWith("* ")) {
-          return (
-            <div key={i} className="flex gap-2 pl-2">
-              <span className="text-[#7c6af7] mt-0.5 shrink-0">•</span>
-              <span>{renderInline(line.slice(2))}</span>
-            </div>
-          );
-        }
-        if (/^\d+\. /.test(line)) {
-          const [num, ...rest] = line.split(". ");
-          return (
-            <div key={i} className="flex gap-2 pl-2">
-              <span className="text-[#7c6af7] shrink-0 tabular-nums">{num}.</span>
-              <span>{renderInline(rest.join(". "))}</span>
-            </div>
-          );
-        }
-        if (line.startsWith("```")) {
-          return null; // handled below
-        }
-        if (line === "") {
-          return <div key={i} className="h-1" />;
-        }
-        return <p key={i}>{renderInline(line)}</p>;
-      })}
-    </div>
-  );
-}
-
 function renderInline(text: string) {
-  // Bold: **text**
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -147,6 +91,118 @@ function renderInline(text: string) {
     }
     return part;
   });
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Fenced code block
+    if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <div key={i} className="my-2 rounded-xl overflow-hidden border border-[#1e1e2e]">
+          {lang && (
+            <div className="px-3 py-1.5 bg-[#0d0d15] border-b border-[#1e1e2e] text-[10px] text-[#6b6b8a] font-mono uppercase tracking-wide">
+              {lang}
+            </div>
+          )}
+          <pre className="p-4 bg-[#0d0d15] overflow-x-auto text-[12px] font-mono text-[#c8c8e0] leading-relaxed">
+            <code>{codeLines.join("\n")}</code>
+          </pre>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // Markdown image: ![alt](url)
+    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imageMatch) {
+      const [, alt, src] = imageMatch;
+      elements.push(
+        <div key={i} className="my-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt || "Generated image"}
+            className="rounded-xl max-w-full max-h-[400px] object-contain border border-[#1e1e2e]"
+          />
+          {alt && (
+            <p className="text-[11px] text-[#6b6b8a] mt-1.5 italic">{alt}</p>
+          )}
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    if (line.startsWith("# ")) {
+      elements.push(
+        <h1 key={i} className="text-base font-bold text-[#e8e8f0] mt-3 mb-1">
+          {renderInline(line.slice(2))}
+        </h1>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h2 key={i} className="text-sm font-bold text-[#e8e8f0] mt-2.5 mb-0.5">
+          {renderInline(line.slice(3))}
+        </h2>
+      );
+    } else if (line.startsWith("### ")) {
+      elements.push(
+        <h3 key={i} className="text-sm font-semibold text-[#c8c8e0] mt-2 mb-0.5">
+          {renderInline(line.slice(4))}
+        </h3>
+      );
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push(
+        <div key={i} className="flex gap-2 pl-2">
+          <span className="text-[#7c6af7] mt-0.5 shrink-0">•</span>
+          <span>{renderInline(line.slice(2))}</span>
+        </div>
+      );
+    } else if (/^\d+\. /.test(line)) {
+      const match = line.match(/^(\d+)\. (.*)/);
+      if (match) {
+        elements.push(
+          <div key={i} className="flex gap-2 pl-2">
+            <span className="text-[#7c6af7] shrink-0 tabular-nums">{match[1]}.</span>
+            <span>{renderInline(match[2])}</span>
+          </div>
+        );
+      }
+    } else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote
+          key={i}
+          className="pl-3 border-l-2 border-[#7c6af7] text-[#a8a8c0] italic my-1"
+        >
+          {renderInline(line.slice(2))}
+        </blockquote>
+      );
+    } else if (line === "" || line === "---" || line === "***") {
+      elements.push(<div key={i} className="h-2" />);
+    } else {
+      elements.push(<p key={i}>{renderInline(line)}</p>);
+    }
+
+    i++;
+  }
+
+  return (
+    <div className="text-sm leading-relaxed space-y-1">{elements}</div>
+  );
 }
 
 export function RealMessageBubble({ message }: { message: UIMessage }) {
@@ -176,6 +232,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         }`}
       >
         {message.parts.map((part, i) => {
+          // Text part
           if (part.type === "text" && part.text) {
             return isUser ? (
               <div
@@ -194,6 +251,40 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             );
           }
 
+          // File part (user attachments + generated images)
+          if (part.type === "file") {
+            const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
+            if (filePart.mediaType.startsWith("image/")) {
+              return (
+                <div key={i} className="rounded-xl overflow-hidden border border-[#1e1e2e] max-w-[280px]">
+                  <Image
+                    src={filePart.url}
+                    alt={filePart.filename ?? "Attached image"}
+                    width={280}
+                    height={280}
+                    className="object-contain w-full"
+                    unoptimized
+                  />
+                </div>
+              );
+            }
+            // Non-image file
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1e1e2e] border border-[#2a2a3e] text-xs text-[#a8a8c0]"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c6af7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span className="max-w-[160px] truncate">
+                  {filePart.filename ?? "Attached file"}
+                </span>
+              </div>
+            );
+          }
+
+          // Tool call parts
           if (
             part.type === "dynamic-tool" ||
             part.type.startsWith("tool-")
@@ -204,8 +295,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
               state: string;
             };
             const name =
-              toolPart.toolName ??
-              part.type.replace(/^tool-/, "");
+              toolPart.toolName ?? part.type.replace(/^tool-/, "");
             return (
               <ToolCallBadge key={i} toolName={name} state={toolPart.state} />
             );

@@ -24,6 +24,11 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Inter font, gradient text, glow borders, typing indicator, custom scrollbars
 - [x] **Migrated database from SQLite to Neon PostgreSQL** — updated schema (pg-core), driver (@neondatabase/serverless), drizzle config, and db helpers
 - [x] Added db scripts: `db:generate`, `db:push`, `db:studio`
+- [x] **3 model modes**: Fast (`gemini-2.0-flash-lite` ⚡), Think (`gemini-2.5-pro` with thinking budget 💭), Pro (`gemini-1.5-pro` ✦)
+- [x] **File upload**: multimodal file/image attachments via AI SDK `sendMessage({ text, files })`
+- [x] **Image generation**: `/api/generate-image` route using Imagen 4, dedicated image mode toggle in TaskInput
+- [x] **Canvas mode**: split-pane document view (CanvasPanel) showing last AI response in clean document format
+- [x] Fixed chatId not being sent to API (was using `id` field, now injected via `prepareSendMessagesRequest`)
 
 ## Current Structure
 
@@ -38,9 +43,11 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 | `src/components/agent/ChatWindow.tsx` | Scrollable message list | ✅ Built |
 | `src/components/agent/MessageBubble.tsx` | User/assistant message bubbles | ✅ Built |
 | `src/components/agent/ToolCallCard.tsx` | Tool call status cards | ✅ Built |
-| `src/components/agent/TaskInput.tsx` | Task input with suggestions | ✅ Built |
+| `src/components/agent/TaskInput.tsx` | Task input with mode pills, file upload, image gen toggle | ✅ Built |
 | `src/components/agent/AgentStatusBar.tsx` | Live agent status bar | ✅ Built |
-| `src/lib/agentSimulator.ts` | Mock agent response simulator | ✅ Built |
+| `src/components/agent/CanvasPanel.tsx` | Split-pane document canvas view | ✅ Built |
+| `src/app/api/generate-image/route.ts` | Imagen 4 image generation endpoint | ✅ Built |
+| `src/lib/agentSimulator.ts` | Mock agent response simulator (legacy/unused) | ✅ Built |
 
 ## Current Focus
 
@@ -105,3 +112,4 @@ export async function GET() {
 | Initial | Template created with base setup |
 | 2026-03-28 | Built Quill AI — full personal AI agent app with landing page, agent chat UI, tool call cards, and mock simulator |
 | 2026-03-28 | Migrated database from SQLite to Neon PostgreSQL with @neondatabase/serverless driver |
+| 2026-03-28 | Added 3 model modes (Fast/Think/Pro), file upload, image generation (Imagen 4), canvas mode |
