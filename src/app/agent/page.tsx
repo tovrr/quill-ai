@@ -35,11 +35,14 @@ export default function AgentPage() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
-  // Sidebar: pinned = stays open; hovered = temporarily visible
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+
+  // Sidebar: pinned = always visible; hovered = temporarily visible on hover
   const [sidebarPinned, setSidebarPinned] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const sidebarHideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const sidebarVisible = sidebarPinned || sidebarHovered;
+  const sidebarZoneRef = useRef<HTMLDivElement>(null);
 
   const showSidebar = useCallback(() => {
     clearTimeout(sidebarHideTimer.current);
@@ -47,15 +50,31 @@ export default function AgentPage() {
   }, []);
 
   const hideSidebar = useCallback(() => {
-    sidebarHideTimer.current = setTimeout(() => setSidebarHovered(false), 180);
+    clearTimeout(sidebarHideTimer.current);
+    sidebarHideTimer.current = setTimeout(() => setSidebarHovered(false), 200);
   }, []);
+
+  // Click-outside closes sidebar (when not pinned)
+  useEffect(() => {
+    if (!sidebarHovered || sidebarPinned) return;
+    const handler = (e: MouseEvent) => {
+      if (sidebarZoneRef.current && !sidebarZoneRef.current.contains(e.target as Node)) {
+        clearTimeout(sidebarHideTimer.current);
+        setSidebarHovered(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sidebarHovered, sidebarPinned]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
   const killerRef = useRef<string | null>(killer?.id ?? null);
+  const webSearchRef = useRef(webSearchEnabled);
   useEffect(() => { modeRef.current = selectedMode; }, [selectedMode]);
+  useEffect(() => { webSearchRef.current = webSearchEnabled; }, [webSearchEnabled]);
 
   const transport = useMemo(
     () =>
@@ -66,6 +85,7 @@ export default function AgentPage() {
             ...body,
             chatId: id,
             mode: modeRef.current,
+            webSearch: webSearchRef.current,
             ...(killerRef.current ? { killerId: killerRef.current } : {}),
           },
         }),
@@ -196,15 +216,29 @@ export default function AgentPage() {
     <div className="relative flex h-screen bg-[#0a0a0f] overflow-hidden">
 
       {/* ── Auto-hide sidebar overlay ────────────────────────────────── */}
-      <div className="absolute left-0 top-0 h-full z-50 flex" onMouseLeave={hideSidebar}>
+      <div
+        ref={sidebarZoneRef}
+        className="absolute left-0 top-0 h-full z-50 flex"
+        onMouseLeave={hideSidebar}
+      >
+        {/* Thin hover trigger strip */}
         <div
-          className="w-1.5 h-full shrink-0 cursor-pointer"
+          className="w-2 h-full shrink-0 cursor-pointer"
           onMouseEnter={showSidebar}
-          style={{ background: sidebarVisible ? "transparent" : "linear-gradient(to right, rgba(124,106,247,0.18), transparent)" }}
+          style={{
+            background: sidebarVisible
+              ? "transparent"
+              : "linear-gradient(to right, rgba(124,106,247,0.2), transparent)",
+          }}
         />
+        {/* Sidebar panel — pointer-events:none when collapsed prevents invisible hit-testing */}
         <div
           className="h-full overflow-hidden"
-          style={{ width: sidebarVisible ? "256px" : "0px", transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)" }}
+          style={{
+            width: sidebarVisible ? "256px" : "0px",
+            transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)",
+            pointerEvents: sidebarVisible ? "auto" : "none",
+          }}
           onMouseEnter={showSidebar}
         >
           <div className="w-64 h-full">
@@ -370,6 +404,8 @@ export default function AgentPage() {
                   onModeChange={setSelectedMode}
                   canvasMode={canvasMode}
                   onCanvasToggle={() => setCanvasMode((v) => !v)}
+                  webSearchEnabled={webSearchEnabled}
+                  onWebSearchToggle={() => setWebSearchEnabled((v) => !v)}
                   disabled={isLoading}
                   isGeneratingImage={isGeneratingImage}
                   placeholder={killer ? `Ask ${killer.name}...` : "Give Quill a task to execute..."}

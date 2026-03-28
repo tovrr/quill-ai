@@ -93,7 +93,7 @@ function Select({ value, onChange, options }: {
 
 // ── Sections ─────────────────────────────────────────────────────────────────
 
-type Section = "general" | "appearance" | "privacy" | "account";
+type Section = "general" | "usage" | "appearance" | "privacy" | "account";
 
 const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
   {
@@ -103,6 +103,17 @@ const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+      </svg>
+    ),
+  },
+  {
+    id: "usage",
+    label: "Usage & API",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
   },
@@ -278,6 +289,111 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <Row label="Auto-open Canvas" hint="Automatically open canvas when a page is generated">
                   <Toggle on={settings.autoOpenCanvas} onChange={(v) => update("autoOpenCanvas", v)} />
                 </Row>
+              </div>
+            )}
+
+            {/* Usage & API */}
+            {section === "usage" && (
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Current billing period</p>
+
+                {/* Period header */}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-[#a8a8c0]">March 1 – March 31, 2026</span>
+                  <span className="text-xs text-[#6b6b8a]">Resets in 3 days</span>
+                </div>
+
+                {/* Overall usage */}
+                <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#e8e8f0]">Messages</span>
+                    <span className="text-sm font-semibold text-[#a78bfa]">2,340 / 10,000</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: "23.4%", background: "linear-gradient(to right, #7c6af7, #a78bfa)" }} />
+                  </div>
+                  <p className="text-[11px] text-[#6b6b8a]">7,660 messages remaining · Free plan</p>
+                </div>
+
+                {/* Token usage */}
+                <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#e8e8f0]">Tokens used</span>
+                    <span className="text-sm font-semibold text-[#60a5fa]">1.2M / 5M</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: "24%", background: "linear-gradient(to right, #3b82f6, #60a5fa)" }} />
+                  </div>
+                  <div className="flex gap-4 text-[11px] text-[#6b6b8a]">
+                    <span>Input: 820K tokens</span>
+                    <span>Output: 380K tokens</span>
+                  </div>
+                </div>
+
+                {/* Breakdown by model */}
+                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Breakdown by model</p>
+                {[
+                  { label: "Pro (default)", color: "#a78bfa", pct: 68, msgs: 1591, tokens: "820K" },
+                  { label: "Fast", color: "#34d399", pct: 22, msgs: 515, tokens: "265K" },
+                  { label: "Think", color: "#f59e0b", pct: 10, msgs: 234, tokens: "115K" },
+                ].map((m) => (
+                  <div key={m.label} className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: m.color }} />
+                        <span className="text-sm text-[#a8a8c0]">{m.label}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-medium" style={{ color: m.color }}>{m.msgs} msgs</span>
+                        <span className="text-[11px] text-[#6b6b8a] ml-2">{m.tokens}</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${m.pct}%`, background: m.color }} />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Web search usage */}
+                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Features</p>
+                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#a8a8c0]">Web searches</span>
+                    <span className="text-xs font-semibold text-[#34d399]">47 / 200</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mt-2">
+                    <div className="h-full rounded-full" style={{ width: "23.5%", background: "#34d399" }} />
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#a8a8c0]">Image generations</span>
+                    <span className="text-xs font-semibold text-[#f59e0b]">12 / 50</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mt-2">
+                    <div className="h-full rounded-full" style={{ width: "24%", background: "#f59e0b" }} />
+                  </div>
+                </div>
+
+                {/* API key */}
+                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">API access</p>
+                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#a8a8c0]">API key</span>
+                    <span className="text-xs text-[#6b6b8a] font-mono">qai_•••••••••••••3f9a</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
+                      Reveal key
+                    </button>
+                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
+                      Regenerate
+                    </button>
+                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
+                      Copy
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

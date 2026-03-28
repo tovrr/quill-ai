@@ -11,6 +11,8 @@ interface TaskInputProps {
   onModeChange: (mode: Mode) => void;
   canvasMode: boolean;
   onCanvasToggle: () => void;
+  webSearchEnabled: boolean;
+  onWebSearchToggle: () => void;
   disabled?: boolean;
   isGeneratingImage?: boolean;
   placeholder?: string;
@@ -29,6 +31,8 @@ export function TaskInput({
   onModeChange,
   canvasMode,
   onCanvasToggle,
+  webSearchEnabled,
+  onWebSearchToggle,
   disabled,
   isGeneratingImage,
   placeholder,
@@ -212,6 +216,8 @@ export function TaskInput({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 dropdownOpen
                   ? "bg-[#1e1e2e] text-[#e8e8f0]"
+                  : webSearchEnabled
+                  ? "text-[#34d399] bg-[rgba(52,211,153,0.08)] hover:bg-[rgba(52,211,153,0.12)]"
                   : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
               }`}
             >
@@ -287,6 +293,25 @@ export function TaskInput({
                     )}
                   </button>
                 )}
+
+                {/* Web search */}
+                <button
+                  onClick={() => {
+                    onWebSearchToggle();
+                    setDropdownOpen(false);
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all text-left"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg>
+                  Web search
+                  {webSearchEnabled && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+                  )}
+                </button>
 
                 <div className="border-t border-[#1e1e2e] mx-2 my-1" />
 

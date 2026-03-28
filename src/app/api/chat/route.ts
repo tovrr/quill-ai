@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     id: rawChatId,
     mode,
     killerId,
+    webSearch,
   } = await req.json();
 
   // Allow guest mode
@@ -132,23 +133,8 @@ export async function POST(req: Request) {
       ? { providerOptions: { google: { thinkingConfig: { thinkingBudget: 8000 } } } }
       : {}),
     tools: {
-      webSearch: {
-        description:
-          "Search the web for current information on a topic. Use when you need up-to-date facts, news, or research.",
-        inputSchema: z.object({
-          query: z.string().describe("The search query"),
-        }),
-        execute: async ({ query }: { query: string }) => ({
-          results: [
-            {
-              title: `Search results for: ${query}`,
-              snippet:
-                "Connect Tavily or Serper in src/app/api/chat/route.ts to enable live web search.",
-              url: "https://example.com",
-            },
-          ],
-        }),
-      },
+      // Real Google Search grounding — only active when user enables web search
+      ...(webSearch ? { google_search: google.tools.googleSearch({}) } : {}),
       analyzeData: {
         description:
           "Analyze structured data or text and extract key insights",
