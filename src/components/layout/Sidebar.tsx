@@ -281,9 +281,26 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         >
           <div className="flex flex-col gap-0.5 pt-1 pb-3">
             {sortedChats.length === 0 && (
-              <p className="px-3 py-2 text-xs text-quill-muted italic">
-                No conversations yet
-              </p>
+              sessionStatus === "unauthenticated" ? (
+                <div className="px-2 py-2 flex flex-col gap-2">
+                  <p className="text-xs text-quill-muted leading-relaxed">Sign in to save and access your conversation history.</p>
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.22)] text-xs font-medium text-[#F87171] hover:bg-[rgba(239,68,68,0.14)] transition-all"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                      <polyline points="10 17 15 12 10 7" />
+                      <line x1="15" y1="12" x2="3" y2="12" />
+                    </svg>
+                    Sign in
+                  </Link>
+                </div>
+              ) : (
+                <p className="px-3 py-2 text-xs text-quill-muted italic">
+                  No conversations yet
+                </p>
+              )
             )}
             {sortedChats.map((chat) => {
               const isPinned = pinned.includes(chat.id);
