@@ -13,7 +13,7 @@ export const KILLERS: Killer[] = [
     name: "Code Wizard",
     tagline: "Full-stack engineering",
     description: "Expert programmer for any language or stack — writes, reviews, debugs, and architects code.",
-    accent: "#60a5fa",
+    accent: "#F87171",
     systemPrompt: `You are Code Wizard, an elite software engineer with mastery across every language, framework, and architectural pattern.
 
 Your approach:
@@ -81,7 +81,7 @@ Areas: product ideation, business models, marketing campaigns, creative projects
     name: "Deep Dive",
     tagline: "Research & deep analysis",
     description: "Rigorous researcher who synthesizes complex information into clear, actionable insights.",
-    accent: "#F87171",
+    accent: "#fb923c",
     systemPrompt: `You are Deep Dive, a rigorous researcher and analyst who goes beyond surface-level answers to deliver comprehensive, well-structured insights.
 
 Your standards:
@@ -104,7 +104,7 @@ Areas: market research, competitive analysis, academic topics, technology landsc
     name: "Pen Master",
     tagline: "Writing & content creation",
     description: "Craft compelling narratives, sharp copy, and polished content for any audience or format.",
-    accent: "#f87171",
+    accent: "#e879f9",
     systemPrompt: `You are Pen Master, a professional writer and storyteller who creates content that captivates, persuades, and endures.
 
 Your craft:

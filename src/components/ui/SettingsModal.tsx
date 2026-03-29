@@ -338,10 +338,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-[#e8e8f0]">Tokens used</span>
-                    <span className="text-sm font-semibold text-[#60a5fa]">1.2M / 5M</span>
+                    <span className="text-sm font-semibold text-[#F87171]">1.2M / 5M</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: "24%", background: "linear-gradient(to right, #3b82f6, #60a5fa)" }} />
+                    <div className="h-full rounded-full" style={{ width: "24%", background: "linear-gradient(to right, #EF4444, #F87171)" }} />
                   </div>
                   <div className="flex gap-4 text-[11px] text-[#6b6b8a]">
                     <span>Input: 820K tokens</span>
@@ -488,7 +488,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Account</p>
 
                 <div className="flex items-center gap-3 py-3.5 border-b border-[#1a1a28]">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-sm font-bold text-white shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-sm font-bold text-white shrink-0">
                     U
                   </div>
                   <div>

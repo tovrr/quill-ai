@@ -288,7 +288,7 @@ export function Sidebar() {
           <>
             {/* Profile row */}
             <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
                 {(session.user.name ?? session.user.email ?? "U")[0]}
               </div>
               <div className="flex-1 min-w-0">

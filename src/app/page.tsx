@@ -52,7 +52,7 @@ const capabilities = [
     ),
     title: "Code & Build",
     description: "Generate full applications, components, scripts, and automation pipelines with production-quality code.",
-    color: "#60a5fa",
+    color: "#F87171",
   },
   {
     icon: (
@@ -318,7 +318,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-8">
             {[
               { step: "01", title: "Describe your goal", desc: "Tell Quill what you want in plain English. No prompting expertise needed.", color: "#EF4444" },
-              { step: "02", title: "Quill plans & acts", desc: "Quill breaks your goal into steps, picks the right tools, and executes autonomously.", color: "#60a5fa" },
+              { step: "02", title: "Quill plans & acts", desc: "Quill breaks your goal into steps, picks the right tools, and executes autonomously.", color: "#F87171" },
               { step: "03", title: "Review & iterate", desc: "See every action taken. Refine results, ask follow-ups, or start a new task.", color: "#34d399" },
             ].map((item) => (
               <div key={item.step} className="flex flex-col gap-4">
