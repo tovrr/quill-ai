@@ -263,9 +263,9 @@ export default function AgentPage() {
             </svg>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <QuillLogo size={20} />
-            <span className="text-sm font-semibold gradient-text">Quill AI</span>
+            <span className="text-sm font-semibold gradient-text whitespace-nowrap">Quill AI</span>
           </div>
 
           {/* Killer badge */}
@@ -275,7 +275,7 @@ export default function AgentPage() {
               style={{ borderColor: `${killer.accent}40`, background: `${killer.accent}12`, color: killer.accent }}
             >
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: killer.accent }} />
-              <span className="sm:hidden">{killer.shortName}</span>
+              <span className="md:hidden">{killer.shortName}</span>
               <span className="hidden md:inline">{killer.name}</span>
             </div>
           )}
@@ -294,7 +294,7 @@ export default function AgentPage() {
               onClick={handleShare}
               disabled={messages.length === 0}
               title="Copy share link"
-              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {shareCopied ? (
                 <>
@@ -320,7 +320,7 @@ export default function AgentPage() {
             {/* New chat */}
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
+              className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
