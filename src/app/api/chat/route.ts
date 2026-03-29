@@ -37,6 +37,43 @@ Your personality:
 
 Always be helpful, direct, and get things done.`;
 
+function extractMessages(body: Record<string, unknown>): Array<{ role: string; content: string }> {
+  // Format 1: { messages: [{ role, content }, ...] }
+  if (Array.isArray(body.messages) && body.messages.length > 0) {
+    return body.messages;
+  }
+
+  // Format 2: { messages: [{ role, parts: [{ type: "text", text }] }] } — AI SDK v6 UIMessage format
+  if (Array.isArray(body.messages)) {
+    return body.messages.map((m: { role: string; content?: string; parts?: Array<{ type: string; text?: string }> }) => {
+      if (typeof m.content === "string") return { role: m.role, content: m.content };
+      if (Array.isArray(m.parts)) {
+        const text = m.parts
+          .filter((p) => p.type === "text")
+          .map((p) => p.text || "")
+          .join("");
+        return { role: m.role, content: text };
+      }
+      return { role: m.role, content: JSON.stringify(m) };
+    }).filter((m) => m.content);
+  }
+
+  // Format 3: { text: "hello" }
+  if (typeof body.text === "string" && body.text.trim()) {
+    return [{ role: "user", content: body.text }];
+  }
+
+  // Format 4: { message: { role: "user", content: "..." } }
+  if (body.message && typeof body.message === "object") {
+    const msg = body.message as { role?: string; content?: string };
+    if (msg.content) {
+      return [{ role: msg.role || "user", content: msg.content }];
+    }
+  }
+
+  return [];
+}
+
 export async function POST(req: Request) {
   try {
     // Get session from Better Auth
@@ -53,11 +90,21 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    console.log("Chat body keys:", Object.keys(body), "messages:", Array.isArray(body.messages) ? body.messages.length : typeof body.messages, "text:", typeof body.text);
-    const { messages: incomingMessages, chatId, id: rawId, mode, text } = body;
+    console.log("[chat] body keys:", JSON.stringify(Object.keys(body)));
 
-    const id: string = chatId || rawId || crypto.randomUUID();
-    const selectedMode: Mode = (mode as Mode) || "advanced";
+    const msgs = extractMessages(body);
+    console.log("[chat] extracted messages:", msgs.length);
+
+    if (msgs.length === 0) {
+      console.error("[chat] No messages found. Body:", JSON.stringify(body).slice(0, 500));
+      return new Response(JSON.stringify({ error: "No messages provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const id: string = (body.chatId as string) || (body.id as string) || crypto.randomUUID();
+    const selectedMode: Mode = (body.mode as Mode) || "advanced";
 
     // Ensure chat exists
     const existing = await getChatById(id);
@@ -65,37 +112,19 @@ export async function POST(req: Request) {
       await createChat(userId, "New chat", id);
     }
 
-    // Determine messages — TextStreamChatTransport may send `text` instead of `messages`
-    const msgs = incomingMessages || (text ? [{ role: "user", content: text }] : []);
-    if (msgs.length === 0) {
-      return new Response(JSON.stringify({ error: "No messages provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
     // Save user message
-    const lastUserMsg = [...msgs]
-      .reverse()
-      .find((m: { role: string }) => m.role === "user");
-
+    const lastUserMsg = [...msgs].reverse().find((m) => m.role === "user");
     if (lastUserMsg) {
-      const content =
-        typeof lastUserMsg.content === "string"
-          ? lastUserMsg.content
-          : JSON.stringify(lastUserMsg.content);
-
-      await saveMessage({ chatId: id, role: "user", content });
-
-      if (msgs.filter((m: { role: string }) => m.role === "user").length === 1) {
-        await updateChatTitle(id, content.slice(0, 60));
+      await saveMessage({ chatId: id, role: "user", content: lastUserMsg.content });
+      if (msgs.filter((m) => m.role === "user").length === 1) {
+        await updateChatTitle(id, lastUserMsg.content.slice(0, 60));
       }
     }
 
     const result = streamText({
       model: getModel(selectedMode),
       system: SYSTEM_PROMPT,
-      messages: msgs,
+      messages: msgs as { role: "user" | "assistant" | "system"; content: string }[],
       stopWhen: stepCountIs(5),
       onFinish: async ({ text }) => {
         if (text) {
@@ -108,7 +137,7 @@ export async function POST(req: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";
-    console.error("Chat API error:", error instanceof Error ? error.stack : error);
+    console.error("[chat] error:", error instanceof Error ? error.stack : error);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
