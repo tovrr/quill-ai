@@ -398,6 +398,19 @@ export default function HomePage() {
             ))}
           </div>
 
+          <div className="mt-10 sm:mt-12 text-center">
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl border border-[#1e1e2e] hover:border-[#2a2a3e] text-[#a8a8c0] hover:text-[#e8e8f0] font-medium text-base transition-all"
+            >
+              See Pricings
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </div>
+
         </div>
       </section>
 
