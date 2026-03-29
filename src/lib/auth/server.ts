@@ -2,22 +2,28 @@ import type { createNeonAuth } from "@neondatabase/auth/next/server";
 
 type NeonAuth = ReturnType<typeof createNeonAuth>;
 
-let _auth: NeonAuth | undefined;
+let _auth: NeonAuth | null = null;
+let _initError: string | null = null;
 
 function getAuth(): NeonAuth {
+  if (_initError) {
+    throw new Error(_initError);
+  }
   if (!_auth) {
-    if (process.env.NEXT_PHASE === "phase-production-build") {
-      return {} as NeonAuth;
-    }
+    try {
+      const baseUrl = process.env.NEON_AUTH_BASE_URL;
+      if (!baseUrl) {
+        _initError = "NEON_AUTH_BASE_URL must be set";
+        throw new Error(_initError);
+      }
 
-    const baseUrl = process.env.NEON_AUTH_BASE_URL;
-    if (!baseUrl) {
-      throw new Error("NEON_AUTH_BASE_URL must be set");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require("@neondatabase/auth/next/server") as { createNeonAuth: typeof createNeonAuth };
+      _auth = mod.createNeonAuth({ baseUrl } as Parameters<typeof createNeonAuth>[0]);
+    } catch (e) {
+      _initError = e instanceof Error ? e.message : "Auth init failed";
+      throw e;
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("@neondatabase/auth/next/server") as { createNeonAuth: typeof createNeonAuth };
-    _auth = mod.createNeonAuth({ baseUrl } as Parameters<typeof createNeonAuth>[0]);
   }
   return _auth;
 }
