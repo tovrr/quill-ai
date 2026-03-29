@@ -52,7 +52,8 @@ export async function POST(req: Request) {
       // Guest mode
     }
 
-    const { messages: incomingMessages, chatId, id: rawId, mode } = await req.json();
+    const body = await req.json();
+    const { messages: incomingMessages, chatId, id: rawId, mode, text } = body;
 
     const id: string = chatId || rawId || crypto.randomUUID();
     const selectedMode: Mode = (mode as Mode) || "advanced";
@@ -63,8 +64,17 @@ export async function POST(req: Request) {
       await createChat(userId, "New chat", id);
     }
 
+    // Determine messages — TextStreamChatTransport may send `text` instead of `messages`
+    const msgs = incomingMessages || (text ? [{ role: "user", content: text }] : []);
+    if (msgs.length === 0) {
+      return new Response(JSON.stringify({ error: "No messages provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Save user message
-    const lastUserMsg = [...(incomingMessages || [])]
+    const lastUserMsg = [...msgs]
       .reverse()
       .find((m: { role: string }) => m.role === "user");
 
@@ -76,10 +86,7 @@ export async function POST(req: Request) {
 
       await saveMessage({ chatId: id, role: "user", content });
 
-      if (
-        (incomingMessages || []).filter((m: { role: string }) => m.role === "user")
-          .length === 1
-      ) {
+      if (msgs.filter((m: { role: string }) => m.role === "user").length === 1) {
         await updateChatTitle(id, content.slice(0, 60));
       }
     }
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: getModel(selectedMode),
       system: SYSTEM_PROMPT,
-      messages: incomingMessages,
+      messages: msgs,
       stopWhen: stepCountIs(5),
       onFinish: async ({ text }) => {
         if (text) {
