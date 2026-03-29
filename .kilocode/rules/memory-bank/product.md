@@ -14,11 +14,13 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 
 ## How It Should Work (User Flow)
 
-1. User lands on Quill and can start immediately (guest) or sign in.
-2. User opens `/agent`, chooses mode, and sends prompts (optionally with files).
-3. Quill streams responses and can route fast mode through a free-cost provider path when configured.
-4. User can manage conversations in sidebar: revisit, pin, share, or delete.
-5. For complex output, user uses Canvas mode to inspect generated docs/pages.
+1. User lands on Quill and types a task directly in the **hero input** (no login required).
+2. Quill redirects to `/agent?q=<task>` and auto-fires the message with a 120ms delay — zero friction.
+3. User chooses mode and continues sending prompts (optionally with files).
+4. Quill streams responses and can route fast mode through a free-cost provider path when configured.
+5. Unauthenticated users are prompted to sign in inside the sidebar history section to save conversations.
+6. User can manage conversations in sidebar: revisit, pin, share, or delete.
+7. For complex output, user uses Canvas mode to inspect generated docs/pages.
 
 ## Key User Experience Goals
 
@@ -29,12 +31,14 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 
 ## Current Product Surface
 
-1. **Agent Chat**: Streaming conversation UI with mode picker.
-2. **Specialist Agents (Killers)**: Persona/system-prompt driven responses.
-3. **History Sidebar**: Fetch, pin, share link, delete with confirmation.
-4. **Canvas Panel**: Markdown/HTML preview with copy/download/open actions.
-5. **Auth + Persistence**: Better Auth + Drizzle + Neon for user-linked history.
-6. **Quota Controls**: Daily mode limits via environment settings.
+1. **Hero Task Input**: Animated typewriter widget on the homepage — submit goes straight to `/agent?q=` without login.
+2. **Agent Chat**: Streaming conversation UI with mode picker.
+3. **Specialist Agents (Killers)**: Persona/system-prompt driven responses (Code Wizard, Flow Master, Idea Factory, Deep Dive, Pen Master).
+4. **History Sidebar**: Fetch, pin, share link, delete with confirmation. Guests see a login CTA in place of history.
+5. **Canvas Panel**: Markdown/HTML preview with copy/download/open actions.
+6. **Auth + Persistence**: Better Auth + Drizzle + Neon for user-linked history.
+7. **Quota Controls**: Daily mode limits via environment settings.
+8. **PWA**: `manifest.webmanifest`, apple-touch-icon, and correct quill-feather icons across all sizes — installable but not yet offline-capable.
 
 ## Integration Points
 

@@ -14,10 +14,10 @@ Quill AI is a production-oriented personal AI agent app. It focuses on deliverin
 
 Users interact with Quill by:
 
-1. Opening `/agent` and selecting Fast, Think, or Pro mode.
-2. Sending prompts (with optional attachments) and receiving streaming responses.
-3. Managing conversations from sidebar history (pin, share, delete).
-4. Using Canvas mode for long-form or HTML outputs.
+1. Typing a task in the **homepage hero input** — no login, no friction — and being sent straight to `/agent`.
+2. Selecting Fast, Think, or Pro mode and sending prompts (with optional attachments).
+3. Receiving streaming responses; optionally using Canvas mode for long-form or HTML outputs.
+4. Managing conversations from sidebar history (pin, share, delete) after signing in.
 
 ## Key Requirements
 
@@ -26,9 +26,11 @@ Users interact with Quill by:
 - Stable chat API with resilient message extraction.
 - Correct provider/model mapping for active model IDs.
 - Authenticated persistence for chats and messages.
-- Guest-safe behavior (no persistence and restricted advanced modes).
+- Guest-safe behavior (no persistence and restricted advanced modes); sidebar login CTA for guests.
+- Zero-friction homepage entry via hero task input → `/agent?q=`.
 - Daily quota enforcement by mode.
 - Sidebar management actions with ownership-safe delete.
+- Consistent branding: quill-feather logo everywhere (favicon, PWA icons, app header).
 
 ### Nice to Have
 
