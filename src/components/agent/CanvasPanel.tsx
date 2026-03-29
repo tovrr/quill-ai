@@ -211,7 +211,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
         {/* Left: icon + title + tabs */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#EF4444] to-[#F87171] flex items-center justify-center shrink-0">
+            <div className="w-5 h-5 rounded-md bg-linear-to-br from-quill-accent to-quill-accent-2 flex items-center justify-center shrink-0">
               {isHTML ? (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="16 18 22 12 16 6" />
@@ -224,21 +224,21 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
                 </svg>
               )}
             </div>
-            <span className={`text-sm font-semibold ${dark ? "text-[#e8e8f0]" : "text-[#1a1a2e]"}`}>
+            <span className={`text-sm font-semibold ${dark ? "text-quill-text" : "text-[#1a1a2e]"}`}>
               Canvas
             </span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-[#1e1e2e] text-[#EF4444]" : "bg-[#f0f0ff] text-[#EF4444]"}`}>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}>
               {isHTML ? "page" : "document"}
             </span>
           </div>
 
           {/* Preview / Code tabs — HTML only */}
           {isHTML && content && (
-            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-[#111118] border border-[#1e1e2e]">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-quill-surface border border-quill-border">
               <button
                 onClick={() => setTab("preview")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "preview" ? "bg-[#EF4444] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                  tab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
                 }`}
               >
                 Preview
@@ -246,7 +246,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               <button
                 onClick={() => setTab("code")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "code" ? "bg-[#EF4444] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                  tab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
                 }`}
               >
                 Code
@@ -262,7 +262,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             <button
               onClick={handleOpenInTab}
               title="Open in new tab"
-              className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e] transition-all"
+              className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -279,7 +279,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             title="Copy source"
             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
               dark
-                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
@@ -303,7 +303,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             title={`Download .${isHTML ? "html" : "md"}`}
             className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
               dark
-                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
@@ -320,7 +320,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             title="Close canvas"
             className={`p-1.5 rounded-lg transition-all ${
               dark
-                ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 : "text-[#9090b0] hover:bg-[#f0f0ff] hover:text-[#5a5a8a]"
             }`}
           >
@@ -337,17 +337,17 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
         {!content ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-[#111118]" : "bg-[#f0f0ff]"}`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-quill-surface" : "bg-[#f0f0ff]"}`}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="16 18 22 12 16 6" />
                 <polyline points="8 6 2 12 8 18" />
               </svg>
             </div>
             <div>
-              <p className={`text-sm font-medium ${dark ? "text-[#e8e8f0]" : "text-[#2a2a4e]"}`}>
+              <p className={`text-sm font-medium ${dark ? "text-quill-text" : "text-[#2a2a4e]"}`}>
                 Canvas is empty
               </p>
-              <p className={`text-xs mt-1 max-w-[220px] ${dark ? "text-[#6b6b8a]" : "text-[#9090b0]"}`}>
+              <p className={`text-xs mt-1 max-w-55 ${dark ? "text-quill-muted" : "text-[#9090b0]"}`}>
                 Ask Quill to build a landing page, UI component, or write a document to see it rendered here.
               </p>
             </div>

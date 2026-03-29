@@ -13,9 +13,7 @@ type SessionData = {
   user: { id: string; name: string; email: string; image?: string | null } | null;
 } | null;
 
-// Chat history is loaded from the DB via the API in production.
-// For now this is empty — real data will populate once auth + DB are wired to the sidebar.
-const recentChats: { id: string; title: string }[] = [];
+type Chat = { id: string; title: string };
 
 const PINNED_KEY = "quill-pinned-chats";
 
@@ -30,16 +28,48 @@ function KillerIcon({ accent, iconKey }: { accent: string; iconKey: import("@/li
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps = {}) {
   const router = useRouter();
   const [session, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const [planLabel, setPlanLabel] = useState("Free");
+  const [messagesUsedToday, setMessagesUsedToday] = useState<number>(0);
+  const [recommendedDailyLimit, setRecommendedDailyLimit] = useState<number>(60);
+  const [usagePercent, setUsagePercent] = useState<number>(0);
+  const [recentChats, setRecentChats] = useState<Chat[]>([]);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [pendingDeleteChat, setPendingDeleteChat] = useState<Chat | null>(null);
 
   useEffect(() => {
     authClient.getSession().then(({ data }) => {
       if (data?.user) {
         setSession({ user: data.user });
         setSessionStatus("authenticated");
+        fetch("/api/me/entitlements", { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((entitlements: { planLabel?: string } | null) => {
+            if (entitlements?.planLabel) setPlanLabel(entitlements.planLabel);
+          })
+          .catch(() => {});
+        fetch("/api/me/usage", { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((usage: { messagesUsedToday?: number; recommendedDailyLimit?: number; usagePercent?: number } | null) => {
+            if (!usage) return;
+            setMessagesUsedToday(usage.messagesUsedToday ?? 0);
+            setRecommendedDailyLimit(usage.recommendedDailyLimit ?? 60);
+            setUsagePercent(usage.usagePercent ?? 0);
+          })
+          .catch(() => {});
+        // Load chat history now that we know the user is authenticated
+        fetch("/api/chats")
+          .then((r) => r.ok ? r.json() : [])
+          .then((chats: Chat[]) => setRecentChats(chats))
+          .catch(() => {});
       } else {
         setSessionStatus("unauthenticated");
       }
@@ -73,19 +103,66 @@ export function Sidebar() {
     });
   }, []);
 
+  const requestDeleteChat = useCallback((chat: Chat) => {
+    setPendingDeleteChat(chat);
+  }, []);
+
+  const deleteChatFromHistory = useCallback(async (chatId: string) => {
+    if (deletingChatId === chatId) return;
+
+    setDeletingChatId(chatId);
+    try {
+      const res = await fetch(`/api/chats/${chatId}`, { method: "DELETE" });
+      if (!res.ok) return;
+
+      setRecentChats((prev) => prev.filter((chat) => chat.id !== chatId));
+      setPinned((prev) => {
+        const next = prev.filter((id) => id !== chatId);
+        try {
+          localStorage.setItem(PINNED_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    } finally {
+      setDeletingChatId(null);
+    }
+  }, [deletingChatId]);
+
+  const confirmDeleteChat = useCallback(async () => {
+    if (!pendingDeleteChat) return;
+    await deleteChatFromHistory(pendingDeleteChat.id);
+    setPendingDeleteChat(null);
+  }, [pendingDeleteChat, deleteChatFromHistory]);
+
   const sortedChats = [
     ...recentChats.filter((c) => pinned.includes(c.id)),
     ...recentChats.filter((c) => !pinned.includes(c.id)),
   ];
 
   return (
-    <aside className="flex flex-col w-64 h-full bg-[#0d0d15] border-r border-[#1e1e2e] shrink-0 overflow-y-auto">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[#1e1e2e] shrink-0">
-        <QuillLogo size={24} />
-        <span className="text-sm font-semibold gradient-text tracking-tight">
-          Quill AI
-        </span>
+    <aside className="flex flex-col w-64 h-full bg-[#0d0d15] border-r border-quill-border shrink-0 overflow-y-auto">
+      {/* Logo + close button (mobile) */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-quill-border shrink-0">
+        <div className="flex items-center gap-3">
+          <QuillLogo size={24} />
+          <span className="text-sm font-semibold gradient-text tracking-tight">
+            Quill AI
+          </span>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 rounded-lg transition-all"
+            title="Close sidebar"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* New chat button */}
@@ -106,7 +183,7 @@ export function Sidebar() {
       <div className="px-3 pt-4 shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); setKillersOpen((v) => !v); }}
-          className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#6b6b8a] hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
+          className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-quill-muted hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
         >
           <span className="flex items-center gap-1.5">
             {/* Diamond icon */}
@@ -139,21 +216,21 @@ export function Sidebar() {
               <button
                 key={killer.id}
                 onClick={() => window.location.assign(`/agent?killer=${killer.id}`)}
-                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-[#16161f] transition-all duration-150 text-left group"
+                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-quill-surface-2 transition-all duration-150 text-left group"
               >
                 <KillerIcon accent={killer.accent} iconKey={killer.iconKey} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#c8c8e0] group-hover:text-[#e8e8f0] truncate transition-colors">
+                  <p className="text-[13px] font-medium text-[#c8c8e0] group-hover:text-quill-text truncate transition-colors">
                     {killer.name}
                   </p>
-                  <p className="text-[11px] text-[#6b6b8a] truncate">{killer.tagline}</p>
+                  <p className="text-[11px] text-quill-muted truncate">{killer.tagline}</p>
                 </div>
               </button>
             ))}
             {KILLERS.length > 3 && (
               <button
                 onClick={(e) => { e.stopPropagation(); setKillersExpanded((v) => !v); }}
-                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-[11px] text-[#6b6b8a] hover:text-[#a8a8c0] hover:bg-[#16161f] transition-all duration-150 text-left"
+                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-[11px] text-quill-muted hover:text-[#a8a8c0] hover:bg-quill-surface-2 transition-all duration-150 text-left"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ transform: killersExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
@@ -167,13 +244,13 @@ export function Sidebar() {
       </div>
 
       {/* Divider */}
-      <div className="mx-4 my-1 border-t border-[#1e1e2e]" />
+      <div className="mx-4 my-1 border-t border-quill-border" />
 
       {/* ── History section ────────────────────────────────────────────── */}
       <div className="px-3 flex-1 min-h-0 overflow-y-auto">
         <button
           onClick={(e) => { e.stopPropagation(); setHistoryOpen((v) => !v); }}
-          className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#6b6b8a] hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
+          className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-quill-muted hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
         >
           <span className="flex items-center gap-1.5">
             {/* History clock icon */}
@@ -204,7 +281,7 @@ export function Sidebar() {
         >
           <div className="flex flex-col gap-0.5 pt-1 pb-3">
             {sortedChats.length === 0 && (
-              <p className="px-3 py-2 text-xs text-[#6b6b8a] italic">
+              <p className="px-3 py-2 text-xs text-quill-muted italic">
                 No conversations yet
               </p>
             )}
@@ -214,7 +291,7 @@ export function Sidebar() {
               return (
                 <div
                   key={chat.id}
-                  className="group relative flex items-start rounded-lg hover:bg-[#16161f] transition-all duration-150"
+                  className="group relative flex items-start rounded-lg hover:bg-quill-surface-2 transition-all duration-150"
                   onMouseEnter={() => setHoveredChat(chat.id)}
                   onMouseLeave={() => setHoveredChat(null)}
                 >
@@ -227,7 +304,7 @@ export function Sidebar() {
                       className="mt-1.5 shrink-0 w-1 h-1 rounded-full transition-colors"
                       style={{ background: isPinned ? "#EF4444" : "#2a2a3e" }}
                     />
-                    <span className="text-[13px] text-[#6b6b8a] group-hover:text-[#b8b8d0] leading-snug line-clamp-2 transition-colors pr-5">
+                    <span className="text-[13px] text-quill-muted group-hover:text-[#b8b8d0] leading-snug line-clamp-2 transition-colors pr-5">
                       {chat.title}
                     </span>
                   </button>
@@ -244,7 +321,7 @@ export function Sidebar() {
                         togglePin(chat.id);
                       }}
                       title={isPinned ? "Unpin" : "Pin to top"}
-                      className="p-1 rounded-md hover:bg-[#1e1e2e] transition-all"
+                      className="p-1 rounded-md hover:bg-quill-border transition-all"
                       style={{ color: isPinned ? "#EF4444" : "#6b6b8a" }}
                     >
                       <svg
@@ -267,11 +344,15 @@ export function Sidebar() {
                         e.stopPropagation();
                         const url = `${window.location.origin}/share/${chat.id}`;
                         navigator.clipboard.writeText(url).then(() => {
-                          // Brief visual feedback
+                          setShareToast(chat.id);
+                          setTimeout(() => setShareToast(null), 1500);
+                        }).catch(() => {
+                          setShareToast(`error-${chat.id}`);
+                          setTimeout(() => setShareToast(null), 1500);
                         });
                       }}
-                      title="Copy share link"
-                      className="p-1 rounded-md text-[#6b6b8a] hover:text-[#a8a8c0] hover:bg-[#1e1e2e] transition-all"
+                      title={shareToast === chat.id ? "Copied!" : "Copy share link"}
+                      className={`p-1 rounded-md transition-all ${shareToast === chat.id ? "text-[#4ade80] bg-[#22c55e]/10" : "text-quill-muted hover:text-[#a8a8c0] hover:bg-quill-border"}`}
                     >
                       <svg
                         width="11"
@@ -290,6 +371,34 @@ export function Sidebar() {
                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                       </svg>
                     </button>
+
+                    {/* Delete button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        requestDeleteChat(chat);
+                      }}
+                      disabled={deletingChatId === chat.id}
+                      title="Delete chat"
+                      className="p-1 rounded-md text-quill-muted hover:text-[#f87171] hover:bg-quill-border transition-all disabled:opacity-50"
+                    >
+                      <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4h6v2" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               );
@@ -299,25 +408,25 @@ export function Sidebar() {
       </div>
 
       {/* User profile + usage + settings */}
-      <div className="px-3 py-3 border-t border-[#1e1e2e] shrink-0 space-y-2">
+      <div className="px-3 py-3 border-t border-quill-border shrink-0 space-y-2">
         {sessionStatus === "authenticated" && session?.user ? (
           <>
             {/* Profile row */}
             <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
+              <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
                 {(session.user.name ?? session.user.email ?? "U")[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#e8e8f0] truncate leading-tight">
+                <p className="text-sm font-medium text-quill-text truncate leading-tight">
                   {session.user.name ?? session.user.email?.split("@")[0] ?? "User"}
                 </p>
-                <p className="text-[11px] text-[#6b6b8a] truncate leading-tight">Free plan</p>
+                <p className="text-[11px] text-quill-muted truncate leading-tight">{planLabel}</p>
               </div>
               {/* Settings button */}
               <button
                 onClick={() => setSettingsOpen(true)}
                 title="Settings"
-                className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all shrink-0"
+                className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all shrink-0"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
@@ -331,7 +440,7 @@ export function Sidebar() {
                   router.push("/login");
                 }}
                 title="Sign out"
-                className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#f87171] hover:bg-[#16161f] transition-all shrink-0"
+                className="p-1.5 rounded-lg text-quill-muted hover:text-[#f87171] hover:bg-quill-surface-2 transition-all shrink-0"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -344,25 +453,27 @@ export function Sidebar() {
             {/* Usage bar */}
             <div className="px-2 pb-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-[#6b6b8a]">2,340 / 10,000 messages</span>
-                <span className="text-[11px] font-medium text-[#F87171]">23%</span>
+                <span className="text-[11px] text-quill-muted">{messagesUsedToday} / {recommendedDailyLimit} messages today</span>
+                <span className="text-[11px] font-medium text-[#F87171]">{usagePercent}%</span>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-quill-border overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: "23%", background: "linear-gradient(to right, #EF4444, #F87171)" }}
+                  style={{ width: `${usagePercent}%`, background: "linear-gradient(to right, #EF4444, #F87171)" }}
                 />
               </div>
-              <button className="mt-1.5 text-[11px] text-[#EF4444] hover:text-[#F87171] transition-colors">
-                Upgrade for unlimited
-              </button>
+              {planLabel === "Free" && (
+                <button className="mt-1.5 text-[11px] text-[#EF4444] hover:text-[#F87171] transition-colors">
+                  Upgrade for unlimited
+                </button>
+              )}
             </div>
           </>
         ) : (
           /* Not signed in */
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-[#1e1e2e] hover:border-[rgba(239,68,68,0.4)] hover:bg-[#111118] text-sm font-medium text-[#6b6b8a] hover:text-[#e8e8f0] transition-all"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-quill-border hover:border-[rgba(239,68,68,0.4)] hover:bg-quill-surface text-sm font-medium text-quill-muted hover:text-quill-text transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -376,6 +487,37 @@ export function Sidebar() {
 
       {/* Settings modal */}
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* Delete confirmation modal */}
+      {pendingDeleteChat && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/60">
+          <div className="w-full max-w-sm rounded-2xl border border-quill-border bg-[#0d0d15] p-4 shadow-2xl">
+            <h3 className="text-sm font-semibold text-quill-text">Delete this chat?</h3>
+            <p className="mt-2 text-xs text-quill-muted leading-relaxed">
+              This action cannot be undone. The conversation will be removed from your history.
+            </p>
+            <p className="mt-2 text-xs text-[#a8a8c0] line-clamp-2">
+              {pendingDeleteChat.title}
+            </p>
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setPendingDeleteChat(null)}
+                className="px-3 py-1.5 rounded-lg border border-quill-border text-xs text-[#a8a8c0] hover:text-quill-text hover:border-quill-border-2 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { void confirmDeleteChat(); }}
+                disabled={deletingChatId === pendingDeleteChat.id}
+                className="px-3 py-1.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all disabled:opacity-60"
+              >
+                {deletingChatId === pendingDeleteChat.id ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

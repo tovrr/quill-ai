@@ -38,7 +38,7 @@ export default function TermsPage() {
             "You may not use Quill AI to deceive, harass, or harm other individuals.",
             "You may not attempt to reverse-engineer, scrape, or abuse the API in ways that circumvent rate limits or usage restrictions.",
             "You may not resell or sublicense access to Quill AI without written permission.",
-            "Automated bulk usage is only permitted on Gold plan with prior written approval.",
+            "Automated bulk usage requires an appropriate paid plan and prior written approval.",
           ],
         },
         {

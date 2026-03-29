@@ -1,0 +1,66 @@
+name: CI Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://user:password@127.0.0.1:5432/quill?sslmode=require
+      BETTER_AUTH_SECRET: test_test_test_test_test_test_test_test
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      GOOGLE_GENERATIVE_AI_API_KEY: test-key
+      API_METRICS_TOKEN: smoke-metrics-token
+      SMOKE_BASE_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start app
+        run: |
+          npm run start > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "Server is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to start"
+          cat server.log
+          exit 1
+
+      - name: Run API smoke tests
+        run: node scripts/smoke-api.mjs
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat server.log
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi

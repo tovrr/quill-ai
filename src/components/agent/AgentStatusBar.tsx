@@ -37,7 +37,7 @@ export function AgentStatusBar({
     stepCount && totalSteps ? Math.round((stepCount / totalSteps) * 100) : null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0d0d15] border-b border-[#1e1e2e]">
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0d0d15] border-b border-quill-border">
       {/* Status dot */}
       <div className="flex items-center gap-2">
         <span
@@ -54,8 +54,8 @@ export function AgentStatusBar({
       {/* Task title */}
       {taskTitle && (
         <>
-          <span className="text-[#2a2a3e]">·</span>
-          <span className="text-xs text-[#6b6b8a] truncate max-w-xs">
+          <span className="text-quill-border-2">·</span>
+          <span className="text-xs text-quill-muted truncate max-w-xs">
             {taskTitle}
           </span>
         </>
@@ -63,14 +63,14 @@ export function AgentStatusBar({
 
       {/* Step counter */}
       {stepCount !== undefined && totalSteps !== undefined && (
-        <span className="ml-auto text-xs text-[#6b6b8a] shrink-0">
+        <span className="ml-auto text-xs text-quill-muted shrink-0">
           Step {stepCount}/{totalSteps}
         </span>
       )}
 
       {/* Progress bar */}
       {progress !== null && (
-        <div className="w-20 h-1 bg-[#1e1e2e] rounded-full overflow-hidden shrink-0">
+        <div className="w-20 h-1 bg-quill-border rounded-full overflow-hidden shrink-0">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${progress}%`, background: color }}

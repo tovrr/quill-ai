@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           title: "Data Storage and Retention",
           content: [
             "Conversation history is stored in our Neon PostgreSQL database and linked to your account.",
-            "Free plan users: chat history retained for 7 days. Silver: 90 days. Gold: indefinitely.",
+            "Signed-in users can manage and delete conversation history directly in the app.",
             "Uploaded files are processed transiently and not stored after your session ends.",
             "You may delete your account and all associated data at any time from Settings → Account.",
             "Upon deletion, all personal data is permanently removed within 30 days.",
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
         {
           title: "Cookies and Tracking",
           content: [
-            "We use a single session cookie (set by NextAuth) to keep you signed in. No advertising cookies.",
+            "We use a session cookie set by Better Auth to keep you signed in. No advertising cookies.",
             "We do not use third-party analytics trackers (Google Analytics, Meta Pixel, etc.).",
             "We collect minimal server-side logs for security and error monitoring.",
           ],

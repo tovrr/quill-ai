@@ -1,44 +1,44 @@
-# Product Context: Next.js Starter Template
+# Product Context: Quill AI
 
-## Why This Template Exists
+## Why This Product Exists
 
-Starting a new Next.js project involves boilerplate setup, configuration decisions, and establishing patterns. This template provides a clean, opinionated starting point that eliminates setup friction and establishes best practices from the start. It's optimized for AI-assisted development, where an AI can quickly extend the template based on user requirements.
+Quill AI is a personal AI agent app that combines chat, specialist agents, file inputs, and fast/pro reasoning modes in one workspace. The goal is to give users a practical daily assistant for writing, coding, research, and execution-oriented tasks.
 
 ## Problems It Solves
 
-1. **Setup Time**: Eliminates boilerplate configuration (TypeScript, Tailwind, ESLint)
-2. **Decision Fatigue**: Pre-made choices for tooling and patterns
-3. **AI Context**: Memory bank provides persistent context for AI assistants
-4. **Extensibility**: Recipe system for adding common features
-5. **Consistency**: Standardized project structure and conventions
+1. **Fragmented AI workflows**: Consolidates chat, model choice, specialist personas, and canvas output in one interface.
+2. **Model-cost tradeoffs**: Exposes mode-based experience (Fast, Think, Pro) with quota controls for sustainability.
+3. **Weak conversation management**: Provides history, pinning, sharing, and deletion from the sidebar.
+4. **Onboarding friction**: Supports guest chat for immediate usage while keeping advanced features behind authentication.
+5. **Limited output usability**: Canvas mode renders long-form and HTML output in a review-friendly panel.
 
 ## How It Should Work (User Flow)
 
-1. User starts with this template
-2. User describes what they want to build to AI assistant
-3. AI adds pages, components, and features as needed
-4. AI uses recipes for common additions (database, auth)
-5. User previews changes via hot reload
-6. Iterate until satisfied
-7. Deploy
+1. User lands on Quill and can start immediately (guest) or sign in.
+2. User opens `/agent`, chooses mode, and sends prompts (optionally with files).
+3. Quill streams responses and can route fast mode through a free-cost provider path when configured.
+4. User can manage conversations in sidebar: revisit, pin, share, or delete.
+5. For complex output, user uses Canvas mode to inspect generated docs/pages.
 
 ## Key User Experience Goals
 
-- **Zero to Feature Fast**: Get building immediately, no setup required
-- **AI-Friendly**: Memory bank and recipes make AI assistance effective
-- **Flexible Foundation**: Can become any type of application
-- **Best Practices Built-In**: TypeScript strict mode, ESLint, clean structure
+- **Fast first value**: New users can test quickly without setup.
+- **Clear mode semantics**: Fast for speed, Think for deeper reasoning, Pro for best quality.
+- **Operational reliability**: Valid model routing, robust request parsing, and stable streaming behavior.
+- **Trust and control**: Ownership-scoped chat deletion and authenticated history access.
 
-## What This Template Provides
+## Current Product Surface
 
-1. **Clean App Structure**: Single page ready for expansion
-2. **Type Safety**: Full TypeScript setup with strict mode
-3. **Modern Styling**: Tailwind CSS 4 ready to use
-4. **Code Quality**: ESLint configured
-5. **Extensibility**: Recipe system for common features
+1. **Agent Chat**: Streaming conversation UI with mode picker.
+2. **Specialist Agents (Killers)**: Persona/system-prompt driven responses.
+3. **History Sidebar**: Fetch, pin, share link, delete with confirmation.
+4. **Canvas Panel**: Markdown/HTML preview with copy/download/open actions.
+5. **Auth + Persistence**: Better Auth + Drizzle + Neon for user-linked history.
+6. **Quota Controls**: Daily mode limits via environment settings.
 
 ## Integration Points
 
-- **Database**: Use add-database recipe for Drizzle + SQLite
-- **Styling**: Tailwind CSS pre-configured
-- **AI Assistance**: Memory bank for context persistence
+- **Primary model provider**: Google Gemini for think/pro and default fallback.
+- **Optional fast-mode provider**: OpenRouter via OpenAI-compatible client.
+- **Database**: Neon PostgreSQL with Drizzle ORM.
+- **Auth**: Better Auth server/client integration.

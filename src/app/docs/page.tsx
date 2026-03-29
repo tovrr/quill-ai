@@ -15,7 +15,7 @@ const sections = [
       { title: "What is Quill AI?", desc: "An overview of what Quill is, what it can do, and who it's for.", slug: "what-is-quill" },
       { title: "Creating your account", desc: "How to sign up, sign in, and manage your profile.", slug: "account-setup" },
       { title: "Your first task", desc: "Send your first message and understand how Quill responds.", slug: "first-task" },
-      { title: "Understanding plans", desc: "Which features are available on Free, Silver, and Gold.", slug: "plans" },
+      { title: "Understanding plans", desc: "Which features are available on Free, Think, and Pro.", slug: "plans" },
     ],
   },
   {
@@ -64,15 +64,15 @@ const sections = [
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e8e8f0]">
+    <div className="min-h-screen bg-quill-bg text-quill-text">
       {/* Nav */}
-      <nav className="border-b border-[#1e1e2e] px-4 sm:px-6 h-14 flex items-center justify-between">
+      <nav className="border-b border-quill-border px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <QuillLogo size={22} />
           <span className="text-sm font-semibold gradient-text tracking-tight">Quill AI</span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-xs text-[#6b6b8a] hover:text-[#e8e8f0] transition-colors hidden sm:block">← Home</Link>
+          <Link href="/" className="text-xs text-quill-muted hover:text-quill-text transition-colors hidden sm:block">← Home</Link>
           <Link
             href="/login"
             className="flex items-center h-8 px-3 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
@@ -83,15 +83,15 @@ export default function DocsPage() {
       </nav>
 
       {/* Hero */}
-      <div className="border-b border-[#1e1e2e] px-4 sm:px-6 py-12 sm:py-16 text-center" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.06) 0%, transparent 70%)" }}>
+      <div className="border-b border-quill-border px-4 sm:px-6 py-12 sm:py-16 text-center" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.06) 0%, transparent 70%)" }}>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Documentation</h1>
-        <p className="text-[#6b6b8a] text-base sm:text-lg max-w-xl mx-auto">
+        <p className="text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
           Everything you need to get the most out of Quill AI.
         </p>
 
         {/* Search placeholder */}
         <div className="mt-6 max-w-md mx-auto">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#111118] border border-[#1e1e2e] text-sm text-[#4a4a6a]">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#4a4a6a]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -117,12 +117,12 @@ export default function DocsPage() {
               {section.articles.map((article) => (
                 <div
                   key={article.slug}
-                  className="group flex flex-col gap-1.5 p-4 rounded-xl border border-[#1e1e2e] bg-[#0d0d15] hover:border-[#2a2a3e] hover:bg-[#111118] transition-all duration-150 cursor-default"
+                  className="group flex flex-col gap-1.5 p-4 rounded-xl border border-quill-border bg-[#0d0d15] hover:border-quill-border-2 hover:bg-quill-surface transition-all duration-150 cursor-default"
                 >
-                  <p className="text-sm font-medium text-[#e8e8f0] group-hover:text-white transition-colors leading-snug">
+                  <p className="text-sm font-medium text-quill-text group-hover:text-white transition-colors leading-snug">
                     {article.title}
                   </p>
-                  <p className="text-xs text-[#6b6b8a] leading-relaxed">{article.desc}</p>
+                  <p className="text-xs text-quill-muted leading-relaxed">{article.desc}</p>
                   <span className="mt-1 text-[11px]" style={{ color: section.color }}>Coming soon →</span>
                 </div>
               ))}
@@ -131,17 +131,17 @@ export default function DocsPage() {
         ))}
 
         {/* Bottom note */}
-        <div className="pt-8 border-t border-[#1e1e2e] text-center">
-          <p className="text-sm text-[#6b6b8a]">
+        <div className="pt-8 border-t border-quill-border text-center">
+          <p className="text-sm text-quill-muted">
             Can&apos;t find what you&apos;re looking for?{" "}
             <a href="mailto:support@quill.ai" className="text-[#EF4444] hover:underline">
               Contact support
             </a>
           </p>
           <div className="flex items-center justify-center gap-5 mt-4 text-xs text-[#4a4a6a]">
-            <Link href="/privacy" className="hover:text-[#6b6b8a] transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-[#6b6b8a] transition-colors">Terms</Link>
-            <Link href="/" className="hover:text-[#6b6b8a] transition-colors">Home</Link>
+            <Link href="/privacy" className="hover:text-quill-muted transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-quill-muted transition-colors">Terms</Link>
+            <Link href="/" className="hover:text-quill-muted transition-colors">Home</Link>
           </div>
         </div>
       </main>

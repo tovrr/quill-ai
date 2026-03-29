@@ -1,48 +1,50 @@
-# Project Brief: Next.js Starter Template
+# Project Brief: Quill AI
 
 ## Purpose
 
-This is a minimal Next.js starter template designed for AI-assisted development. It provides a clean foundation that can be extended to build any type of web application through interaction with an AI assistant.
+Quill AI is a production-oriented personal AI agent app. It focuses on delivering reliable chat workflows, specialist personas, and sustainable model usage with clear free and paid mode boundaries.
 
 ## Target Users
 
-- Developers wanting a clean Next.js starting point
-- Users building applications through AI-assisted coding
-- Teams needing a standardized, modern Next.js setup
+- Individual users who need a fast daily AI workspace.
+- Power users who switch between speed-oriented and deep-reasoning tasks.
+- Authenticated users who need persistent conversation history and sharing.
 
 ## Core Use Case
 
-Users describe what they want to build to an AI assistant, which then expands this template by:
+Users interact with Quill by:
 
-1. Adding components and pages as needed
-2. Installing additional dependencies
-3. Setting up databases, authentication, etc. using recipes
-4. Customizing styling and branding
+1. Opening `/agent` and selecting Fast, Think, or Pro mode.
+2. Sending prompts (with optional attachments) and receiving streaming responses.
+3. Managing conversations from sidebar history (pin, share, delete).
+4. Using Canvas mode for long-form or HTML outputs.
 
 ## Key Requirements
 
 ### Must Have
 
-- Modern Next.js 16 setup with App Router
-- TypeScript for type safety
-- Tailwind CSS 4 for styling
-- ESLint for code quality
-- Clean, minimal starting structure
-- Bun as package manager
+- Stable chat API with resilient message extraction.
+- Correct provider/model mapping for active model IDs.
+- Authenticated persistence for chats and messages.
+- Guest-safe behavior (no persistence and restricted advanced modes).
+- Daily quota enforcement by mode.
+- Sidebar management actions with ownership-safe delete.
 
 ### Nice to Have
 
-- Recipe system for common additions (database, auth)
-- Memory bank for AI context persistence
-- Clear development guidelines
+- Optional low-cost fast-mode routing (OpenRouter free model path).
+- Better observability and rate limiting for production hardening.
+- Expanded product docs and in-app help coverage.
 
 ## Success Metrics
 
-- Clean, zero-error TypeScript setup
-- Passing lint and type checks
+- `npm run typecheck` passes consistently.
+- Core chat flows return successful responses with expected streaming behavior.
+- Authenticated history operations (fetch/delete) are reliable and scoped to user ownership.
 
 ## Constraints
 
-- Minimal dependencies by default
-- Framework: Next.js 16 + React 19 + Tailwind CSS 4
-- Package manager: Bun
+- Framework: Next.js 16 + React 19 + Tailwind CSS 4.
+- Data layer: Neon PostgreSQL + Drizzle ORM.
+- Auth: Better Auth.
+- Package manager/scripts: npm in this repository.

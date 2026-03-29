@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,8 +85,8 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   return (
     <div className="flex items-center justify-between gap-4 py-3.5 border-b border-[#1a1a28]">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[#e8e8f0]">{label}</p>
-        {hint && <p className="text-xs text-[#6b6b8a] mt-0.5">{hint}</p>}
+        <p className="text-sm font-medium text-quill-text">{label}</p>
+        {hint && <p className="text-xs text-quill-muted mt-0.5">{hint}</p>}
       </div>
       {children}
     </div>
@@ -101,7 +102,7 @@ function Select({ value, onChange, options }: {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-[#1a1a28] border border-[#2a2a3e] text-sm text-[#e8e8f0] rounded-lg px-3 py-1.5 outline-none focus:border-[#EF4444] transition-colors cursor-pointer"
+      className="bg-[#1a1a28] border border-quill-border-2 text-sm text-quill-text rounded-lg px-3 py-1.5 outline-none focus:border-[#EF4444] transition-colors cursor-pointer"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -193,11 +194,32 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+type UsageData = {
+  planLabel: string;
+  canUsePaidModes: boolean;
+  messagesUsedToday: number;
+  recommendedDailyLimit: number;
+  usagePercent: number;
+  limits: {
+    fast: number;
+    thinking: number;
+    advanced: number;
+  };
+  webSearchState: "available" | "coming-soon";
+  imageGenerationState: "auth-required";
+};
+
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
+  const router = useRouter();
   const [section, setSection] = useState<Section>("general");
   // Loaded fresh on every mount (component unmounts when closed via `if (!open) return null`)
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [saved, setSaved] = useState(false);
+  const [accountName, setAccountName] = useState("User");
+  const [accountEmail, setAccountEmail] = useState("user@example.com");
+  const [planLabel, setPlanLabel] = useState("Free");
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
 
   // Close on Escape
   useEffect(() => {
@@ -206,6 +228,44 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const loadAccount = async () => {
+      setUsageLoading(true);
+      try {
+        const [{ authClient }, entitlementsRes, usageRes] = await Promise.all([
+          import("@/lib/auth/client"),
+          fetch("/api/me/entitlements", { cache: "no-store" }),
+          fetch("/api/me/usage", { cache: "no-store" }),
+        ]);
+
+        const session = await authClient.getSession();
+        const user = session.data?.user;
+        if (user) {
+          setAccountName(user.name ?? user.email?.split("@")[0] ?? "User");
+          setAccountEmail(user.email ?? "");
+        }
+
+        if (entitlementsRes.ok) {
+          const entitlements = (await entitlementsRes.json()) as { planLabel?: string };
+          if (entitlements.planLabel) setPlanLabel(entitlements.planLabel);
+        }
+
+        if (usageRes.ok) {
+          const usage = (await usageRes.json()) as UsageData;
+          setUsageData(usage);
+        }
+      } catch {
+        setPlanLabel("Free");
+      } finally {
+        setUsageLoading(false);
+      }
+    };
+
+    void loadAccount();
+  }, [open]);
 
   const update = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((s) => ({ ...s, [key]: value }));
@@ -221,23 +281,23 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative flex flex-col bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+        className="relative flex flex-col bg-[#0d0d15] border border-quill-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
         style={{ width: "680px", maxWidth: "95vw", height: "520px", maxHeight: "90vh" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-quill-border shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-[#e8e8f0]">Settings</h2>
-            <p className="text-xs text-[#6b6b8a] mt-0.5">Manage your Quill AI preferences</p>
+            <h2 className="text-base font-semibold text-quill-text">Settings</h2>
+            <p className="text-xs text-quill-muted mt-0.5">Manage your Quill AI preferences</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all"
+            className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -249,7 +309,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         {/* Body */}
         <div className="flex flex-1 min-h-0">
           {/* Left nav */}
-          <nav className="w-44 shrink-0 border-r border-[#1e1e2e] p-3 flex flex-col gap-0.5">
+          <nav className="w-44 shrink-0 border-r border-quill-border p-3 flex flex-col gap-0.5">
             {SECTIONS.map((s) => (
               <button
                 key={s.id}
@@ -257,7 +317,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-all text-left ${
                   section === s.id
                     ? "bg-[#EF4444] text-white"
-                    : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"
+                    : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
                 }`}
               >
                 {s.icon}
@@ -272,7 +332,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {/* General */}
             {section === "general" && (
               <div>
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">General</p>
+                <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">General</p>
 
                 <Row label="Language" hint="Interface and response language">
                   <Select
@@ -283,7 +343,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Row>
 
                 <Row label="Default mode" hint="Model used when starting a new chat">
-                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e]">
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-quill-bg border border-quill-border">
                     {MODES.map((m) => (
                       <button
                         key={m.value}
@@ -292,7 +352,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           settings.defaultMode === m.value
                             ? "bg-[#EF4444] text-white"
-                            : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                            : "text-quill-muted hover:text-[#a8a8c0]"
                         }`}
                       >
                         {m.label}
@@ -314,115 +374,70 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {/* Usage & API */}
             {section === "usage" && (
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Current billing period</p>
+                <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Live usage</p>
 
-                {/* Period header */}
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-[#a8a8c0]">March 1 – March 31, 2026</span>
-                  <span className="text-xs text-[#6b6b8a]">Resets in 3 days</span>
-                </div>
+                {usageLoading && (
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#a8a8c0]">
+                    Loading usage data...
+                  </div>
+                )}
 
-                {/* Overall usage */}
-                <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#e8e8f0]">Messages</span>
-                    <span className="text-sm font-semibold text-[#F87171]">2,340 / 10,000</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: "23.4%", background: "linear-gradient(to right, #EF4444, #F87171)" }} />
-                  </div>
-                  <p className="text-[11px] text-[#6b6b8a]">7,660 messages remaining · Free plan</p>
-                </div>
-
-                {/* Token usage */}
-                <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#e8e8f0]">Tokens used</span>
-                    <span className="text-sm font-semibold text-[#F87171]">1.2M / 5M</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: "24%", background: "linear-gradient(to right, #EF4444, #F87171)" }} />
-                  </div>
-                  <div className="flex gap-4 text-[11px] text-[#6b6b8a]">
-                    <span>Input: 820K tokens</span>
-                    <span>Output: 380K tokens</span>
-                  </div>
-                </div>
-
-                {/* Breakdown by model */}
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Breakdown by model</p>
-                {[
-                  { label: "Pro (default)", color: "#F87171", pct: 68, msgs: 1591, tokens: "820K" },
-                  { label: "Fast", color: "#34d399", pct: 22, msgs: 515, tokens: "265K" },
-                  { label: "Think", color: "#f59e0b", pct: 10, msgs: 234, tokens: "115K" },
-                ].map((m) => (
-                  <div key={m.label} className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: m.color }} />
-                        <span className="text-sm text-[#a8a8c0]">{m.label}</span>
+                {!usageLoading && usageData && (
+                  <>
+                    <div className="p-4 rounded-xl bg-quill-surface border border-quill-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-quill-text">Messages today</span>
+                        <span className="text-sm font-semibold text-[#F87171]">
+                          {usageData.messagesUsedToday} / {usageData.recommendedDailyLimit}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs font-medium" style={{ color: m.color }}>{m.msgs} msgs</span>
-                        <span className="text-[11px] text-[#6b6b8a] ml-2">{m.tokens}</span>
+                      <div className="w-full h-2 rounded-full bg-quill-border overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${usageData.usagePercent}%`, background: "linear-gradient(to right, #EF4444, #F87171)" }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-quill-muted">Current plan: {usageData.planLabel}</p>
+                    </div>
+
+                    <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Per-mode limits</p>
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#a8a8c0]">
+                      <div className="flex items-center justify-between"><span>Fast</span><span>{usageData.limits.fast}/day</span></div>
+                      <div className="flex items-center justify-between"><span>Think</span><span>{usageData.limits.thinking}/day</span></div>
+                      <div className="flex items-center justify-between"><span>Pro</span><span>{usageData.limits.advanced}/day</span></div>
+                    </div>
+
+                    <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Feature status</p>
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#a8a8c0]">
+                      <div className="flex items-center justify-between">
+                        <span>Web search</span>
+                        <span className={usageData.webSearchState === "available" ? "text-quill-green" : "text-[#f59e0b]"}>
+                          {usageData.webSearchState === "available" ? "Available" : "Coming soon"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Image generation</span>
+                        <span className="text-quill-green">Signed-in users</span>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${m.pct}%`, background: m.color }} />
-                    </div>
-                  </div>
-                ))}
+                  </>
+                )}
 
-                {/* Web search usage */}
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Features</p>
-                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#a8a8c0]">Web searches</span>
-                    <span className="text-xs font-semibold text-[#34d399]">47 / 200</span>
+                {!usageLoading && !usageData && (
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#a8a8c0]">
+                    Unable to load usage data right now.
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mt-2">
-                    <div className="h-full rounded-full" style={{ width: "23.5%", background: "#34d399" }} />
-                  </div>
-                </div>
-                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#a8a8c0]">Image generations</span>
-                    <span className="text-xs font-semibold text-[#f59e0b]">12 / 50</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mt-2">
-                    <div className="h-full rounded-full" style={{ width: "24%", background: "#f59e0b" }} />
-                  </div>
-                </div>
-
-                {/* API key */}
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">API access</p>
-                <div className="p-3 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#a8a8c0]">API key</span>
-                    <span className="text-xs text-[#6b6b8a] font-mono">qai_•••••••••••••3f9a</span>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
-                      Reveal key
-                    </button>
-                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
-                      Regenerate
-                    </button>
-                    <button className="text-xs px-3 py-1.5 rounded-lg bg-[#1e1e2e] hover:bg-[#2a2a3e] text-[#a8a8c0] transition-all">
-                      Copy
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* Appearance */}
             {section === "appearance" && (
               <div>
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Appearance</p>
+                <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Appearance</p>
 
                 <Row label="Theme" hint="Color scheme for the interface">
-                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e]">
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-quill-bg border border-quill-border">
                     {[
                       { value: "dark", label: "Dark" },
                       { value: "system", label: "System" },
@@ -432,7 +447,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           t.value === "dark"
                             ? "bg-[#EF4444] text-white"
-                            : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                            : "text-quill-muted hover:text-[#a8a8c0]"
                         }`}
                       >
                         {t.label}
@@ -445,8 +460,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <Toggle on={settings.compactMessages} onChange={(v) => update("compactMessages", v)} />
                 </Row>
 
-                <div className="mt-4 p-3 rounded-xl bg-[#111118] border border-[#1e1e2e]">
-                  <p className="text-xs text-[#6b6b8a]">
+                <div className="mt-4 p-3 rounded-xl bg-quill-surface border border-quill-border">
+                  <p className="text-xs text-quill-muted">
                     Additional themes (light mode, high contrast) are coming soon.
                   </p>
                 </div>
@@ -456,7 +471,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {/* Privacy */}
             {section === "privacy" && (
               <div>
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Privacy</p>
+                <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Privacy</p>
 
                 <Row label="Usage analytics" hint="Help improve Quill AI by sharing anonymous usage data">
                   <Toggle on={settings.analyticsEnabled} onChange={(v) => update("analyticsEnabled", v)} />
@@ -470,9 +485,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <Toggle on={false} onChange={() => {}} />
                 </Row>
 
-                <div className="mt-4 p-3 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-1.5">
+                <div className="mt-4 p-3 rounded-xl bg-quill-surface border border-quill-border space-y-1.5">
                   <p className="text-xs font-medium text-[#a8a8c0]">Data & Privacy</p>
-                  <p className="text-xs text-[#6b6b8a]">
+                  <p className="text-xs text-quill-muted">
                     Your conversations are encrypted and stored securely. We never sell your data.
                   </p>
                   <button className="text-xs text-[#EF4444] hover:text-[#F87171] transition-colors">
@@ -485,36 +500,41 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {/* Account */}
             {section === "account" && (
               <div>
-                <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Account</p>
+                <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Account</p>
 
                 <div className="flex items-center gap-3 py-3.5 border-b border-[#1a1a28]">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-sm font-bold text-white shrink-0">
-                    U
+                  <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-sm font-bold text-white shrink-0">
+                    {(accountName || accountEmail || "U")[0]?.toUpperCase() ?? "U"}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#e8e8f0]">User</p>
-                    <p className="text-xs text-[#6b6b8a]">user@example.com</p>
+                    <p className="text-sm font-medium text-quill-text">{accountName}</p>
+                    <p className="text-xs text-quill-muted">{accountEmail}</p>
                   </div>
                 </div>
 
                 <Row label="Current plan" hint="Your active subscription tier">
-                  <span className="px-2.5 py-1 rounded-full bg-[#1e1e2e] text-xs font-medium text-[#a8a8c0]">
-                    Free
+                  <span className="px-2.5 py-1 rounded-full bg-quill-border text-xs font-medium text-[#a8a8c0]">
+                    {planLabel}
                   </span>
                 </Row>
 
-                <div className="mt-3 p-4 rounded-xl border border-[#EF444430] bg-[rgba(239,68,68,0.05)]">
-                  <p className="text-sm font-semibold text-[#e8e8f0]">Upgrade to Pro</p>
-                  <p className="text-xs text-[#6b6b8a] mt-1 mb-3">
-                    Unlimited messages, priority access to all models, and advanced features.
-                  </p>
-                  <button className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all">
-                    View plans
-                  </button>
-                </div>
+                {planLabel === "Free" && (
+                  <div className="mt-3 p-4 rounded-xl border border-[#EF444430] bg-[rgba(239,68,68,0.05)]">
+                    <p className="text-sm font-semibold text-quill-text">Upgrade to Pro</p>
+                    <p className="text-xs text-quill-muted mt-1 mb-3">
+                      Unlimited messages, priority access to all models, and advanced features.
+                    </p>
+                    <button
+                      onClick={() => router.push("/pricing")}
+                      className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
+                    >
+                      View plans
+                    </button>
+                  </div>
+                )}
 
                 <div className="pt-4 flex flex-col gap-1">
-                  <button className="text-xs text-[#6b6b8a] hover:text-[#a8a8c0] transition-colors text-left py-1">
+                  <button className="text-xs text-quill-muted hover:text-[#a8a8c0] transition-colors text-left py-1">
                     Sign out
                   </button>
                   <button className="text-xs text-[#f87171] hover:text-[#fca5a5] transition-colors text-left py-1">
@@ -527,13 +547,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-[#1e1e2e] shrink-0">
-          <span className="text-[11px] text-[#6b6b8a]">Quill AI v1.0.0</span>
+        <div className="flex items-center justify-between px-6 py-3 border-t border-quill-border shrink-0">
+          <span className="text-[11px] text-quill-muted">Quill AI v1.0.0</span>
           <button
             onClick={handleSave}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               saved
-                ? "bg-[#34d399] text-white"
+                ? "bg-quill-green text-white"
                 : "bg-[#EF4444] hover:bg-[#DC2626] text-white"
             }`}
           >
@@ -553,3 +573,4 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     </div>
   );
 }
+

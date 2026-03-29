@@ -1,6 +1,6 @@
 # Recipe: Add Database
 
-Add SQLite database support with Drizzle ORM for data persistence.
+Add PostgreSQL schema/data support with Drizzle ORM in this Quill AI codebase.
 
 ## When to Use
 
@@ -15,30 +15,31 @@ Add SQLite database support with Drizzle ORM for data persistence.
 
 ## Environment
 
-Database credentials (`DB_URL`, `DB_TOKEN`) are automatically provided by the sandbox environment.
+Database credentials are provided through `DATABASE_URL`.
 
 ## Setup Steps
 
 ### Step 1: Install Dependencies
 
 ```bash
-bun add github:Kilo-Org/app-builder-db#main drizzle-orm && bun add -D drizzle-kit
+npm install drizzle-orm @neondatabase/serverless
+npm install -D drizzle-kit
 ```
 
 ### Step 2: Create All Required Files
 
 ⚠️ **Important**: Create ALL files before running generate. Setup fails if any are missing.
 
-#### `src/db/schema.ts` - Table definitions
+#### `src/db/schema.ts` - Table definitions (PostgreSQL)
 
 ```typescript
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Add more tables as needed
@@ -47,19 +48,16 @@ export const users = sqliteTable("users", {
 #### `src/db/index.ts` - Database client
 
 ```typescript
-import { createDatabase } from "@kilocode/app-builder-db";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-export const db = createDatabase(schema);
-```
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
 
-#### `src/db/migrate.ts` - Migration script
-
-```typescript
-import { runMigrations } from "@kilocode/app-builder-db";
-import { db } from "./index";
-
-await runMigrations(db, {}, { migrationsFolder: "./src/db/migrations" });
+const sql = neon(process.env.DATABASE_URL);
+export const db = drizzle(sql, { schema });
 ```
 
 #### `drizzle.config.ts` - Drizzle configuration (project root)
@@ -69,8 +67,11 @@ import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
-  out: "./src/db/migrations",
-  dialect: "sqlite",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL ?? "",
+  },
 });
 ```
 
@@ -82,7 +83,8 @@ Add to `package.json`:
 {
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun run src/db/migrate.ts"
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   }
 }
 ```
@@ -90,18 +92,17 @@ Add to `package.json`:
 ### Step 4: Generate Migrations
 
 ```bash
-bun db:generate
+npm run db:generate
+npm run db:push
 ```
 
 ### Step 5: Commit and Push
 
 ```bash
-bun typecheck && bun lint && git add -A && git commit -m "Add database support" && git push
+npm run typecheck && npm run lint && git add -A && git commit -m "Add database support" && git push
 ```
 
-Migrations run automatically in the sandbox after push.
-
-⚠️ **Never run `bun db:migrate` manually** - it won't work locally.
+Run `db:push` only when `DATABASE_URL` is correctly configured.
 
 ## Usage Examples
 

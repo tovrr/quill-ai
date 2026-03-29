@@ -1,18 +1,17 @@
-# System Patterns: Next.js Starter Template
+# System Patterns: Quill AI
 
 ## Architecture Overview
 
-```
+```text
 src/
 ├── app/                    # Next.js App Router
-│   ├── layout.tsx          # Root layout + metadata
-│   ├── page.tsx            # Home page
-│   ├── globals.css         # Tailwind imports + global styles
-│   └── favicon.ico         # Site icon
-└── (expand as needed)
-    ├── components/         # React components (add when needed)
-    ├── lib/                # Utilities and helpers (add when needed)
-    └── db/                 # Database files (add via recipe)
+│   ├── agent/page.tsx      # Main agent chat experience
+│   ├── pricing/page.tsx    # Pricing and plan messaging
+│   ├── docs/page.tsx       # Product documentation page
+│   └── api/*               # Chat/auth/utility endpoints
+├── components/             # UI and feature components
+├── lib/                    # Auth/data/provider helpers
+└── db/                     # Drizzle schema and DB client
 ```
 
 ## Key Design Patterns
@@ -20,7 +19,8 @@ src/
 ### 1. App Router Pattern
 
 Uses Next.js App Router with file-based routing:
-```
+
+```text
 src/app/
 ├── page.tsx           # Route: /
 ├── about/page.tsx     # Route: /about
@@ -31,19 +31,19 @@ src/app/
     └── route.ts       # API Route: /api
 ```
 
-### 2. Component Organization Pattern (When Expanding)
+### 2. Component Organization Pattern
 
-```
+```text
 src/components/
 ├── ui/                # Reusable UI components (Button, Card, etc.)
 ├── layout/            # Layout components (Header, Footer)
-├── sections/          # Page sections (Hero, Features, etc.)
-└── forms/             # Form components
+└── agent/             # Agent-specific UI (status, canvas, messages)
 ```
 
 ### 3. Server Components by Default
 
 All components are Server Components unless marked with `"use client"`:
+
 ```tsx
 // Server Component (default) - can fetch data, access DB
 export default function Page() {
@@ -61,6 +61,7 @@ export default function Counter() {
 ### 4. Layout Pattern
 
 Layouts wrap pages and can be nested:
+
 ```tsx
 // src/app/layout.tsx - Root layout
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -85,11 +86,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 ## Styling Conventions
 
 ### Tailwind CSS Usage
+
 - Utility classes directly on elements
 - Component composition for repeated patterns
 - Responsive: `sm:`, `md:`, `lg:`, `xl:`
 
 ### Common Patterns
+
 ```tsx
 // Container
 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,11 +113,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 ## State Management
 
-For simple needs:
-- `useState` for local component state
-- `useContext` for shared state
-- Server Components for data fetching
-
-For complex needs (add when necessary):
-- Zustand for client state
-- React Query for server state
+- Local UI state via `useState`/`useMemo` in client components.
+- Chat state handled through AI SDK hooks and transport layer.
+- Persistent state (history/messages) via server routes + Drizzle.

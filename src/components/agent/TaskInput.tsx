@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 export type Mode = "fast" | "thinking" | "advanced";
 
@@ -13,6 +14,11 @@ interface TaskInputProps {
   onCanvasToggle: () => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
+  showWebSearch?: boolean;
+  webSearchState?: "available" | "auth-required" | "coming-soon";
+  allowedModes?: Mode[];
+  showLockedModes?: boolean;
+  canGenerateImage?: boolean;
   disabled?: boolean;
   isGeneratingImage?: boolean;
   placeholder?: string;
@@ -33,10 +39,16 @@ export function TaskInput({
   onCanvasToggle,
   webSearchEnabled,
   onWebSearchToggle,
+  showWebSearch,
+  webSearchState,
+  allowedModes,
+  showLockedModes,
+  canGenerateImage,
   disabled,
   isGeneratingImage,
   placeholder,
 }: TaskInputProps) {
+  const router = useRouter();
   const [value, setValue] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileList | null>(null);
@@ -115,13 +127,17 @@ export function TaskInput({
     ? "Describe the image to generate..."
     : placeholder ?? "Ask Quill to do anything...";
 
-  const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? "Pro";
+  const enabledModes = new Set(allowedModes ?? MODES.map((m) => m.id));
+  const visibleModes = showLockedModes ? MODES : MODES.filter((m) => enabledModes.has(m.id));
+  const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Fast";
+  const hasLockedModes = visibleModes.some((m) => !enabledModes.has(m.id));
+  const imageGenerationEnabled = canGenerateImage ?? true;
 
   return (
     <div className="flex flex-col gap-2">
       {/* Input area */}
       <div
-        className="glow-border rounded-2xl bg-[#111118] transition-all duration-200 focus-within:border-[rgba(239,68,68,0.6)] focus-within:shadow-[0_0_24px_rgba(239,68,68,0.15)]"
+        className="glow-border rounded-2xl bg-quill-surface transition-all duration-200 focus-within:border-[rgba(239,68,68,0.6)] focus-within:shadow-[0_0_24px_rgba(239,68,68,0.15)]"
         style={
           imageMode
             ? {
@@ -137,7 +153,7 @@ export function TaskInput({
             {Array.from(attachedFiles).map((file, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e1e2e] border border-[#2a2a3e] text-xs text-[#a8a8c0]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
               >
                 <svg
                   width="11"
@@ -152,10 +168,10 @@ export function TaskInput({
                 >
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
-                <span className="max-w-[100px] truncate">{file.name}</span>
+                <span className="max-w-25 truncate">{file.name}</span>
                 <button
                   onClick={() => removeFile(i)}
-                  className="ml-0.5 text-[#6b6b8a] hover:text-[#e8e8f0] transition-colors"
+                  className="ml-0.5 text-quill-muted hover:text-quill-text transition-colors"
                   aria-label="Remove file"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -171,7 +187,7 @@ export function TaskInput({
         {/* Image mode badge */}
         {imageMode && (
           <div className="px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-accent-glow border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
@@ -191,174 +207,117 @@ export function TaskInput({
           disabled={isDisabled}
           placeholder={currentPlaceholder}
           rows={1}
-          className="w-full bg-transparent resize-none px-5 py-4 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none leading-relaxed"
+          className="w-full bg-transparent resize-none px-5 py-4 text-sm text-quill-text placeholder-quill-muted outline-none leading-relaxed"
           style={{ minHeight: "52px" }}
         />
 
         {/* Toolbar */}
         <div className="flex items-center justify-between px-3 pb-3 pt-0">
-          {/* Left: dropdown + web search */}
-          <div className="flex items-center gap-1">
-          <div className="relative" ref={dropdownRef}>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              multiple
-              accept="image/*,.pdf,.txt,.md,.csv,.json,.docx,.xlsx"
-            />
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            multiple
+            accept="image/*,.pdf,.txt,.md,.csv,.json,.docx,.xlsx"
+          />
 
+          {/* Left: attach + search + image */}
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => setDropdownOpen((v) => !v)}
+              onClick={() => {
+                fileInputRef.current?.click();
+                setDropdownOpen(false);
+              }}
               disabled={isDisabled}
-              title="Tools & options"
+              title="Attach file"
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                dropdownOpen
-                  ? "bg-[#1e1e2e] text-[#e8e8f0]"
-                  : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                attachedFiles && attachedFiles.length > 0
+                  ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
+                  : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
               }`}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
-              <span className="text-[11px]">{currentModeLabel}</span>
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-transform duration-150"
-                style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <span>Attach</span>
+              {attachedFiles && attachedFiles.length > 0 && (
+                <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
+                  {attachedFiles.length}
+                </span>
+              )}
             </button>
 
-            {/* Dropdown menu — opens upward */}
-            {dropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#111118] border border-[#1e1e2e] rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
-              <div className="overflow-y-auto" style={{ maxHeight: "min(420px, calc(100vh - 140px))" }}>
-                {/* Attach file */}
-                <button
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all text-left"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                  </svg>
-                  Attach file
-                  {attachedFiles && attachedFiles.length > 0 && (
-                    <span className="ml-auto text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
-                      {attachedFiles.length}
-                    </span>
-                  )}
-                </button>
-
-                <div className="border-t border-[#1e1e2e] mx-2 my-1" />
-
-                {/* Mode heading */}
-                <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-[#6b6b8a] uppercase tracking-wider">
-                  Mode
-                </div>
-
-                {MODES.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      onModeChange(m.id);
-                      setDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-[#16161f]"
-                    style={{
-                      color: mode === m.id ? "#F87171" : "#a8a8c0",
-                    }}
-                  >
-                    <span className="flex-1">
-                      {m.label}
-                      <span className="ml-2 text-[11px] text-[#6b6b8a]">{m.desc}</span>
-                    </span>
-                    {mode === m.id && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-
-                <div className="border-t border-[#1e1e2e] mx-2 my-1" />
-
-                {/* Canvas view */}
-                <button
-                  onClick={() => {
-                    onCanvasToggle();
-                    setDropdownOpen(false);
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all text-left mb-1"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <line x1="15" y1="3" x2="15" y2="21" />
-                  </svg>
-                  Canvas view
-                  {canvasMode && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />
-                  )}
-                </button>
-              </div>
-              </div>
-            )}
-          </div>{/* end dropdown relative wrapper */}
-
           {/* Web search standalone button */}
-          <button
-            onClick={onWebSearchToggle}
-            disabled={isDisabled}
-            title={webSearchEnabled ? "Web search on — click to disable" : "Enable web search"}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-              webSearchEnabled
-                ? "text-[#34d399] bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
-                : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
-            }`}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <span>Search</span>
-          </button>
+          {showWebSearch && (
+            <button
+              onClick={() => {
+                if (webSearchState === "auth-required") {
+                  router.push("/login?callbackUrl=%2Fagent");
+                  return;
+                }
+
+                if (webSearchState !== "available") {
+                  setDropdownOpen(false);
+                  return;
+                }
+
+                onWebSearchToggle();
+              }}
+              disabled={isDisabled || webSearchState === "coming-soon"}
+              title={
+                webSearchState === "available"
+                  ? webSearchEnabled
+                    ? "Web search on - click to disable"
+                    : "Enable web search"
+                  : webSearchState === "auth-required"
+                    ? "Sign in to use web search"
+                    : "Web search coming soon"
+              }
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:cursor-not-allowed ${
+                webSearchState === "available"
+                  ? webSearchEnabled
+                    ? "text-quill-green bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
+                    : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                  : webSearchState === "auth-required"
+                    ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    : "text-quill-muted bg-quill-border/40 opacity-70"
+              } ${isDisabled ? "opacity-30" : ""}`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span>Search</span>
+              {webSearchState !== "available" && (
+                <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
+                  {webSearchState === "auth-required" ? "Login" : "Soon"}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Generate image standalone button */}
           {onGenerateImage && (
             <button
               onClick={() => {
+                if (!imageGenerationEnabled) {
+                  router.push("/login?callbackUrl=%2Fagent");
+                  return;
+                }
                 setImageMode((m) => !m);
                 setAttachedFiles(null);
               }}
               disabled={isDisabled}
-              title={imageMode ? "Image generation on — click to disable" : "Enable image generation"}
+              title={imageGenerationEnabled ? (imageMode ? "Image generation on - click to disable" : "Enable image generation") : "Sign in to generate images"}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                imageMode
+                !imageGenerationEnabled
+                  ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                  : imageMode
                   ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
-                  : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+                  : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
               }`}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -366,45 +325,160 @@ export function TaskInput({
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <span>Image</span>
+              <span>{imageGenerationEnabled ? "Image" : "Sign in for image"}</span>
             </button>
           )}
 
           </div>{/* end left group */}
 
-          {/* Right: send button */}
-          <button
-            onClick={handleSend}
-            disabled={!value.trim() || isDisabled}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
-              imageMode
-                ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
-                : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
-            }`}
-          >
-            {isGeneratingImage ? (
-              <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-              </svg>
-            ) : imageMode ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            )}
-          </button>
+          {/* Right: mode selector + send */}
+          <div className="flex items-center gap-1" ref={dropdownRef}>
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen((v) => !v)}
+                disabled={isDisabled}
+                title="Mode & options"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  dropdownOpen
+                    ? "bg-quill-border text-quill-text"
+                    : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                }`}
+              >
+                <span>{currentModeLabel}</span>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-transform duration-150"
+                  style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-64 bg-quill-surface border border-quill-border rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
+                  <div className="overflow-y-auto" style={{ maxHeight: "min(420px, calc(100vh - 140px))" }}>
+                    <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
+                      Mode
+                    </div>
+
+                    {visibleModes.map((m) => {
+                      const isEnabled = enabledModes.has(m.id);
+                      return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          if (!isEnabled) {
+                            setDropdownOpen(false);
+                            router.push("/pricing");
+                            return;
+                          }
+                          onModeChange(m.id);
+                          setDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
+                        style={{
+                          color: !isEnabled ? "#6b6b8a" : mode === m.id ? "#F87171" : "#a8a8c0",
+                        }}
+                      >
+                        <span className="flex-1">
+                          {m.label}
+                          <span className="ml-2 text-[11px] text-quill-muted">{m.desc}</span>
+                        </span>
+                        {!isEnabled && (
+                          <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
+                            Paid
+                          </span>
+                        )}
+                        {isEnabled && mode === m.id && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    );})}
+
+                    {hasLockedModes && (
+                      <div className="mx-3 mb-2 mt-1 rounded-xl border border-quill-accent-glow bg-[rgba(239,68,68,0.05)] p-3">
+                        <p className="text-xs text-[#c7c7d8]">Think and Pro require a paid plan.</p>
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            router.push("/pricing");
+                          }}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white transition-all hover:bg-[#DC2626]"
+                        >
+                          Upgrade
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                            <polyline points="12 5 19 12 12 19" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="border-t border-quill-border mx-2 my-1" />
+
+                    <button
+                      onClick={() => {
+                        onCanvasToggle();
+                        setDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="15" y1="3" x2="15" y2="21" />
+                      </svg>
+                      Canvas view
+                      {canvasMode && (
+                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleSend}
+              disabled={!value.trim() || isDisabled}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
+                imageMode
+                  ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
+                  : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
+              }`}
+            >
+              {isGeneratingImage ? (
+                <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+                </svg>
+              ) : imageMode ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Hint */}
-      <p className="text-center text-[11px] text-[#6b6b8a]">
-        <kbd className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#a8a8c0] text-[10px] font-mono">Enter</kbd>{" "}
+      <p className="text-center text-[11px] text-quill-muted">
+        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Enter</kbd>{" "}
         to send &middot;{" "}
-        <kbd className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
+        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
         for new line
         {imageMode && <span className="ml-2 text-[#EF4444]">· Image generation active</span>}
       </p>

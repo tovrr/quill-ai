@@ -1,7 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { getChatById, getMessagesByChatId } from "@/lib/db-helpers";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { auth } from "@/lib/auth/server";
+import { headers as nextHeaders } from "next/headers";
 
 interface Props {
   params: Promise<{ chatId: string }>;
@@ -20,11 +22,11 @@ function MessageBubble({
     <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
-        <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
           <QuillLogo size={15} />
         </div>
       )}
@@ -34,7 +36,7 @@ function MessageBubble({
         className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
             ? "rounded-tr-sm bg-[#EF4444] text-white"
-            : "rounded-tl-sm bg-[#111118] border border-[#1e1e2e] text-[#e8e8f0]"
+            : "rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text"
         }`}
       >
         {content}
@@ -45,6 +47,11 @@ function MessageBubble({
 
 export default async function SharePage({ params }: Props) {
   const { chatId } = await params;
+
+  const sessionData = await auth.api.getSession({ headers: await nextHeaders() }).catch(() => null);
+  if (!sessionData?.user?.id) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/share/${chatId}`)}`);
+  }
 
   let chat;
   let msgs: Awaited<ReturnType<typeof getMessagesByChatId>> = [];
@@ -58,7 +65,7 @@ export default async function SharePage({ params }: Props) {
     // DB not available or chat not found
   }
 
-  if (!chat) {
+  if (!chat || chat.userId !== sessionData.user.id) {
     notFound();
   }
 
@@ -67,15 +74,15 @@ export default async function SharePage({ params }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+    <div className="min-h-screen bg-quill-bg flex flex-col">
       {/* Top banner */}
-      <div className="border-b border-[#1e1e2e] bg-[#0d0d15] shrink-0">
+      <div className="border-b border-quill-border bg-[#0d0d15] shrink-0">
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <QuillLogo size={20} />
             <span className="text-sm font-semibold gradient-text">Quill AI</span>
-            <span className="text-[#2a2a3e]">·</span>
-            <span className="text-xs text-[#6b6b8a]">Shared conversation</span>
+            <span className="text-quill-border-2">·</span>
+            <span className="text-xs text-quill-muted">Shared conversation</span>
           </div>
           <Link
             href="/agent"
@@ -92,8 +99,8 @@ export default async function SharePage({ params }: Props) {
 
       {/* Chat title */}
       <div className="max-w-3xl mx-auto w-full px-6 pt-8 pb-4">
-        <h1 className="text-lg font-semibold text-[#e8e8f0]">{chat.title}</h1>
-        <p className="text-xs text-[#6b6b8a] mt-1">
+        <h1 className="text-lg font-semibold text-quill-text">{chat.title}</h1>
+        <p className="text-xs text-quill-muted mt-1">
           {visibleMessages.length} message{visibleMessages.length !== 1 ? "s" : ""}
           {chat.createdAt && (
             <>
@@ -111,10 +118,10 @@ export default async function SharePage({ params }: Props) {
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 pb-12 space-y-5">
         {visibleMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#111118] border border-[#1e1e2e] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-quill-surface border border-quill-border flex items-center justify-center">
               <QuillLogo size={24} />
             </div>
-            <p className="text-sm text-[#6b6b8a]">No messages in this conversation.</p>
+            <p className="text-sm text-quill-muted">No messages in this conversation.</p>
           </div>
         ) : (
           visibleMessages.map((msg) => (
@@ -124,11 +131,11 @@ export default async function SharePage({ params }: Props) {
       </div>
 
       {/* Footer CTA */}
-      <div className="border-t border-[#1e1e2e] bg-[#0d0d15] shrink-0">
+      <div className="border-t border-quill-border bg-[#0d0d15] shrink-0">
         <div className="max-w-3xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-[#e8e8f0]">Continue this conversation in Quill AI</p>
-            <p className="text-xs text-[#6b6b8a] mt-0.5">Your personal AI agent for research, code, writing, and more.</p>
+            <p className="text-sm font-medium text-quill-text">Continue this conversation in Quill AI</p>
+            <p className="text-xs text-quill-muted mt-0.5">Your personal AI agent for research, code, writing, and more.</p>
           </div>
           <Link
             href="/agent"

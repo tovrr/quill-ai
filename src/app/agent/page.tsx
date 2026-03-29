@@ -29,7 +29,10 @@ export default function AgentPage() {
   });
 
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("idle");
-  const [selectedMode, setSelectedMode] = useState<Mode>("advanced");
+  const [selectedMode, setSelectedMode] = useState<Mode>("fast");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [canUsePaidModes, setCanUsePaidModes] = useState(false);
+  const [webSearchState, setWebSearchState] = useState<"available" | "auth-required" | "coming-soon">("coming-soon");
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasContent, setCanvasContent] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -37,24 +40,9 @@ export default function AgentPage() {
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
-  // Sidebar: pinned = always visible; hovered = temporarily visible on hover
-  const [sidebarPinned, setSidebarPinned] = useState(false);
-  const [sidebarHovered, setSidebarHovered] = useState(false);
-  const sidebarHideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const sidebarVisible = sidebarPinned || sidebarHovered;
-  const sidebarZoneRef = useRef<HTMLDivElement>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const showSidebar = useCallback(() => {
-    clearTimeout(sidebarHideTimer.current);
-    setSidebarHovered(true);
-  }, []);
-
-  const hideSidebar = useCallback(() => {
-    clearTimeout(sidebarHideTimer.current);
-    sidebarHideTimer.current = setTimeout(() => setSidebarHovered(false), 200);
-  }, []);
-
-  // Sidebar closes on mouse-leave only (no click-outside handler — avoids closing on internal clicks)
+  const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -69,9 +57,10 @@ export default function AgentPage() {
     () =>
       new TextStreamChatTransport({
         api: "/api/chat",
-        prepareSendMessagesRequest: ({ body, id }) => ({
+        prepareSendMessagesRequest: ({ body, id, messages }) => ({
           body: {
-            ...body,
+            ...(body ?? {}),
+            messages,
             chatId: id,
             mode: modeRef.current,
             webSearch: webSearchRef.current,
@@ -87,6 +76,36 @@ export default function AgentPage() {
     id: chatId,
     onError: () => setAgentStatus("error"),
   });
+
+  // Resolve client entitlements to gate mode options for guest/free users.
+  useEffect(() => {
+    const loadEntitlements = async () => {
+      try {
+        const res = await fetch("/api/me/entitlements", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          authenticated?: boolean;
+          canUsePaidModes?: boolean;
+          webSearchState?: "available" | "auth-required" | "coming-soon";
+        };
+        setIsAuthenticated(Boolean(data.authenticated));
+        setCanUsePaidModes(Boolean(data.canUsePaidModes));
+        setWebSearchState(data.webSearchState ?? "coming-soon");
+      } catch {
+        setIsAuthenticated(false);
+        setCanUsePaidModes(false);
+        setWebSearchState("coming-soon");
+      }
+    };
+
+    void loadEntitlements();
+  }, []);
+
+  useEffect(() => {
+    if (!canUsePaidModes && selectedMode !== "fast") {
+      setSelectedMode("fast");
+    }
+  }, [canUsePaidModes, selectedMode]);
 
   // Sync URL with chatId once first message is sent
   useEffect(() => {
@@ -119,8 +138,10 @@ export default function AgentPage() {
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
     if (lastAssistant) {
       const text = lastAssistant.parts
-        .filter((p): p is { type: "text"; text: string } => p.type === "text")
-        .map((p) => p.text)
+        .filter((p: unknown): p is { type: "text"; text: string } => {
+          return typeof p === "object" && p !== null && (p as { type?: string }).type === "text";
+        })
+        .map((p: { type: "text"; text: string }) => p.text)
         .join("\n");
       if (text) {
         setCanvasContent(text);
@@ -202,69 +223,37 @@ export default function AgentPage() {
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
 
   return (
-    <div className="relative flex h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="relative flex h-screen bg-quill-bg overflow-hidden">
 
-      {/* ── Sidebar: hover-overlay on desktop, full-screen drawer on mobile ── */}
+      {/* Desktop: always-visible sidebar */}
+      <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
+        <Sidebar />
+      </aside>
 
-      {/* Mobile: dark backdrop when sidebar open */}
-      {sidebarVisible && (
+      {/* Mobile backdrop */}
+      {mobileSidebarOpen && (
         <div
           className="md:hidden fixed inset-0 z-40 bg-black/60"
-          onClick={() => { clearTimeout(sidebarHideTimer.current); setSidebarHovered(false); }}
+          onClick={() => setMobileSidebarOpen(false)}
         />
       )}
-
-      {/* Desktop hover trigger strip (hidden on mobile) */}
-      <div
-        ref={sidebarZoneRef}
-        className="hidden md:flex absolute left-0 top-0 h-full z-50"
-        onMouseLeave={hideSidebar}
-      >
-        <div
-          className="w-2 h-full shrink-0 cursor-pointer"
-          onMouseEnter={showSidebar}
-          style={{
-            background: sidebarVisible
-              ? "transparent"
-              : "linear-gradient(to right, rgba(239,68,68,0.2), transparent)",
-          }}
-        />
-        <div
-          className="h-full overflow-hidden"
-          style={{
-            width: sidebarVisible ? "256px" : "0px",
-            transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)",
-            pointerEvents: sidebarVisible ? "auto" : "none",
-          }}
-          onMouseEnter={showSidebar}
-        >
-          <div className="w-64 h-full"><Sidebar /></div>
-        </div>
-      </div>
 
       {/* Mobile: fixed full-screen sidebar drawer */}
       <div
         className="md:hidden fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-out"
-        style={{ transform: sidebarVisible ? "translateX(0)" : "translateX(-100%)" }}
+        style={{ transform: mobileSidebarOpen ? "translateX(0)" : "translateX(-100%)" }}
       >
-        <Sidebar />
+        <Sidebar onClose={() => setMobileSidebarOpen(false)} />
       </div>
 
       {/* ── Main content ─────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-[#1e1e2e] bg-[#0a0a0f] shrink-0">
-          {/* Hamburger: pin on desktop, toggle drawer on mobile */}
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-quill-border bg-quill-bg shrink-0">
+          {/* Hamburger: mobile drawer toggle */}
           <button
-            onClick={() => {
-              if (typeof window !== "undefined" && window.innerWidth < 768) {
-                // Mobile: toggle drawer
-                setSidebarHovered((v) => !v);
-              } else {
-                setSidebarPinned((v) => !v);
-              }
-            }}
-            className={`icon-btn p-1.5 rounded-lg transition-all ${sidebarPinned ? "text-[#F87171] bg-[rgba(239,68,68,0.08)]" : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"}`}
+            onClick={() => setMobileSidebarOpen((v) => !v)}
+            className="icon-btn md:hidden p-1.5 rounded-lg transition-all text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
             aria-label="Toggle sidebar"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -292,7 +281,7 @@ export default function AgentPage() {
 
           {/* Active mode badge */}
           {!killer && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#111118] border border-[#1e1e2e]">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
               <span className="text-[11px] font-medium text-[#a8a8c0]">{modeLabels[selectedMode]}</span>
             </div>
@@ -304,7 +293,7 @@ export default function AgentPage() {
               onClick={handleShare}
               disabled={messages.length === 0}
               title="Copy share link"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e1e2e] text-xs text-[#6b6b8a] hover:text-[#e8e8f0] hover:border-[#2a2a3e] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {shareCopied ? (
                 <>
@@ -330,7 +319,7 @@ export default function AgentPage() {
             {/* New chat */}
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e1e2e] text-xs text-[#6b6b8a] hover:text-[#e8e8f0] hover:border-[#2a2a3e] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -364,23 +353,23 @@ export default function AgentPage() {
                     <h2 className="text-lg font-semibold" style={killer ? { color: killer.accent } : {}}>
                       {killer ? killer.name : <span className="gradient-text">Quill AI</span>}
                     </h2>
-                    <p className="text-sm text-[#6b6b8a] mt-1 max-w-sm">
+                    <p className="text-sm text-quill-muted mt-1 max-w-sm">
                       {killer ? killer.description : "Your personal AI agent. Ask anything, attach files, generate images, or build a page."}
                     </p>
                   </div>
                 </div>
               )}
 
-              {messages.map((msg) => (
+              {messages.map((msg: UIMessage) => (
                 <RealMessageBubble key={msg.id} message={msg} />
               ))}
 
               {isLoading && !isGeneratingImage && (
                 <div className="flex items-start gap-3 animate-fade-in">
-                  <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
                     <QuillLogo size={16} />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[#1e1e2e] px-4 py-3 flex items-center gap-1.5">
+                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border px-4 py-3 flex items-center gap-1.5">
                     {[0, 1, 2].map((i) => (
                       <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot" style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
@@ -390,10 +379,10 @@ export default function AgentPage() {
 
               {isGeneratingImage && (
                 <div className="flex items-start gap-3 animate-fade-in">
-                  <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
                     <QuillLogo size={16} />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
+                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
                     <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round">
                       <path d="M21 12a9 9 0 1 1-6.22-8.56" />
                     </svg>
@@ -406,7 +395,7 @@ export default function AgentPage() {
             </div>
 
             {/* Input — safe-area bottom padding for iPhone home indicator */}
-            <div className="shrink-0 px-4 md:px-6 pb-6 pt-3 border-t border-[#1e1e2e] bg-[#0a0a0f] pb-safe">
+            <div className="shrink-0 px-4 md:px-6 pb-6 pt-3 border-t border-quill-border bg-quill-bg pb-safe">
               <div className="max-w-3xl mx-auto">
                 <TaskInput
                   onSend={handleSend}
@@ -417,6 +406,11 @@ export default function AgentPage() {
                   onCanvasToggle={() => setCanvasMode((v) => !v)}
                   webSearchEnabled={webSearchEnabled}
                   onWebSearchToggle={() => setWebSearchEnabled((v) => !v)}
+                  showWebSearch
+                  webSearchState={webSearchState}
+                  allowedModes={allowedModes}
+                  showLockedModes
+                  canGenerateImage={isAuthenticated}
                   disabled={isLoading}
                   isGeneratingImage={isGeneratingImage}
                   placeholder={killer ? `Ask ${killer.name}...` : "Give Quill a task to execute..."}

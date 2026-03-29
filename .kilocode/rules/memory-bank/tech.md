@@ -1,44 +1,45 @@
-# Technical Context: Next.js Starter Template
+# Technical Context: Quill AI
 
 ## Technology Stack
 
-| Technology   | Version | Purpose                         |
-| ------------ | ------- | ------------------------------- |
-| Next.js      | 16.x    | React framework with App Router |
-| React        | 19.x    | UI library                      |
-| TypeScript   | 5.9.x   | Type-safe JavaScript            |
-| Tailwind CSS | 4.x     | Utility-first CSS               |
-| Bun          | Latest  | Package manager & runtime       |
-| Neon         | -       | Serverless PostgreSQL database  |
-| Drizzle ORM  | 0.45.x  | Type-safe database ORM          |
+| Technology | Version | Purpose |
+| ---------- | ------- | ------- |
+| Next.js | 16.x | React framework with App Router |
+| React | 19.x | UI library |
+| TypeScript | 5.9.x | Type-safe JavaScript |
+| Tailwind CSS | 4.x | Utility-first CSS |
+| Neon | - | Serverless PostgreSQL database |
+| Drizzle ORM | 0.45.x | Type-safe database ORM |
+| Better Auth | 1.5.x | Authentication and session handling |
+| AI SDK | 6.x | Model-agnostic streaming chat primitives |
 
 ## Development Environment
 
 ### Prerequisites
 
-- Bun installed (`curl -fsSL https://bun.sh/install | bash`)
-- Node.js 20+ (for compatibility)
+- Node.js 20+
+- npm
 
 ### Commands
 
 ```bash
-bun install        # Install dependencies
-bun dev            # Start dev server (http://localhost:3000)
-bun build          # Production build
-bun start          # Start production server
-bun lint           # Run ESLint
-bun typecheck      # Run TypeScript type checking
-bun db:generate    # Generate Drizzle migrations
-bun db:push        # Push schema to Neon database
-bun db:studio      # Open Drizzle Studio
+npm install        # Install dependencies
+npm run dev        # Start dev server (http://localhost:3000)
+npm run build      # Production build
+npm run start      # Start production server
+npm run lint       # Run ESLint
+npm run typecheck  # Run TypeScript type checking
+npm run db:generate # Generate Drizzle migrations
+npm run db:push    # Push schema to Neon database
+npm run db:studio  # Open Drizzle Studio
 ```
 
 ## Project Configuration
 
 ### Next.js Config (`next.config.ts`)
 
-- App Router enabled
-- Default settings for flexibility
+- App Router project
+- Security headers configured
 
 ### TypeScript Config (`tsconfig.json`)
 
@@ -49,7 +50,7 @@ bun db:studio      # Open Drizzle Studio
 ### Tailwind CSS 4 (`postcss.config.mjs`)
 
 - Uses `@tailwindcss/postcss` plugin
-- CSS-first configuration (v4 style)
+- Theme tokens are defined in `src/app/globals.css`
 
 ### ESLint (`eslint.config.mjs`)
 
@@ -58,7 +59,7 @@ bun db:studio      # Open Drizzle Studio
 
 ## Key Dependencies
 
-### Production Dependencies
+### Production Dependencies (key)
 
 ```json
 {
@@ -67,9 +68,9 @@ bun db:studio      # Open Drizzle Studio
   "react-dom": "^19.2.3", // React DOM
   "drizzle-orm": "^0.45.2", // Database ORM
   "@neondatabase/serverless": "^1.0.2", // Neon PostgreSQL driver
-  "next-auth": "^5.0.0-beta.30", // Authentication
-  "@auth/drizzle-adapter": "^1.11.1", // Auth Drizzle adapter
+  "better-auth": "^1.5.6", // Authentication
   "@ai-sdk/google": "^3.0.53", // AI SDK (Google)
+  "@ai-sdk/openai": "^3.0.48", // OpenRouter-compatible provider client
   "@ai-sdk/react": "^3.0.143", // AI SDK (React)
   "ai": "^6.0.141" // AI SDK core
 }
@@ -93,32 +94,33 @@ bun db:studio      # Open Drizzle Studio
 
 ## File Structure
 
-```
-/
-├── .gitignore              # Git ignore rules
-├── package.json            # Dependencies and scripts
-├── bun.lock                # Bun lockfile
-├── next.config.ts          # Next.js configuration
-├── tsconfig.json           # TypeScript configuration
-├── postcss.config.mjs      # PostCSS (Tailwind) config
-├── eslint.config.mjs       # ESLint configuration
-├── public/                 # Static assets
-│   └── .gitkeep
-└── src/                    # Source code
-    └── app/                # Next.js App Router
-        ├── layout.tsx      # Root layout
-        ├── page.tsx        # Home page
-        ├── globals.css     # Global styles
-        └── favicon.ico     # Site icon
+```text
+src/
+  app/
+    agent/page.tsx
+    api/chat/route.ts
+    api/chats/route.ts
+    api/chats/[chatId]/route.ts
+    api/generate-image/route.ts
+  components/
+    layout/Sidebar.tsx
+    agent/*
+  lib/
+    auth/client.ts
+    auth/server.ts
+    db-helpers.ts
+  db/
+    index.ts
+    schema.ts
 ```
 
 ## Technical Constraints
 
-### Starting Point
+### Product Constraints
 
-- Minimal structure - expand as needed
-- No database by default (use recipe to add)
-- No authentication by default (add when needed)
+- Authenticated persistence is required for history features.
+- Guest users are intentionally restricted in tier access.
+- Daily usage limits are environment-driven.
 
 ### Browser Support
 
@@ -146,10 +148,14 @@ bun db:studio      # Open Drizzle Studio
 
 ### Build Output
 
-- Server-rendered pages by default
-- Can be configured for static export
+- Server-rendered pages by default.
+- API routes depend on runtime env configuration.
 
 ### Environment Variables
 
-- `DATABASE_URL` — Neon PostgreSQL connection string (required)
-- Use `.env.local` for local development
+- `DATABASE_URL` (required)
+- `BETTER_AUTH_SECRET` (required)
+- `BETTER_AUTH_URL` (required)
+- `GOOGLE_GENERATIVE_AI_API_KEY` (required for Think/Pro)
+- `FREE_DAILY_MESSAGES`, `THINK_DAILY_MESSAGES`, `PRO_DAILY_MESSAGES` (optional quotas)
+- `OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODEL` (optional fast-mode routing)

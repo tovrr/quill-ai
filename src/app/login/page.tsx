@@ -19,7 +19,11 @@ export default function LoginPage() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/agent";
+  const callbackUrl = (() => {
+    const raw = searchParams.get("callbackUrl") ?? "/agent";
+    // Only allow same-origin relative paths (no protocol-relative or external URLs)
+    return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/agent";
+  })();
 
   const [tab, setTab] = useState<Tab>("signin");
   const [email, setEmail] = useState("");
@@ -80,34 +84,34 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-quill-bg flex items-center justify-center px-4">
       {/* Background glow */}
       <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-15 pointer-events-none"
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-150 h-100 rounded-full opacity-15 pointer-events-none"
         style={{ background: "radial-gradient(ellipse at center, rgba(239,68,68,0.8) 0%, transparent 70%)", filter: "blur(60px)" }}
       />
 
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-[#111118] border border-[#1e1e2e] flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-quill-surface border border-quill-border flex items-center justify-center mb-4">
             <QuillLogo size={28} />
           </div>
           <h1 className="text-2xl font-bold gradient-text">Welcome to Quill</h1>
-          <p className="text-sm text-[#6b6b8a] mt-1 text-center">Your personal AI agent</p>
+          <p className="text-sm text-quill-muted mt-1 text-center">Your personal AI agent</p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-6">
+        <div className="bg-[#0d0d15] border border-quill-border rounded-2xl p-6">
           {/* Tab switcher */}
-          <div className="flex rounded-xl bg-[#111118] p-1 mb-5">
+          <div className="flex rounded-xl bg-quill-surface p-1 mb-5">
             {(["signin", "signup"] as Tab[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => handleTabChange(t)}
                 className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  tab === t ? "bg-[#1e1e2e] text-[#e8e8f0] shadow-sm" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                  tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-[#a8a8c0]"
                 }`}
               >
                 {t === "signin" ? "Sign in" : "Sign up"}
@@ -118,7 +122,7 @@ function LoginContent() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {tab === "signup" && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-[#6b6b8a]">
+                <label className="text-xs font-medium text-quill-muted">
                   Name <span className="text-[#3a3a5a]">(optional)</span>
                 </label>
                 <input
@@ -126,13 +130,13 @@ function LoginContent() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
-                  className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                  className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
                 />
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#6b6b8a]">Email address</label>
+              <label className="text-xs font-medium text-quill-muted">Email address</label>
               <input
                 type="email"
                 value={email}
@@ -140,12 +144,12 @@ function LoginContent() {
                 placeholder="you@example.com"
                 required
                 autoFocus
-                className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#6b6b8a]">Password</label>
+              <label className="text-xs font-medium text-quill-muted">Password</label>
               <input
                 type="password"
                 value={password}
@@ -153,7 +157,7 @@ function LoginContent() {
                 placeholder="••••••••"
                 required
                 minLength={8}
-                className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
               />
             </div>
 
@@ -163,7 +167,7 @@ function LoginContent() {
               </p>
             )}
             {success && (
-              <p className="text-xs text-[#34d399] bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] rounded-lg px-3 py-2">
+              <p className="text-xs text-quill-green bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] rounded-lg px-3 py-2">
                 {success}
               </p>
             )}
@@ -179,7 +183,7 @@ function LoginContent() {
             </button>
           </form>
 
-          <p className="text-xs text-[#6b6b8a] text-center mt-4">
+          <p className="text-xs text-quill-muted text-center mt-4">
             {tab === "signin"
               ? "Enter your email and password to sign in."
               : "Free to use. No credit card required."}
@@ -188,7 +192,7 @@ function LoginContent() {
 
         {/* Guest */}
         <div className="flex items-center justify-center mt-4">
-          <Link href="/agent" className="text-xs text-[#6b6b8a] hover:text-[#a8a8c0] transition-colors">
+          <Link href="/agent" className="text-xs text-quill-muted hover:text-[#a8a8c0] transition-colors">
             Continue without signing in →
           </Link>
         </div>

@@ -16,7 +16,7 @@ function ToolCallBadge({
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[#1e1e2e] text-xs animate-fade-in"
+      className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-quill-border text-xs animate-fade-in"
       style={{
         background: isRunning
           ? "rgba(239,68,68,0.08)"
@@ -53,7 +53,7 @@ function ToolCallBadge({
           <polyline points="20 6 9 17 4 12" />
         </svg>
       ) : (
-        <span className="w-2 h-2 rounded-full bg-[#6b6b8a] shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-quill-muted shrink-0" />
       )}
 
       <span
@@ -62,7 +62,7 @@ function ToolCallBadge({
       >
         {toolName}
       </span>
-      <span className="text-[#6b6b8a]">
+      <span className="text-quill-muted">
         {isRunning ? "Running..." : isDone ? "Done" : "Pending"}
       </span>
     </div>
@@ -74,7 +74,7 @@ function renderInline(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-semibold text-[#e8e8f0]">
+        <strong key={i} className="font-semibold text-quill-text">
           {part.slice(2, -2)}
         </strong>
       );
@@ -83,7 +83,7 @@ function renderInline(text: string) {
       return (
         <code
           key={i}
-          className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#F87171] text-[12px] font-mono"
+          className="px-1 py-0.5 rounded bg-quill-border text-[#F87171] text-[12px] font-mono"
         >
           {part.slice(1, -1)}
         </code>
@@ -111,9 +111,9 @@ function MarkdownText({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <div key={i} className="my-2 rounded-xl overflow-hidden border border-[#1e1e2e]">
+        <div key={i} className="my-2 rounded-xl overflow-hidden border border-quill-border">
           {lang && (
-            <div className="px-3 py-1.5 bg-[#0d0d15] border-b border-[#1e1e2e] text-[10px] text-[#6b6b8a] font-mono uppercase tracking-wide">
+            <div className="px-3 py-1.5 bg-[#0d0d15] border-b border-quill-border text-[10px] text-quill-muted font-mono uppercase tracking-wide">
               {lang}
             </div>
           )}
@@ -136,10 +136,10 @@ function MarkdownText({ text }: { text: string }) {
           <img
             src={src}
             alt={alt || "Generated image"}
-            className="rounded-xl max-w-full max-h-[400px] object-contain border border-[#1e1e2e]"
+            className="rounded-xl max-w-full max-h-100 object-contain border border-quill-border"
           />
           {alt && (
-            <p className="text-[11px] text-[#6b6b8a] mt-1.5 italic">{alt}</p>
+            <p className="text-[11px] text-quill-muted mt-1.5 italic">{alt}</p>
           )}
         </div>
       );
@@ -149,13 +149,13 @@ function MarkdownText({ text }: { text: string }) {
 
     if (line.startsWith("# ")) {
       elements.push(
-        <h1 key={i} className="text-base font-bold text-[#e8e8f0] mt-3 mb-1">
+        <h1 key={i} className="text-base font-bold text-quill-text mt-3 mb-1">
           {renderInline(line.slice(2))}
         </h1>
       );
     } else if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="text-sm font-bold text-[#e8e8f0] mt-2.5 mb-0.5">
+        <h2 key={i} className="text-sm font-bold text-quill-text mt-2.5 mb-0.5">
           {renderInline(line.slice(3))}
         </h2>
       );
@@ -216,11 +216,11 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
     >
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
-        <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
           <QuillLogo size={16} />
         </div>
       )}
@@ -244,7 +244,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             ) : (
               <div
                 key={i}
-                className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#111118] border border-[#1e1e2e] text-[#e8e8f0] w-full"
+                className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
               >
                 <MarkdownText text={part.text} />
               </div>
@@ -256,7 +256,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
             if (filePart.mediaType.startsWith("image/")) {
               return (
-                <div key={i} className="rounded-xl overflow-hidden border border-[#1e1e2e] max-w-[280px]">
+                <div key={i} className="rounded-xl overflow-hidden border border-quill-border max-w-70">
                   <Image
                     src={filePart.url}
                     alt={filePart.filename ?? "Attached image"}
@@ -270,17 +270,22 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             }
             // Non-image file
             return (
-              <div
+              <a
                 key={i}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1e1e2e] border border-[#2a2a3e] text-xs text-[#a8a8c0]"
+                href={filePart.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                download={filePart.filename ?? true}
+                title="Open attachment"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
-                <span className="max-w-[160px] truncate">
+                <span className="max-w-40 truncate">
                   {filePart.filename ?? "Attached file"}
                 </span>
-              </div>
+              </a>
             );
           }
 

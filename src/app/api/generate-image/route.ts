@@ -1,13 +1,67 @@
 import { google } from "@ai-sdk/google";
 import { experimental_generateImage as generateImage } from "ai";
+import { auth } from "@/lib/auth/server";
+import { headers as nextHeaders } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  buildRateLimitHeaders,
+  createApiRequestContext,
+  logApiCompletion,
+  logApiStart,
+} from "@/lib/observability";
 
 export const maxDuration = 60;
 
+function jsonResponse(payload: Record<string, string>, status: number, headers?: HeadersInit) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+  });
+}
+
 export async function POST(req: Request) {
+  const requestContext = createApiRequestContext(req, "/api/generate-image");
+  // Image generation is a paid-tier feature — require authentication
+  const sessionData = await auth.api.getSession({ headers: await nextHeaders() }).catch(() => null);
+  if (!sessionData?.user?.id) {
+    logApiStart(requestContext);
+    logApiCompletion(requestContext, { status: 401, error: "auth_required" });
+    return jsonResponse({ error: "Authentication required" }, 401, {
+      "x-request-id": requestContext.requestId,
+    });
+  }
+
+  requestContext.userId = sessionData.user.id;
+  logApiStart(requestContext);
+
+  const perMinute = Number(process.env.API_IMAGE_REQUESTS_PER_MINUTE ?? "6");
+  const rateLimit = checkRateLimit({
+    key: `image:user:${sessionData.user.id}`,
+    max: perMinute,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    const headers = buildRateLimitHeaders({
+      requestId: requestContext.requestId,
+      limit: rateLimit.limit,
+      remaining: rateLimit.remaining,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    });
+    logApiCompletion(requestContext, { status: 429, error: "rate_limit" });
+    return jsonResponse({ error: "Too many image requests. Please retry shortly." }, 429, headers);
+  }
+
   const { prompt } = await req.json();
 
   if (!prompt || typeof prompt !== "string") {
-    return Response.json({ error: "Prompt is required" }, { status: 400 });
+    logApiCompletion(requestContext, { status: 400, error: "prompt_required" });
+    return jsonResponse({ error: "Prompt is required" }, 400, {
+      "x-request-id": requestContext.requestId,
+    });
   }
 
   try {
@@ -17,14 +71,27 @@ export async function POST(req: Request) {
       aspectRatio: "1:1",
     });
 
-    return Response.json({
-      url: `data:${image.mediaType};base64,${image.base64}`,
-      mediaType: image.mediaType,
-    });
+    logApiCompletion(requestContext, { status: 200 });
+    return new Response(
+      JSON.stringify({
+        url: `data:${image.mediaType};base64,${image.base64}`,
+        mediaType: image.mediaType,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "x-request-id": requestContext.requestId,
+        },
+      }
+    );
   } catch (error) {
     console.error("Image generation error:", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate image";
-    return Response.json({ error: message }, { status: 500 });
+    logApiCompletion(requestContext, { status: 500, error: message });
+    return jsonResponse({ error: message }, 500, {
+      "x-request-id": requestContext.requestId,
+    });
   }
 }

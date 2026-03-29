@@ -20,57 +20,79 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] **TaskInput** — auto-resize textarea, keyboard shortcuts, quick suggestion chips
 - [x] **ToolCallCard** — expandable tool call results with status indicators (pending/running/done/error)
 - [x] **Agent simulator** — realistic multi-step responses for research/write/code/analyze tasks
-- [x] Custom design system: dark theme (#0a0a0f), purple accent (#7c6af7), animations, glassmorphism
+- [x] Custom design system: dark theme (#0a0a0f), red accent (#EF4444), animations, glassmorphism
 - [x] Inter font, gradient text, glow borders, typing indicator, custom scrollbars
 - [x] **Migrated database from SQLite to Neon PostgreSQL** — updated schema (pg-core), driver (@neondatabase/serverless), drizzle config, and db helpers
 - [x] Added db scripts: `db:generate`, `db:push`, `db:studio`
-- [x] **3 model modes**: Fast (`gemini-2.0-flash-lite` ⚡), Think (`gemini-2.5-pro` with thinking budget 💭), Pro (`gemini-1.5-pro` ✦)
+- [x] **3 model modes**: Fast (`gemini-2.5-flash` or optional OpenRouter free model), Think (`gemini-2.5-pro`), Pro (`gemini-2.5-flash`)
 - [x] **File upload**: multimodal file/image attachments via AI SDK `sendMessage({ text, files })`
 - [x] **Image generation**: `/api/generate-image` route using Imagen 4, dedicated image mode toggle in TaskInput
 - [x] **Canvas mode**: split-pane document view (CanvasPanel) showing last AI response in clean document format
 - [x] Fixed chatId not being sent to API (was using `id` field, now injected via `prepareSendMessagesRequest`)
+- [x] Fixed chat payload and provider runtime issues (valid Gemini model mapping + robust message extraction)
+- [x] Added guest-safe chat behavior (no DB persistence for unauthenticated users)
+- [x] Added authenticated chat deletion flow (API endpoint + sidebar actions + confirmation)
+- [x] Added daily per-mode quotas (Free/Think/Pro) and guest fast-mode restriction
+- [x] Added optional OpenRouter fast-mode routing (`OPENROUTER_API_KEY`, `OPENROUTER_FREE_MODEL`)
+- [x] Migrated key UI files from raw color classes to Tailwind v4 Quill tokens to remove diagnostics noise
+- [x] Added share page auth + ownership validation (login required, non-owner chats return 404)
+- [x] Added shared in-memory API rate limiter utility for production hardening
+- [x] Added request-ID observability helpers (`x-request-id`, structured start/complete logs)
+- [x] Applied per-minute route limits to `/api/chat` and `/api/generate-image`
+- [x] Added protected `/api/metrics` endpoint (token-gated) for route/status/error counters
+- [x] Added CI API smoke workflow (`.github/workflows/ci-smoke.yml`) and smoke script
+- [x] Tuned production defaults for daily quotas and per-minute burst limits in `.env.example`
+- [x] Added root `DEPLOYMENT_CHECKLIST.md` with env, validation, smoke-test, and triage steps
+- [x] Added OpenRouter best-free-model auto-selection with 48h caching
+- [x] Added Neon foreign-key indexes for auth/chat/message relations and verified them live
+- [x] Refined chat input UX: separate attach button, mode selector near send, clickable non-image attachments
+- [x] Preserved attachment parts end-to-end for multimodal requests and improved file-only persistence fallbacks
+- [x] Added `/api/me/entitlements` and enforced paid-mode access for Think/Pro on both client and server
+- [x] Updated mode selector to keep paid tiers visible but locked for non-paid users, plus refreshed TODO and deployment docs
+- [x] Added Tavily-backed live web search for signed-in users, with entitlement-aware UI states (available/login required/coming soon)
+- [x] Updated visible plan labels in sidebar/settings to use entitlements instead of hardcoded Free placeholders
 
 ## Current Structure
 
-| File/Directory | Purpose | Status |
-|----------------|---------|--------|
-| `src/app/page.tsx` | Landing page (Quill AI homepage) | ✅ Built |
-| `src/app/agent/page.tsx` | Agent chat interface | ✅ Built |
-| `src/app/layout.tsx` | Root layout with Inter font | ✅ Built |
-| `src/app/globals.css` | Design tokens, animations, custom classes | ✅ Built |
-| `src/components/ui/QuillLogo.tsx` | SVG feather quill logo | ✅ Built |
-| `src/components/layout/Sidebar.tsx` | Sidebar with nav and recent tasks | ✅ Built |
-| `src/components/agent/ChatWindow.tsx` | Scrollable message list | ✅ Built |
-| `src/components/agent/MessageBubble.tsx` | User/assistant message bubbles | ✅ Built |
-| `src/components/agent/ToolCallCard.tsx` | Tool call status cards | ✅ Built |
-| `src/components/agent/TaskInput.tsx` | Task input with mode pills, file upload, image gen toggle | ✅ Built |
-| `src/components/agent/AgentStatusBar.tsx` | Live agent status bar | ✅ Built |
-| `src/components/agent/CanvasPanel.tsx` | Split-pane document canvas view | ✅ Built |
-| `src/app/api/generate-image/route.ts` | Imagen 4 image generation endpoint | ✅ Built |
-| `src/lib/agentSimulator.ts` | Mock agent response simulator (legacy/unused) | ✅ Built |
+- `src/app/page.tsx`: Landing page (Quill AI homepage) — ✅ Built
+- `src/app/agent/page.tsx`: Agent chat interface — ✅ Built
+- `src/app/layout.tsx`: Root layout with Inter font — ✅ Built
+- `src/app/globals.css`: Design tokens, animations, custom classes — ✅ Built
+- `src/components/ui/QuillLogo.tsx`: SVG feather quill logo — ✅ Built
+- `src/components/layout/Sidebar.tsx`: Sidebar with nav and recent tasks — ✅ Built
+- `src/components/agent/ChatWindow.tsx`: Scrollable message list — ✅ Built
+- `src/components/agent/MessageBubble.tsx`: User/assistant message bubbles — ✅ Built
+- `src/components/agent/ToolCallCard.tsx`: Tool call status cards — ✅ Built
+- `src/components/agent/TaskInput.tsx`: Task input with mode pills, file upload, image gen toggle — ✅ Built
+- `src/components/agent/AgentStatusBar.tsx`: Live agent status bar — ✅ Built
+- `src/components/agent/CanvasPanel.tsx`: Split-pane document canvas view — ✅ Built
+- `src/app/api/generate-image/route.ts`: Imagen 4 image generation endpoint — ✅ Built
+- `src/lib/agentSimulator.ts`: Mock agent response simulator (legacy/unused) — ✅ Built
 
 ## Current Focus
 
-App is complete. Potential next steps:
-1. Connect real AI API (OpenAI, Anthropic, etc.)
-2. Add authentication (login/signup)
-3. Database (Neon PostgreSQL) is set up with Drizzle ORM
-4. Build Settings and History pages
+Current priorities:
+
+1. Replace env-based paid entitlements with a DB billing/subscription model
+2. Replace in-memory rate limiting with a distributed limiter
+3. Replace placeholder settings usage/billing stats with real data
 
 ## Quick Start Guide
 
-### To add a new page:
+### To add a new page
 
 Create a file at `src/app/[route]/page.tsx`:
+
 ```tsx
 export default function NewPage() {
   return <div>New page content</div>;
 }
 ```
 
-### To add components:
+### To add components
 
 Create `src/components/` directory and add components:
+
 ```tsx
 // src/components/ui/Button.tsx
 export function Button({ children }: { children: React.ReactNode }) {
@@ -78,13 +100,14 @@ export function Button({ children }: { children: React.ReactNode }) {
 }
 ```
 
-### To add a database:
+### To add a database
 
 Follow `.kilocode/recipes/add-database.md`
 
-### To add API routes:
+### To add API routes
 
 Create `src/app/api/[route]/route.ts`:
+
 ```tsx
 import { NextResponse } from "next/server";
 
@@ -95,9 +118,7 @@ export async function GET() {
 
 ## Available Recipes
 
-| Recipe | File | Use Case |
-|--------|------|----------|
-| Add Database | `.kilocode/recipes/add-database.md` | Data persistence with Drizzle + SQLite |
+- Add Database: `.kilocode/recipes/add-database.md` — Data persistence with Drizzle + PostgreSQL
 
 ## Pending Improvements
 
@@ -107,9 +128,16 @@ export async function GET() {
 
 ## Session History
 
-| Date | Changes |
-|------|---------|
-| Initial | Template created with base setup |
-| 2026-03-28 | Built Quill AI — full personal AI agent app with landing page, agent chat UI, tool call cards, and mock simulator |
-| 2026-03-28 | Migrated database from SQLite to Neon PostgreSQL with @neondatabase/serverless driver |
-| 2026-03-28 | Added 3 model modes (Fast/Think/Pro), file upload, image generation (Imagen 4), canvas mode |
+- Initial: Template created with base setup
+- 2026-03-28: Built Quill AI full personal AI agent app with landing page, agent chat UI, tool call cards, and mock simulator
+- 2026-03-28: Migrated database from SQLite to Neon PostgreSQL with @neondatabase/serverless driver
+- 2026-03-28: Added 3 model modes (Fast/Think/Pro), file upload, image generation (Imagen 4), and canvas mode
+- 2026-03-29: Stabilized chat pipeline (payload/model fixes), guest-safe persistence, and sidebar delete-with-confirm
+- 2026-03-29: Added daily mode quotas and optional OpenRouter free-model path
+- 2026-03-29: Cleared major Tailwind v4 token diagnostics in agent/docs/login/status UI
+- 2026-03-29: Enforced share route auth and ownership checks; cleaned remaining lint warnings to green
+- 2026-03-29: Added API request IDs, structured API completion logs, per-minute route limits, and deployment checklist
+- 2026-03-29: Added token-gated `/api/metrics`, CI API smoke tests, and tuned production env defaults for quotas/rate limits
+- 2026-03-29: Added OpenRouter auto-selection, audited Neon indexes, and improved multimodal attachment handling
+- 2026-03-29: Added entitlement endpoint and paid-mode enforcement; updated selector UX to show locked paid tiers for free users
+- 2026-03-29: Implemented live web search with Tavily retrieval, auth gating, and entitlement-driven search button states

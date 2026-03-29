@@ -8,35 +8,36 @@ export const metadata: Metadata = {
 };
 
 const FREE_FEATURES = [
-  "50 messages / month",
-  "Fast model only",
-  "1 specialist agent",
-  "7-day chat history",
-  "No web search",
+  "Fast mode",
+  "Quick start (guest access)",
+  "Specialist agents",
+  "Share + delete controls",
+  "Limited web search (account required)",
+  "Sign in to unlock Think + Pro",
   "No image generation",
 ];
 
-const SILVER_FEATURES = [
-  "1,000 messages / month",
-  "Fast + Think models",
-  "All 5 specialist agents",
-  "90-day chat history",
+const THINK_FEATURES = [
+  "Fast + Think modes",
+  "Deeper reasoning quality",
+  "Higher daily usage limits",
+  "Saved history (account required)",
   "Web search included",
-  "20 image generations / mo",
+  "Image generation",
   "File uploads",
   "Canvas mode",
 ];
 
-const GOLD_FEATURES = [
-  "Unlimited messages",
+const PRO_FEATURES = [
   "Fast + Think + Pro models",
-  "All 5 specialist agents",
-  "Unlimited chat history",
+  "Highest quality responses",
+  "Highest daily usage limits",
+  "Saved history + sharing",
   "Web search included",
-  "Unlimited image generation",
+  "Image generation",
   "File uploads",
   "Canvas mode",
-  "Priority processing speed",
+  "Priority processing",
 ];
 
 function Check({ color }: { color: string }) {
@@ -49,15 +50,15 @@ function Check({ color }: { color: string }) {
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e8e8f0]">
+    <div className="min-h-screen bg-quill-bg text-quill-text">
       {/* Nav */}
-      <nav className="border-b border-[#1e1e2e] px-4 sm:px-6 h-14 flex items-center justify-between">
+      <nav className="border-b border-quill-border px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <QuillLogo size={22} />
           <span className="text-sm font-semibold gradient-text tracking-tight">Quill AI</span>
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center h-9 px-3 rounded-xl text-sm text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e] transition-all hidden sm:flex">
+          <Link href="/" className="hidden sm:inline-flex items-center h-9 px-3 rounded-xl text-sm text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
@@ -75,11 +76,11 @@ export default function PricingPage() {
         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
           Simple, honest pricing
         </h1>
-        <p className="text-[#6b6b8a] text-base sm:text-lg max-w-lg mx-auto">
+        <p className="text-quill-muted text-base sm:text-lg max-w-lg mx-auto">
           Start free. Upgrade when you need more power. No hidden fees, no surprises.
         </p>
         <p className="mt-3 text-xs text-[#EF4444] font-medium">
-          All paid plans include a 7-day free trial — no charge until it ends.
+          Plan details evolve as quotas and provider costs are tuned.
         </p>
       </div>
 
@@ -88,19 +89,19 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-start">
 
           {/* Free */}
-          <div className="flex flex-col p-6 rounded-2xl border border-[#1e1e2e] bg-[#0d0d15]">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#6b6b8a] mb-3">Free</p>
+          <div className="flex flex-col p-6 rounded-2xl border border-quill-border bg-[#0d0d15]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-3">Free</p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="text-4xl font-black text-[#e8e8f0]">$0</span>
-              <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
+              <span className="text-4xl font-black text-quill-text">$0</span>
+              <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
             <p className="text-xs text-[#4a4a6a] mb-6">No credit card required</p>
-            <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[#1e1e2e] text-sm font-medium text-[#a8a8c0] hover:border-[#2a2a3e] hover:text-[#e8e8f0] transition-all mb-6">
+            <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-quill-border text-sm font-medium text-[#a8a8c0] hover:border-quill-border-2 hover:text-quill-text transition-all mb-6">
               Get started
             </Link>
             <ul className="space-y-3">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#6b6b8a]">
+                <li key={f} className="flex items-start gap-2.5 text-sm text-quill-muted">
                   <Check color="#2a2a3e" />
                   {f}
                 </li>
@@ -108,22 +109,22 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          {/* Silver */}
+          {/* Think */}
           <div className="flex flex-col p-6 rounded-2xl border-2 border-[#EF4444] bg-[#0d0d15] relative">
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#EF4444] text-white text-[11px] font-bold tracking-wide whitespace-nowrap">
               MOST POPULAR
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Silver</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Think</p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="text-4xl font-black text-[#e8e8f0]">$12</span>
-              <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
+              <span className="text-4xl font-black text-quill-text">$12</span>
+              <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
             <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all mb-6">
-              Start Silver
+              Start Think
             </Link>
             <ul className="space-y-3">
-              {SILVER_FEATURES.map((f) => (
+              {THINK_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
                   <Check color="#EF4444" />
                   {f}
@@ -132,19 +133,19 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          {/* Gold */}
+          {/* Pro */}
           <div className="flex flex-col p-6 rounded-2xl border border-[rgba(245,158,11,0.3)] bg-[#0d0d15]" style={{ boxShadow: "0 0 40px rgba(245,158,11,0.04)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Gold</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Pro</p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="text-4xl font-black text-[#e8e8f0]">$29</span>
-              <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
+              <span className="text-4xl font-black text-quill-text">$29</span>
+              <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
             <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[rgba(245,158,11,0.4)] text-[#f59e0b] text-sm font-semibold hover:bg-[rgba(245,158,11,0.08)] transition-all mb-6">
-              Start Gold
+              Start Pro
             </Link>
             <ul className="space-y-3">
-              {GOLD_FEATURES.map((f) => (
+              {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
                   <Check color="#f59e0b" />
                   {f}
@@ -162,29 +163,29 @@ export default function PricingPage() {
               { q: "Can I cancel anytime?", a: "Yes. Cancel from Settings → Billing at any time. Your plan stays active until the end of the current billing period — no partial refunds." },
               { q: "What happens when I hit my message limit?", a: "Requests are paused until your next billing cycle resets. You can upgrade at any time to get more immediately." },
               { q: "Is there an annual discount?", a: "Annual billing (2 months free) is coming soon. Sign up free and we'll notify you when it's available." },
-              { q: "Do you store my conversations?", a: "Yes — linked to your account. Free plan: 7 days. Silver: 90 days. Gold: indefinitely. You can export or delete your data at any time." },
-              { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.0 Flash Lite, Think uses Gemini 2.5 Pro with extended reasoning, and Pro uses Gemini 1.5 Pro for best overall quality." },
+              { q: "Do you store my conversations?", a: "If you are signed in, conversations are stored in your account history and can be deleted from the sidebar. Guest sessions are not persisted." },
+              { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.5 Flash by default (or optional OpenRouter free-model routing when configured). Think uses Gemini 2.5 Pro. Pro uses a high-quality Gemini route tuned for quality and reliability." },
             ].map(({ q, a }) => (
-              <div key={q} className="border-b border-[#1e1e2e] pb-5">
-                <p className="text-sm font-semibold text-[#e8e8f0] mb-2">{q}</p>
-                <p className="text-sm text-[#6b6b8a] leading-relaxed">{a}</p>
+              <div key={q} className="border-b border-quill-border pb-5">
+                <p className="text-sm font-semibold text-quill-text mb-2">{q}</p>
+                <p className="text-sm text-quill-muted leading-relaxed">{a}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Footer links */}
-        <div className="mt-14 pt-8 border-t border-[#1e1e2e] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-14 pt-8 border-t border-quill-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <QuillLogo size={16} />
             <span className="text-xs font-semibold gradient-text">Quill AI</span>
           </div>
           <p className="text-xs text-[#4a4a6a]">© 2026 Quill AI</p>
-          <div className="flex gap-5 text-xs text-[#6b6b8a]">
-            <Link href="/pricing" className="hover:text-[#e8e8f0] transition-colors">Pricing</Link>
-            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
-            <Link href="/privacy" className="hover:text-[#e8e8f0] transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-[#e8e8f0] transition-colors">Terms</Link>
+          <div className="flex gap-5 text-xs text-quill-muted">
+            <Link href="/pricing" className="hover:text-quill-text transition-colors">Pricing</Link>
+            <Link href="/docs" className="hover:text-quill-text transition-colors">Docs</Link>
+            <Link href="/privacy" className="hover:text-quill-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-quill-text transition-colors">Terms</Link>
           </div>
         </div>
       </div>
