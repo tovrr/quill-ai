@@ -27,6 +27,7 @@ function KillerIcon({ accent }: { accent: string }) {
 
 export function Sidebar() {
   const [killersOpen, setKillersOpen] = useState(true);
+  const [killersExpanded, setKillersExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pinned, setPinned] = useState<string[]>(() => {
@@ -85,10 +86,16 @@ export function Sidebar() {
       {/* ── Killers section ────────────────────────────────────────────── */}
       <div className="px-3 pt-4 shrink-0">
         <button
-          onClick={() => setKillersOpen((v) => !v)}
+          onClick={(e) => { e.stopPropagation(); setKillersOpen((v) => !v); }}
           className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#6b6b8a] hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
         >
-          <span>Killers</span>
+          <span className="flex items-center gap-1.5">
+            {/* Diamond icon */}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#a78bfa" }}>
+              <path d="M12 2L22 12L12 22L2 12Z" />
+            </svg>
+            Killers
+          </span>
           <svg
             width="11"
             height="11"
@@ -106,10 +113,10 @@ export function Sidebar() {
 
         <div
           className="overflow-hidden transition-all duration-200"
-          style={{ maxHeight: killersOpen ? "400px" : "0px", opacity: killersOpen ? 1 : 0 }}
+          style={{ maxHeight: killersOpen ? "600px" : "0px", opacity: killersOpen ? 1 : 0 }}
         >
           <div className="flex flex-col gap-0.5 pt-1 pb-2">
-            {KILLERS.map((killer) => (
+            {(killersExpanded ? KILLERS : KILLERS.slice(0, 3)).map((killer) => (
               <button
                 key={killer.id}
                 onClick={() => window.location.assign(`/agent?killer=${killer.id}`)}
@@ -124,6 +131,18 @@ export function Sidebar() {
                 </div>
               </button>
             ))}
+            {KILLERS.length > 3 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setKillersExpanded((v) => !v); }}
+                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-[11px] text-[#6b6b8a] hover:text-[#a8a8c0] hover:bg-[#16161f] transition-all duration-150 text-left"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: killersExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+                {killersExpanded ? "Show less" : `See all ${KILLERS.length}`}
+              </button>
+            )}
           </div>
         </div>
       </div>
