@@ -456,9 +456,9 @@ export default function HomePage() {
           </div>
           <p className="text-xs text-[#6b6b8a] text-center">© 2026 Quill AI. Your personal AI agent.</p>
           <div className="flex gap-5 text-xs text-[#6b6b8a]">
-            <a href="#" className="hover:text-[#e8e8f0] transition-colors">Privacy</a>
-            <a href="#" className="hover:text-[#e8e8f0] transition-colors">Terms</a>
-            <a href="#" className="hover:text-[#e8e8f0] transition-colors">Docs</a>
+            <Link href="/privacy" className="hover:text-[#e8e8f0] transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-[#e8e8f0] transition-colors">Terms</Link>
+            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
           </div>
         </div>
       </footer>
