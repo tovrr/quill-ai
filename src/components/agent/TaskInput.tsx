@@ -274,47 +274,6 @@ export function TaskInput({
                   )}
                 </button>
 
-                {/* Generate image */}
-                {onGenerateImage && (
-                  <button
-                    onClick={() => {
-                      setImageMode((m) => !m);
-                      setAttachedFiles(null);
-                      setDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all text-left"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    Generate image
-                    {imageMode && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
-                    )}
-                  </button>
-                )}
-
-                {/* Web search */}
-                <button
-                  onClick={() => {
-                    onWebSearchToggle();
-                    setDropdownOpen(false);
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all text-left"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="2" y1="12" x2="22" y2="12" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                  Web search
-                  {webSearchEnabled && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#34d399]" />
-                  )}
-                </button>
-
                 <div className="border-t border-[#1e1e2e] mx-2 my-1" />
 
                 {/* Mode heading */}
@@ -370,7 +329,7 @@ export function TaskInput({
             )}
           </div>{/* end dropdown relative wrapper */}
 
-          {/* Web search standalone button — right next to dropdown */}
+          {/* Web search standalone button */}
           <button
             onClick={onWebSearchToggle}
             disabled={isDisabled}
@@ -388,6 +347,30 @@ export function TaskInput({
             </svg>
             <span>Search</span>
           </button>
+
+          {/* Generate image standalone button */}
+          {onGenerateImage && (
+            <button
+              onClick={() => {
+                setImageMode((m) => !m);
+                setAttachedFiles(null);
+              }}
+              disabled={isDisabled}
+              title={imageMode ? "Image generation on — click to disable" : "Enable image generation"}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                imageMode
+                  ? "text-[#a78bfa] bg-[rgba(167,139,250,0.1)] hover:bg-[rgba(167,139,250,0.16)]"
+                  : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>Image</span>
+            </button>
+          )}
 
           </div>{/* end left group */}
 
