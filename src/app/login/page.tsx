@@ -2,33 +2,66 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import Link from "next/link";
 
+type Tab = "signin" | "signup";
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/agent";
+
+  const [tab, setTab] = useState<Tab>("signin");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Reset state when switching tabs
+  const handleTabChange = (t: Tab) => {
+    setTab(t);
+    setError("");
+    setSuccess("");
+    setEmail("");
+    setName("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
     setError("");
+    setSuccess("");
+
+    if (tab === "signup") {
+      // Register: call our API to create the user, then sign in
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+      });
+      const data = await res.json() as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setSuccess("Account created! Signing you in…");
+    }
 
     const result = await signIn("credentials", {
       email: email.trim(),
-      password: "demo",
       redirect: false,
     });
 
     if (result?.error) {
-      setError("Sign in failed. Please try again.");
+      setError("Sign in failed. Please check your email and try again.");
       setLoading(false);
     } else {
-      router.push("/agent");
+      router.push(callbackUrl);
     }
   };
 
@@ -38,8 +71,7 @@ export default function LoginPage() {
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-15 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(124,106,247,0.8) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(124,106,247,0.8) 0%, transparent 70%)",
           filter: "blur(60px)",
         }}
       />
@@ -51,18 +83,47 @@ export default function LoginPage() {
             <QuillLogo size={28} />
           </div>
           <h1 className="text-2xl font-bold gradient-text">Welcome to Quill</h1>
-          <p className="text-sm text-[#6b6b8a] mt-1">
+          <p className="text-sm text-[#6b6b8a] mt-1 text-center">
             Your personal AI agent
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-6">
-          <h2 className="text-base font-semibold text-[#e8e8f0] mb-5">
-            Sign in to continue
-          </h2>
+          {/* Tab switcher */}
+          <div className="flex rounded-xl bg-[#111118] p-1 mb-5">
+            {(["signin", "signup"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => handleTabChange(t)}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  tab === t
+                    ? "bg-[#1e1e2e] text-[#e8e8f0] shadow-sm"
+                    : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                }`}
+              >
+                {t === "signin" ? "Sign in" : "Sign up"}
+              </button>
+            ))}
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {tab === "signup" && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#6b6b8a]">
+                  Name <span className="text-[#3a3a5a]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(124,106,247,0.5)] focus:shadow-[0_0_0_3px_rgba(124,106,247,0.1)] transition-all"
+                />
+              </div>
+            )}
+
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-[#6b6b8a]">
                 Email address
@@ -73,13 +134,20 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoFocus
                 className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(124,106,247,0.5)] focus:shadow-[0_0_0_3px_rgba(124,106,247,0.1)] transition-all"
               />
             </div>
 
             {error && (
-              <p className="text-xs text-[#f87171] bg-[rgba(248,113,113,0.1)] rounded-lg px-3 py-2">
+              <p className="text-xs text-[#f87171] bg-[rgba(248,113,113,0.1)] border border-[rgba(248,113,113,0.2)] rounded-lg px-3 py-2">
                 {error}
+              </p>
+            )}
+
+            {success && (
+              <p className="text-xs text-[#34d399] bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] rounded-lg px-3 py-2">
+                {success}
               </p>
             )}
 
@@ -88,12 +156,16 @@ export default function LoginPage() {
               disabled={loading || !email.trim()}
               className="w-full py-2.5 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[rgba(124,106,247,0.25)] active:scale-[0.98]"
             >
-              {loading ? "Signing in..." : "Continue with email"}
+              {loading
+                ? tab === "signup" ? "Creating account…" : "Signing in…"
+                : tab === "signup" ? "Create account" : "Continue with email"}
             </button>
           </form>
 
           <p className="text-xs text-[#6b6b8a] text-center mt-4">
-            No password needed — enter any email to get started.
+            {tab === "signin"
+              ? "No password needed — we'll sign you in instantly."
+              : "Free to use. No credit card required."}
           </p>
         </div>
 

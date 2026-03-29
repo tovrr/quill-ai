@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KILLERS } from "@/lib/killers";
 import { SettingsModal } from "@/components/ui/SettingsModal";
@@ -26,6 +28,7 @@ function KillerIcon({ accent }: { accent: string }) {
 }
 
 export function Sidebar() {
+  const { data: session, status } = useSession();
   const [killersOpen, setKillersOpen] = useState(true);
   const [killersExpanded, setKillersExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -281,47 +284,75 @@ export function Sidebar() {
 
       {/* User profile + usage + settings */}
       <div className="px-3 py-3 border-t border-[#1e1e2e] shrink-0 space-y-2">
-        {/* Profile row */}
-        <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0">
-            U
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[#e8e8f0] truncate leading-tight">User</p>
-            <p className="text-[11px] text-[#6b6b8a] truncate leading-tight">Free plan</p>
-          </div>
-          {/* Settings button */}
-          <button
-            onClick={() => setSettingsOpen(true)}
-            title="Settings"
-            className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all shrink-0"
+        {status === "authenticated" && session?.user ? (
+          <>
+            {/* Profile row */}
+            <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
+                {(session.user.name ?? session.user.email ?? "U")[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#e8e8f0] truncate leading-tight">
+                  {session.user.name ?? session.user.email?.split("@")[0] ?? "User"}
+                </p>
+                <p className="text-[11px] text-[#6b6b8a] truncate leading-tight">Free plan</p>
+              </div>
+              {/* Settings button */}
+              <button
+                onClick={() => setSettingsOpen(true)}
+                title="Settings"
+                className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f] transition-all shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+                </svg>
+              </button>
+              {/* Sign out */}
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                title="Sign out"
+                className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#f87171] hover:bg-[#16161f] transition-all shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Usage bar */}
+            <div className="px-2 pb-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-[#6b6b8a]">2,340 / 10,000 messages</span>
+                <span className="text-[11px] font-medium text-[#a78bfa]">23%</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: "23%", background: "linear-gradient(to right, #7c6af7, #a78bfa)" }}
+                />
+              </div>
+              <button className="mt-1.5 text-[11px] text-[#7c6af7] hover:text-[#a78bfa] transition-colors">
+                Upgrade for unlimited
+              </button>
+            </div>
+          </>
+        ) : (
+          /* Not signed in */
+          <Link
+            href="/login"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-[#1e1e2e] hover:border-[rgba(124,106,247,0.4)] hover:bg-[#111118] text-sm font-medium text-[#6b6b8a] hover:text-[#e8e8f0] transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
             </svg>
-          </button>
-        </div>
-
-        {/* Usage bar */}
-        <div className="px-2 pb-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] text-[#6b6b8a]">2,340 / 10,000 messages</span>
-            <span className="text-[11px] font-medium text-[#a78bfa]">23%</span>
-          </div>
-          <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: "23%",
-                background: "linear-gradient(to right, #7c6af7, #a78bfa)",
-              }}
-            />
-          </div>
-          <button className="mt-1.5 text-[11px] text-[#7c6af7] hover:text-[#a78bfa] transition-colors">
-            Upgrade for unlimited
-          </button>
-        </div>
+            Sign in
+          </Link>
+        )}
       </div>
 
       {/* Settings modal */}

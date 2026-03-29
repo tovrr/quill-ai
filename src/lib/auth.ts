@@ -16,27 +16,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email) return null;
 
-        // Find or create user (simple demo auth — no real password hashing)
-        const email = credentials.email as string;
-        let user = await db.query.users.findFirst({
+        const email = (credentials.email as string).trim().toLowerCase();
+
+        // Only sign in existing users — registration is handled by /api/auth/register
+        const user = await db.query.users.findFirst({
           where: eq(users.email, email),
         });
 
-        if (!user) {
-          const [created] = await db
-            .insert(users)
-            .values({
-              email,
-              name: email.split("@")[0],
-            })
-            .returning();
-          user = created;
-        }
+        if (!user) return null;
 
         return { id: user.id, email: user.email, name: user.name };
       },
