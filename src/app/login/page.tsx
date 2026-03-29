@@ -45,31 +45,37 @@ function LoginContent() {
     setError("");
     setSuccess("");
 
-    if (tab === "signup") {
-      const { error: signUpError } = await authClient.signUp.email({
+    try {
+      if (tab === "signup") {
+        const { error: signUpError } = await authClient.signUp.email({
+          email: email.trim(),
+          name: name.trim() || email.split("@")[0],
+          password,
+        });
+
+        if (signUpError) {
+          setError(signUpError.message ?? "Registration failed. Please try again.");
+          setLoading(false);
+          return;
+        }
+        setSuccess("Account created! Signing you in…");
+      }
+
+      const { error: signInError } = await authClient.signIn.email({
         email: email.trim(),
-        name: name.trim() || email.split("@")[0],
         password,
       });
 
-      if (signUpError) {
-        setError(signUpError.message ?? "Registration failed. Please try again.");
+      if (signInError) {
+        setError(signInError.message ?? "Sign in failed. Please check your credentials and try again.");
         setLoading(false);
-        return;
+      } else {
+        router.push(callbackUrl);
       }
-      setSuccess("Account created! Signing you in…");
-    }
-
-    const { error: signInError } = await authClient.signIn.email({
-      email: email.trim(),
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message ?? "Sign in failed. Please check your credentials and try again.");
+    } catch (err) {
+      console.error("Auth error:", err);
+      setError(err instanceof Error ? err.message : "Something went wrong. Check your connection and try again.");
       setLoading(false);
-    } else {
-      router.push(callbackUrl);
     }
   };
 
