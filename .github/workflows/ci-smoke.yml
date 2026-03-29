@@ -27,11 +27,22 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
       - name: Install npm
         run: npm install -g npm@10.9.4
 
       - name: Install dependencies
         run: npm install
+
+      - name: Install Linux native modules
+        run: npm install --no-save lightningcss@1.32.0 && npm install --no-save @next/swc-linux-x64-gnu @next/swc-linux-x64-musl || true
 
       - name: Build app
         run: npm run build
