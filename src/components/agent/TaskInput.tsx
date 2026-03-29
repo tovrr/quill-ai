@@ -121,12 +121,12 @@ export function TaskInput({
     <div className="flex flex-col gap-2">
       {/* Input area */}
       <div
-        className="glow-border rounded-2xl bg-[#111118] transition-all duration-200 focus-within:border-[rgba(124,106,247,0.6)] focus-within:shadow-[0_0_24px_rgba(124,106,247,0.15)]"
+        className="glow-border rounded-2xl bg-[#111118] transition-all duration-200 focus-within:border-[rgba(239,68,68,0.6)] focus-within:shadow-[0_0_24px_rgba(239,68,68,0.15)]"
         style={
           imageMode
             ? {
-                borderColor: "rgba(124,106,247,0.5)",
-                boxShadow: "0 0 20px rgba(124,106,247,0.1)",
+                borderColor: "rgba(239,68,68,0.5)",
+                boxShadow: "0 0 20px rgba(239,68,68,0.1)",
               }
             : {}
         }
@@ -171,7 +171,7 @@ export function TaskInput({
         {/* Image mode badge */}
         {imageMode && (
           <div className="px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(124,106,247,0.15)] border border-[rgba(124,106,247,0.3)] text-xs text-[#a78bfa] font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
@@ -266,7 +266,7 @@ export function TaskInput({
                   </svg>
                   Attach file
                   {attachedFiles && attachedFiles.length > 0 && (
-                    <span className="ml-auto text-[10px] bg-[#7c6af7] text-white px-1.5 py-0.5 rounded-full">
+                    <span className="ml-auto text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
                       {attachedFiles.length}
                     </span>
                   )}
@@ -288,7 +288,7 @@ export function TaskInput({
                     }}
                     className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-[#16161f]"
                     style={{
-                      color: mode === m.id ? "#a78bfa" : "#a8a8c0",
+                      color: mode === m.id ? "#F87171" : "#a8a8c0",
                     }}
                   >
                     <span className="flex-1">
@@ -319,7 +319,7 @@ export function TaskInput({
                   </svg>
                   Canvas view
                   {canvasMode && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />
                   )}
                 </button>
               </div>
@@ -357,7 +357,7 @@ export function TaskInput({
               title={imageMode ? "Image generation on — click to disable" : "Enable image generation"}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 imageMode
-                  ? "text-[#a78bfa] bg-[rgba(167,139,250,0.1)] hover:bg-[rgba(167,139,250,0.16)]"
+                  ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
                   : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
               }`}
             >
@@ -378,8 +378,8 @@ export function TaskInput({
             disabled={!value.trim() || isDisabled}
             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
               imageMode
-                ? "bg-[#a78bfa] hover:bg-[#9370f0] shadow-[rgba(167,139,250,0.3)]"
-                : "bg-[#7c6af7] hover:bg-[#6b58e8] shadow-[rgba(124,106,247,0.3)]"
+                ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
+                : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
             }`}
           >
             {isGeneratingImage ? (
@@ -406,7 +406,7 @@ export function TaskInput({
         to send &middot;{" "}
         <kbd className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
         for new line
-        {imageMode && <span className="ml-2 text-[#7c6af7]">· Image generation active</span>}
+        {imageMode && <span className="ml-2 text-[#EF4444]">· Image generation active</span>}
       </p>
     </div>
   );

@@ -70,7 +70,7 @@ function MarkdownDocument({ text }: { text: string }) {
       elements.push(
         <div key={i} className="my-4 rounded-xl overflow-hidden border border-[#e0deff]">
           {lang && (
-            <div className="px-3 py-1.5 bg-[#f5f3ff] border-b border-[#e0deff] text-[10px] text-[#7c6af7] font-mono uppercase tracking-wide">
+            <div className="px-3 py-1.5 bg-[#f5f3ff] border-b border-[#e0deff] text-[10px] text-[#EF4444] font-mono uppercase tracking-wide">
               {lang}
             </div>
           )}
@@ -104,7 +104,7 @@ function MarkdownDocument({ text }: { text: string }) {
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
         <div key={i} className="flex gap-2.5 pl-2 py-0.5">
-          <span className="text-[#7c6af7] mt-1 shrink-0 text-xs">●</span>
+          <span className="text-[#EF4444] mt-1 shrink-0 text-xs">●</span>
           <span className="text-[#3a3a60] text-sm leading-relaxed">
             {renderInlineCanvas(line.slice(2))}
           </span>
@@ -115,7 +115,7 @@ function MarkdownDocument({ text }: { text: string }) {
       if (match) {
         elements.push(
           <div key={i} className="flex gap-2.5 pl-2 py-0.5">
-            <span className="text-[#7c6af7] shrink-0 tabular-nums text-sm font-medium">{match[1]}.</span>
+            <span className="text-[#EF4444] shrink-0 tabular-nums text-sm font-medium">{match[1]}.</span>
             <span className="text-[#3a3a60] text-sm leading-relaxed">
               {renderInlineCanvas(match[2])}
             </span>
@@ -124,7 +124,7 @@ function MarkdownDocument({ text }: { text: string }) {
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={i} className="pl-4 border-l-4 border-[#7c6af7] text-[#5a5a8a] italic my-2 py-1">
+        <blockquote key={i} className="pl-4 border-l-4 border-[#EF4444] text-[#5a5a8a] italic my-2 py-1">
           {renderInlineCanvas(line.slice(2))}
         </blockquote>
       );
@@ -211,7 +211,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
         {/* Left: icon + title + tabs */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#7c6af7] to-[#a78bfa] flex items-center justify-center shrink-0">
+            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#EF4444] to-[#F87171] flex items-center justify-center shrink-0">
               {isHTML ? (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="16 18 22 12 16 6" />
@@ -227,7 +227,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             <span className={`text-sm font-semibold ${dark ? "text-[#e8e8f0]" : "text-[#1a1a2e]"}`}>
               Canvas
             </span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-[#1e1e2e] text-[#7c6af7]" : "bg-[#f0f0ff] text-[#7c6af7]"}`}>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-[#1e1e2e] text-[#EF4444]" : "bg-[#f0f0ff] text-[#EF4444]"}`}>
               {isHTML ? "page" : "document"}
             </span>
           </div>
@@ -238,7 +238,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               <button
                 onClick={() => setTab("preview")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "preview" ? "bg-[#7c6af7] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                  tab === "preview" ? "bg-[#EF4444] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
                 }`}
               >
                 Preview
@@ -246,7 +246,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               <button
                 onClick={() => setTab("code")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "code" ? "bg-[#7c6af7] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
+                  tab === "code" ? "bg-[#EF4444] text-white" : "text-[#6b6b8a] hover:text-[#a8a8c0]"
                 }`}
               >
                 Code
@@ -280,7 +280,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
               dark
                 ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
-                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7]"
+                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
             {copied ? (
@@ -304,7 +304,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
               dark
                 ? "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
-                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#7c6af7]"
+                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -338,7 +338,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-[#111118]" : "bg-[#f0f0ff]"}`}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6af7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="16 18 22 12 16 6" />
                 <polyline points="8 6 2 12 8 18" />
               </svg>

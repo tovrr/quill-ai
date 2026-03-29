@@ -19,7 +19,7 @@ function ToolCallBadge({
       className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[#1e1e2e] text-xs animate-fade-in"
       style={{
         background: isRunning
-          ? "rgba(124,106,247,0.08)"
+          ? "rgba(239,68,68,0.08)"
           : isDone
           ? "rgba(52,211,153,0.06)"
           : "rgba(17,17,24,0.8)",
@@ -32,7 +32,7 @@ function ToolCallBadge({
           height="13"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#7c6af7"
+          stroke="#EF4444"
           strokeWidth="2.5"
           strokeLinecap="round"
         >
@@ -58,7 +58,7 @@ function ToolCallBadge({
 
       <span
         className="font-semibold"
-        style={{ color: isRunning ? "#a78bfa" : isDone ? "#34d399" : "#6b6b8a" }}
+        style={{ color: isRunning ? "#F87171" : isDone ? "#34d399" : "#6b6b8a" }}
       >
         {toolName}
       </span>
@@ -83,7 +83,7 @@ function renderInline(text: string) {
       return (
         <code
           key={i}
-          className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#a78bfa] text-[12px] font-mono"
+          className="px-1 py-0.5 rounded bg-[#1e1e2e] text-[#F87171] text-[12px] font-mono"
         >
           {part.slice(1, -1)}
         </code>
@@ -168,7 +168,7 @@ function MarkdownText({ text }: { text: string }) {
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
         <div key={i} className="flex gap-2 pl-2">
-          <span className="text-[#7c6af7] mt-0.5 shrink-0">•</span>
+          <span className="text-[#EF4444] mt-0.5 shrink-0">•</span>
           <span>{renderInline(line.slice(2))}</span>
         </div>
       );
@@ -177,7 +177,7 @@ function MarkdownText({ text }: { text: string }) {
       if (match) {
         elements.push(
           <div key={i} className="flex gap-2 pl-2">
-            <span className="text-[#7c6af7] shrink-0 tabular-nums">{match[1]}.</span>
+            <span className="text-[#EF4444] shrink-0 tabular-nums">{match[1]}.</span>
             <span>{renderInline(match[2])}</span>
           </div>
         );
@@ -186,7 +186,7 @@ function MarkdownText({ text }: { text: string }) {
       elements.push(
         <blockquote
           key={i}
-          className="pl-3 border-l-2 border-[#7c6af7] text-[#a8a8c0] italic my-1"
+          className="pl-3 border-l-2 border-[#EF4444] text-[#a8a8c0] italic my-1"
         >
           {renderInline(line.slice(2))}
         </blockquote>
@@ -216,7 +216,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
     >
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
@@ -237,7 +237,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             return isUser ? (
               <div
                 key={i}
-                className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#7c6af7] text-white text-sm leading-relaxed"
+                className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed"
               >
                 {part.text}
               </div>
@@ -274,7 +274,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
                 key={i}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1e1e2e] border border-[#2a2a3e] text-xs text-[#a8a8c0]"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c6af7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
                 <span className="max-w-[160px] truncate">

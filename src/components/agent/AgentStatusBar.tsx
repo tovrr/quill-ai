@@ -19,8 +19,8 @@ const statusMessages: Record<AgentStatus, string> = {
 
 const statusColors: Record<AgentStatus, string> = {
   idle: "#6b6b8a",
-  thinking: "#a78bfa",
-  running: "#7c6af7",
+  thinking: "#F87171",
+  running: "#EF4444",
   done: "#34d399",
   error: "#f87171",
 };

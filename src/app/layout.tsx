@@ -16,7 +16,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",          // iOS safe area support
-  themeColor: "#7c6af7",
+  themeColor: "#EF4444",
 };
 
 // ── App metadata + PWA ────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   // Android / generic
   other: {
     "mobile-web-app-capable": "yes",
-    "msapplication-TileColor": "#7c6af7",
+    "msapplication-TileColor": "#EF4444",
     "msapplication-tap-highlight": "no",
   },
 

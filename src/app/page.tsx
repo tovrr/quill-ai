@@ -42,7 +42,7 @@ const capabilities = [
     ),
     title: "Deep Research",
     description: "Quill searches the web, reads pages, and synthesizes intelligence from dozens of sources — in seconds.",
-    color: "#a78bfa",
+    color: "#F87171",
   },
   {
     icon: (
@@ -99,7 +99,7 @@ const capabilities = [
     ),
     title: "Specialist Agents",
     description: "Switch between expert modes — Code Wizard, Deep Dive researcher, Pen Master writer, and more.",
-    color: "#c084fc",
+    color: "#FCA5A5",
   },
 ];
 
@@ -144,7 +144,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/login"
-              className="flex items-center h-9 px-4 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(124,106,247,0.25)] active:scale-95"
+              className="flex items-center h-9 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-95"
             >
               Try Free
             </Link>
@@ -156,12 +156,12 @@ export default function HomePage() {
       <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 flex flex-col items-center text-center overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] sm:w-[800px] h-[400px] sm:h-[500px] rounded-full opacity-20 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at center, rgba(124,106,247,0.6) 0%, transparent 70%)", filter: "blur(60px)" }}
+          style={{ background: "radial-gradient(ellipse at center, rgba(239,68,68,0.6) 0%, transparent 70%)", filter: "blur(60px)" }}
         />
 
         {/* Badge */}
-        <div className="relative flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(124,106,247,0.3)] bg-[rgba(124,106,247,0.08)] text-[#a78bfa] text-xs font-medium mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] animate-pulse" />
+        <div className="relative flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] text-[#F87171] text-xs font-medium mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] animate-pulse" />
           Now available · No credit card required
         </div>
 
@@ -179,7 +179,7 @@ export default function HomePage() {
         <div className="relative flex flex-col sm:flex-row items-center gap-3 mt-8 sm:mt-10 w-full sm:w-auto px-4 sm:px-0">
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white font-semibold text-base transition-all shadow-xl shadow-[rgba(124,106,247,0.3)] active:scale-95"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold text-base transition-all shadow-xl shadow-[rgba(239,68,68,0.3)] active:scale-95"
           >
             Start for free
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -221,7 +221,7 @@ export default function HomePage() {
           </div>
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex justify-end">
-              <div className="max-w-xs sm:max-w-lg px-4 py-3 rounded-2xl rounded-tr-sm bg-[#7c6af7] text-white text-sm leading-relaxed">
+              <div className="max-w-xs sm:max-w-lg px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed">
                 Research the top 10 AI agent companies in 2026 and create a competitive analysis report
               </div>
             </div>
@@ -233,14 +233,14 @@ export default function HomePage() {
                 {[
                   { tool: "Web Search", desc: 'Searching "top AI agent companies 2026"', status: "done", color: "#34d399" },
                   { tool: "Browser", desc: "Reading TechCrunch, Forbes, Crunchbase...", status: "done", color: "#34d399" },
-                  { tool: "Analyze", desc: "Synthesizing competitive data", status: "running", color: "#7c6af7" },
+                  { tool: "Analyze", desc: "Synthesizing competitive data", status: "running", color: "#EF4444" },
                 ].map((t) => (
                   <div key={t.tool} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#1e1e2e] bg-[#111118] text-xs min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.color }} />
                     <span className="font-semibold text-[#e8e8f0] shrink-0">{t.tool}</span>
                     <span className="text-[#6b6b8a] truncate hidden sm:block">{t.desc}</span>
                     {t.status === "running" && (
-                      <span className="ml-auto text-[#7c6af7] text-[10px] font-medium bg-[rgba(124,106,247,0.1)] px-2 py-0.5 rounded-full shrink-0">
+                      <span className="ml-auto text-[#EF4444] text-[10px] font-medium bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-full shrink-0">
                         Running
                       </span>
                     )}
@@ -277,7 +277,7 @@ export default function HomePage() {
       <section id="agents" className="px-4 sm:px-6 py-16 sm:py-24 bg-[#0d0d15] border-y border-[#1e1e2e]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(167,139,250,0.3)] bg-[rgba(167,139,250,0.08)] text-[#a78bfa] text-xs font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] text-[#F87171] text-xs font-medium mb-4">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L22 12L12 22L2 12Z" /></svg>
               Specialist Agents
             </div>
@@ -317,7 +317,7 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-8">
             {[
-              { step: "01", title: "Describe your goal", desc: "Tell Quill what you want in plain English. No prompting expertise needed.", color: "#7c6af7" },
+              { step: "01", title: "Describe your goal", desc: "Tell Quill what you want in plain English. No prompting expertise needed.", color: "#EF4444" },
               { step: "02", title: "Quill plans & acts", desc: "Quill breaks your goal into steps, picks the right tools, and executes autonomously.", color: "#60a5fa" },
               { step: "03", title: "Review & iterate", desc: "See every action taken. Refine results, ask follow-ups, or start a new task.", color: "#34d399" },
             ].map((item) => (
@@ -346,9 +346,9 @@ export default function HomePage() {
               <Link
                 key={task}
                 href="/login"
-                className="flex items-center gap-4 px-4 sm:px-5 py-4 rounded-2xl border border-[#1e1e2e] bg-[#0a0a0f] hover:border-[rgba(124,106,247,0.4)] hover:bg-[rgba(124,106,247,0.04)] transition-all duration-200 group text-left"
+                className="flex items-center gap-4 px-4 sm:px-5 py-4 rounded-2xl border border-[#1e1e2e] bg-[#0a0a0f] hover:border-[rgba(239,68,68,0.4)] hover:bg-[rgba(239,68,68,0.04)] transition-all duration-200 group text-left"
               >
-                <div className="w-8 h-8 rounded-xl bg-[rgba(124,106,247,0.1)] flex items-center justify-center shrink-0 text-[#7c6af7] group-hover:bg-[rgba(124,106,247,0.2)] transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-[rgba(239,68,68,0.1)] flex items-center justify-center shrink-0 text-[#EF4444] group-hover:bg-[rgba(239,68,68,0.2)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="5 3 19 12 5 21 5 3" />
                   </svg>
@@ -362,7 +362,7 @@ export default function HomePage() {
 
       {/* CTA */}
       <section className="px-4 sm:px-6 py-16 sm:py-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(124,106,247,0.8) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.8) 0%, transparent 70%)" }} />
         <div className="relative max-w-2xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
             Start your first task <span className="gradient-text">now</span>
@@ -372,7 +372,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2.5 px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white font-semibold text-base sm:text-lg transition-all shadow-2xl shadow-[rgba(124,106,247,0.4)] active:scale-95"
+            className="inline-flex items-center gap-2.5 px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold text-base sm:text-lg transition-all shadow-2xl shadow-[rgba(239,68,68,0.4)] active:scale-95"
           >
             <QuillLogo size={20} />
             Launch Quill AI — It&apos;s free

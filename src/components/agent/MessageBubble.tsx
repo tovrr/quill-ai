@@ -19,7 +19,7 @@ function TypingIndicator() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-1.5 h-1.5 rounded-full bg-[#7c6af7] animate-typing-dot"
+          className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot"
           style={{ animationDelay: `${i * 0.15}s` }}
         />
       ))}
@@ -59,7 +59,7 @@ export function MessageBubble({
     >
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
@@ -84,7 +84,7 @@ export function MessageBubble({
           <div
             className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
               isUser
-                ? "bg-[#7c6af7] text-white rounded-tr-sm"
+                ? "bg-[#EF4444] text-white rounded-tr-sm"
                 : "bg-[#111118] border border-[#1e1e2e] text-[#e8e8f0] rounded-tl-sm"
             }`}
           >

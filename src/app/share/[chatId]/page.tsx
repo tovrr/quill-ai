@@ -20,7 +20,7 @@ function MessageBubble({
     <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
@@ -33,7 +33,7 @@ function MessageBubble({
       <div
         className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? "rounded-tr-sm bg-[#7c6af7] text-white"
+            ? "rounded-tr-sm bg-[#EF4444] text-white"
             : "rounded-tl-sm bg-[#111118] border border-[#1e1e2e] text-[#e8e8f0]"
         }`}
       >
@@ -79,7 +79,7 @@ export default async function SharePage({ params }: Props) {
           </div>
           <Link
             href="/agent"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -132,7 +132,7 @@ export default async function SharePage({ params }: Props) {
           </div>
           <Link
             href="/agent"
-            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(124,106,247,0.3)]"
+            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.3)]"
           >
             Start chatting
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

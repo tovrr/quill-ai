@@ -71,7 +71,7 @@ export default function LoginPage() {
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-15 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse at center, rgba(124,106,247,0.8) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(239,68,68,0.8) 0%, transparent 70%)",
           filter: "blur(60px)",
         }}
       />
@@ -119,7 +119,7 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
-                  className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(124,106,247,0.5)] focus:shadow-[0_0_0_3px_rgba(124,106,247,0.1)] transition-all"
+                  className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
                 />
               </div>
             )}
@@ -135,7 +135,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 required
                 autoFocus
-                className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(124,106,247,0.5)] focus:shadow-[0_0_0_3px_rgba(124,106,247,0.1)] transition-all"
+                className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
               />
             </div>
 
@@ -154,7 +154,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !email.trim()}
-              className="w-full py-2.5 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[rgba(124,106,247,0.25)] active:scale-[0.98]"
+              className="w-full py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-[0.98]"
             >
               {loading
                 ? tab === "signup" ? "Creating account…" : "Signing in…"

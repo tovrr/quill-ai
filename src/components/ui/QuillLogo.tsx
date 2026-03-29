@@ -13,8 +13,8 @@ export function QuillLogo({ size = 28 }: { size?: number }) {
     >
       <defs>
         <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#a78bfa" />
-          <stop offset="100%" stopColor="#60a5fa" />
+          <stop offset="0%" stopColor="#EF4444" />
+          <stop offset="100%" stopColor="#F87171" />
         </linearGradient>
       </defs>
       {/* Feather quill shape */}

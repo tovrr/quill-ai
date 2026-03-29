@@ -15,7 +15,7 @@ export interface ToolCall {
 
 const statusConfig: Record<ToolStatus, { color: string; bg: string; label: string }> = {
   pending: { color: "#6b6b8a", bg: "#1e1e2e", label: "Pending" },
-  running: { color: "#7c6af7", bg: "rgba(124,106,247,0.1)", label: "Running" },
+  running: { color: "#EF4444", bg: "rgba(239,68,68,0.1)", label: "Running" },
   done: { color: "#34d399", bg: "rgba(52,211,153,0.1)", label: "Done" },
   error: { color: "#f87171", bg: "rgba(248,113,113,0.1)", label: "Error" },
 };
@@ -59,7 +59,7 @@ export function ToolCallCard({ call }: { call: ToolCall }) {
               height="14"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#7c6af7"
+              stroke="#EF4444"
               strokeWidth="2.5"
               strokeLinecap="round"
             >

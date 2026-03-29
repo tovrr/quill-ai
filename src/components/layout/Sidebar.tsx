@@ -76,7 +76,7 @@ export function Sidebar() {
       <div className="px-3 pt-3 shrink-0">
         <button
           onClick={() => window.location.assign("/agent")}
-          className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-sm font-medium transition-all duration-150 shadow-lg shadow-[rgba(124,106,247,0.25)]"
+          className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all duration-150 shadow-lg shadow-[rgba(239,68,68,0.25)]"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -94,7 +94,7 @@ export function Sidebar() {
         >
           <span className="flex items-center gap-1.5">
             {/* Diamond icon */}
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#a78bfa" }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#F87171" }}>
               <path d="M12 2L22 12L12 22L2 12Z" />
             </svg>
             Killers
@@ -209,7 +209,7 @@ export function Sidebar() {
                     {/* Pin indicator dot */}
                     <span
                       className="mt-1.5 shrink-0 w-1 h-1 rounded-full transition-colors"
-                      style={{ background: isPinned ? "#7c6af7" : "#2a2a3e" }}
+                      style={{ background: isPinned ? "#EF4444" : "#2a2a3e" }}
                     />
                     <span className="text-[13px] text-[#6b6b8a] group-hover:text-[#b8b8d0] leading-snug line-clamp-2 transition-colors pr-5">
                       {chat.title}
@@ -229,7 +229,7 @@ export function Sidebar() {
                       }}
                       title={isPinned ? "Unpin" : "Pin to top"}
                       className="p-1 rounded-md hover:bg-[#1e1e2e] transition-all"
-                      style={{ color: isPinned ? "#7c6af7" : "#6b6b8a" }}
+                      style={{ color: isPinned ? "#EF4444" : "#6b6b8a" }}
                     >
                       <svg
                         width="11"
@@ -288,7 +288,7 @@ export function Sidebar() {
           <>
             {/* Profile row */}
             <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
                 {(session.user.name ?? session.user.email ?? "U")[0]}
               </div>
               <div className="flex-1 min-w-0">
@@ -326,15 +326,15 @@ export function Sidebar() {
             <div className="px-2 pb-1">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] text-[#6b6b8a]">2,340 / 10,000 messages</span>
-                <span className="text-[11px] font-medium text-[#a78bfa]">23%</span>
+                <span className="text-[11px] font-medium text-[#F87171]">23%</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: "23%", background: "linear-gradient(to right, #7c6af7, #a78bfa)" }}
+                  style={{ width: "23%", background: "linear-gradient(to right, #EF4444, #F87171)" }}
                 />
               </div>
-              <button className="mt-1.5 text-[11px] text-[#7c6af7] hover:text-[#a78bfa] transition-colors">
+              <button className="mt-1.5 text-[11px] text-[#EF4444] hover:text-[#F87171] transition-colors">
                 Upgrade for unlimited
               </button>
             </div>
@@ -343,7 +343,7 @@ export function Sidebar() {
           /* Not signed in */
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-[#1e1e2e] hover:border-[rgba(124,106,247,0.4)] hover:bg-[#111118] text-sm font-medium text-[#6b6b8a] hover:text-[#e8e8f0] transition-all"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-[#1e1e2e] hover:border-[rgba(239,68,68,0.4)] hover:bg-[#111118] text-sm font-medium text-[#6b6b8a] hover:text-[#e8e8f0] transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />

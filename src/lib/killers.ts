@@ -81,7 +81,7 @@ Areas: product ideation, business models, marketing campaigns, creative projects
     name: "Deep Dive",
     tagline: "Research & deep analysis",
     description: "Rigorous researcher who synthesizes complex information into clear, actionable insights.",
-    accent: "#a78bfa",
+    accent: "#F87171",
     systemPrompt: `You are Deep Dive, a rigorous researcher and analyst who goes beyond surface-level answers to deliver comprehensive, well-structured insights.
 
 Your standards:

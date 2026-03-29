@@ -54,7 +54,7 @@ When asked to create a website, landing page, web page, UI, app interface, compo
 - Include ALL CSS inside a <style> tag in the <head> — no external stylesheets
 - Include ALL JavaScript inside a <script> tag before </body> — no external scripts or CDN links
 - Make the design visually polished, modern, and fully responsive
-- Default aesthetic: dark premium theme (background #0a0a0f, accent #7c6af7 purple, white text)
+- Default aesthetic: dark premium theme (background #0a0a0f, accent #EF4444 purple, white text)
 - Use smooth animations, clean typography (system-ui or Inter), generous spacing
 - Output ONLY the raw HTML starting with <!DOCTYPE html> — no explanations, no markdown code fences, no surrounding text
 

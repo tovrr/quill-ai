@@ -226,7 +226,7 @@ export default function AgentPage() {
           style={{
             background: sidebarVisible
               ? "transparent"
-              : "linear-gradient(to right, rgba(124,106,247,0.2), transparent)",
+              : "linear-gradient(to right, rgba(239,68,68,0.2), transparent)",
           }}
         />
         <div
@@ -264,7 +264,7 @@ export default function AgentPage() {
                 setSidebarPinned((v) => !v);
               }
             }}
-            className={`icon-btn p-1.5 rounded-lg transition-all ${sidebarPinned ? "text-[#a78bfa] bg-[rgba(124,106,247,0.08)]" : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"}`}
+            className={`icon-btn p-1.5 rounded-lg transition-all ${sidebarPinned ? "text-[#F87171] bg-[rgba(239,68,68,0.08)]" : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"}`}
             aria-label="Toggle sidebar"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -293,7 +293,7 @@ export default function AgentPage() {
           {/* Active mode badge */}
           {!killer && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#111118] border border-[#1e1e2e]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#7c6af7] shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
               <span className="text-[11px] font-medium text-[#a8a8c0]">{modeLabels[selectedMode]}</span>
             </div>
           )}
@@ -382,7 +382,7 @@ export default function AgentPage() {
                   </div>
                   <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[#1e1e2e] px-4 py-3 flex items-center gap-1.5">
                     {[0, 1, 2].map((i) => (
-                      <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#7c6af7] animate-typing-dot" style={{ animationDelay: `${i * 0.15}s` }} />
+                      <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot" style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
                 </div>
@@ -393,11 +393,11 @@ export default function AgentPage() {
                   <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
                     <QuillLogo size={16} />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[rgba(167,139,250,0.3)] px-4 py-3 flex items-center gap-2">
-                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round">
+                  <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
+                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round">
                       <path d="M21 12a9 9 0 1 1-6.22-8.56" />
                     </svg>
-                    <span className="text-xs text-[#a78bfa]">Generating image...</span>
+                    <span className="text-xs text-[#F87171]">Generating image...</span>
                   </div>
                 </div>
               )}

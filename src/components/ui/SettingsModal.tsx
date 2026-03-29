@@ -55,7 +55,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
         width: "40px",
         height: "22px",
         borderRadius: "11px",
-        background: on ? "#7c6af7" : "#2a2a3e",
+        background: on ? "#EF4444" : "#2a2a3e",
         transition: "background 0.2s",
         flexShrink: 0,
         cursor: "pointer",
@@ -101,7 +101,7 @@ function Select({ value, onChange, options }: {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-[#1a1a28] border border-[#2a2a3e] text-sm text-[#e8e8f0] rounded-lg px-3 py-1.5 outline-none focus:border-[#7c6af7] transition-colors cursor-pointer"
+      className="bg-[#1a1a28] border border-[#2a2a3e] text-sm text-[#e8e8f0] rounded-lg px-3 py-1.5 outline-none focus:border-[#EF4444] transition-colors cursor-pointer"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -256,7 +256,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 onClick={() => setSection(s.id)}
                 className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-all text-left ${
                   section === s.id
-                    ? "bg-[#7c6af7] text-white"
+                    ? "bg-[#EF4444] text-white"
                     : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#16161f]"
                 }`}
               >
@@ -291,7 +291,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         title={m.desc}
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           settings.defaultMode === m.value
-                            ? "bg-[#7c6af7] text-white"
+                            ? "bg-[#EF4444] text-white"
                             : "text-[#6b6b8a] hover:text-[#a8a8c0]"
                         }`}
                       >
@@ -326,10 +326,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <div className="p-4 rounded-xl bg-[#111118] border border-[#1e1e2e] space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-[#e8e8f0]">Messages</span>
-                    <span className="text-sm font-semibold text-[#a78bfa]">2,340 / 10,000</span>
+                    <span className="text-sm font-semibold text-[#F87171]">2,340 / 10,000</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-[#1e1e2e] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: "23.4%", background: "linear-gradient(to right, #7c6af7, #a78bfa)" }} />
+                    <div className="h-full rounded-full" style={{ width: "23.4%", background: "linear-gradient(to right, #EF4444, #F87171)" }} />
                   </div>
                   <p className="text-[11px] text-[#6b6b8a]">7,660 messages remaining · Free plan</p>
                 </div>
@@ -352,7 +352,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 {/* Breakdown by model */}
                 <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Breakdown by model</p>
                 {[
-                  { label: "Pro (default)", color: "#a78bfa", pct: 68, msgs: 1591, tokens: "820K" },
+                  { label: "Pro (default)", color: "#F87171", pct: 68, msgs: 1591, tokens: "820K" },
                   { label: "Fast", color: "#34d399", pct: 22, msgs: 515, tokens: "265K" },
                   { label: "Think", color: "#f59e0b", pct: 10, msgs: 234, tokens: "115K" },
                 ].map((m) => (
@@ -431,7 +431,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         key={t.value}
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           t.value === "dark"
-                            ? "bg-[#7c6af7] text-white"
+                            ? "bg-[#EF4444] text-white"
                             : "text-[#6b6b8a] hover:text-[#a8a8c0]"
                         }`}
                       >
@@ -475,7 +475,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <p className="text-xs text-[#6b6b8a]">
                     Your conversations are encrypted and stored securely. We never sell your data.
                   </p>
-                  <button className="text-xs text-[#7c6af7] hover:text-[#a78bfa] transition-colors">
+                  <button className="text-xs text-[#EF4444] hover:text-[#F87171] transition-colors">
                     Download your data
                   </button>
                 </div>
@@ -488,7 +488,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <p className="text-[11px] font-semibold text-[#6b6b8a] uppercase tracking-wider pt-3 pb-1">Account</p>
 
                 <div className="flex items-center gap-3 py-3.5 border-b border-[#1a1a28]">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#a78bfa] to-[#60a5fa] flex items-center justify-center text-sm font-bold text-white shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F87171] to-[#60a5fa] flex items-center justify-center text-sm font-bold text-white shrink-0">
                     U
                   </div>
                   <div>
@@ -503,12 +503,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </span>
                 </Row>
 
-                <div className="mt-3 p-4 rounded-xl border border-[#7c6af730] bg-[rgba(124,106,247,0.05)]">
+                <div className="mt-3 p-4 rounded-xl border border-[#EF444430] bg-[rgba(239,68,68,0.05)]">
                   <p className="text-sm font-semibold text-[#e8e8f0]">Upgrade to Pro</p>
                   <p className="text-xs text-[#6b6b8a] mt-1 mb-3">
                     Unlimited messages, priority access to all models, and advanced features.
                   </p>
-                  <button className="px-4 py-2 rounded-xl bg-[#7c6af7] hover:bg-[#6b58e8] text-white text-xs font-medium transition-all">
+                  <button className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all">
                     View plans
                   </button>
                 </div>
@@ -534,7 +534,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               saved
                 ? "bg-[#34d399] text-white"
-                : "bg-[#7c6af7] hover:bg-[#6b58e8] text-white"
+                : "bg-[#EF4444] hover:bg-[#DC2626] text-white"
             }`}
           >
             {saved ? (
