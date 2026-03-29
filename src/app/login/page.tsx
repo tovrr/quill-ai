@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 
 type Tab = "signin" | "signup";
@@ -24,6 +24,7 @@ function LoginContent() {
   const [tab, setTab] = useState<Tab>("signin");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -34,37 +35,38 @@ function LoginContent() {
     setSuccess("");
     setEmail("");
     setName("");
+    setPassword("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password.trim()) return;
     setLoading(true);
     setError("");
     setSuccess("");
 
     if (tab === "signup") {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+      const { error: signUpError } = await authClient.signUp.email({
+        email: email.trim(),
+        name: name.trim() || email.split("@")[0],
+        password,
       });
-      const data = await res.json() as { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Registration failed. Please try again.");
+
+      if (signUpError) {
+        setError(signUpError.message ?? "Registration failed. Please try again.");
         setLoading(false);
         return;
       }
       setSuccess("Account created! Signing you in…");
     }
 
-    const result = await signIn("credentials", {
+    const { error: signInError } = await authClient.signIn.email({
       email: email.trim(),
-      redirect: false,
+      password,
     });
 
-    if (result?.error) {
-      setError("Sign in failed. Please check your email and try again.");
+    if (signInError) {
+      setError(signInError.message ?? "Sign in failed. Please check your credentials and try again.");
       setLoading(false);
     } else {
       router.push(callbackUrl);
@@ -90,7 +92,7 @@ function LoginContent() {
         </div>
 
         {/* Card */}
-          <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-6">
+        <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-6">
           {/* Tab switcher */}
           <div className="flex rounded-xl bg-[#111118] p-1 mb-5">
             {(["signin", "signup"] as Tab[]).map((t) => (
@@ -136,6 +138,19 @@ function LoginContent() {
               />
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-[#6b6b8a]">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={8}
+                className="w-full bg-[#111118] border border-[#1e1e2e] rounded-xl px-4 py-2.5 text-sm text-[#e8e8f0] placeholder-[#6b6b8a] outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+              />
+            </div>
+
             {error && (
               <p className="text-xs text-[#f87171] bg-[rgba(248,113,113,0.1)] border border-[rgba(248,113,113,0.2)] rounded-lg px-3 py-2">
                 {error}
@@ -149,7 +164,7 @@ function LoginContent() {
 
             <button
               type="submit"
-              disabled={loading || !email.trim()}
+              disabled={loading || !email.trim() || !password.trim()}
               className="w-full py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-[0.98]"
             >
               {loading
@@ -160,7 +175,7 @@ function LoginContent() {
 
           <p className="text-xs text-[#6b6b8a] text-center mt-4">
             {tab === "signin"
-              ? "No password needed — we'll sign you in instantly."
+              ? "Enter your email and password to sign in."
               : "Free to use. No credit card required."}
           </p>
         </div>

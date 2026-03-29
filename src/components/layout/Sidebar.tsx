@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
 import { SettingsModal } from "@/components/ui/SettingsModal";
+
+type SessionData = {
+  user: { id: string; name: string; email: string; image?: string | null } | null;
+} | null;
 
 // Chat history is loaded from the DB via the API in production.
 // For now this is empty — real data will populate once auth + DB are wired to the sidebar.
@@ -26,7 +31,20 @@ function KillerIcon({ accent, iconKey }: { accent: string; iconKey: import("@/li
 }
 
 export function Sidebar() {
-  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [session, setSession] = useState<SessionData>(null);
+  const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+
+  useEffect(() => {
+    authClient.getSession().then(({ data }) => {
+      if (data?.user) {
+        setSession({ user: data.user });
+        setSessionStatus("authenticated");
+      } else {
+        setSessionStatus("unauthenticated");
+      }
+    }).catch(() => setSessionStatus("unauthenticated"));
+  }, []);
   const [killersOpen, setKillersOpen] = useState(true);
   const [killersExpanded, setKillersExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -282,7 +300,7 @@ export function Sidebar() {
 
       {/* User profile + usage + settings */}
       <div className="px-3 py-3 border-t border-[#1e1e2e] shrink-0 space-y-2">
-        {status === "authenticated" && session?.user ? (
+        {sessionStatus === "authenticated" && session?.user ? (
           <>
             {/* Profile row */}
             <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
@@ -308,7 +326,10 @@ export function Sidebar() {
               </button>
               {/* Sign out */}
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={async () => {
+                  await authClient.signOut();
+                  router.push("/login");
+                }}
                 title="Sign out"
                 className="p-1.5 rounded-lg text-[#6b6b8a] hover:text-[#f87171] hover:bg-[#16161f] transition-all shrink-0"
               >

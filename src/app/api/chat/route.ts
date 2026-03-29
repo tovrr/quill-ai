@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamText, stepCountIs } from "ai";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/server";
 import { getKillerById } from "@/lib/killers";
 import {
   createChat,
@@ -62,7 +62,8 @@ Always be helpful, direct, and get things done.`;
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
+    const { data: sessionData } = await auth.getSession();
+    const userId = sessionData?.user?.id ?? "guest";
     const {
       messages: incomingMessages,
       chatId,
@@ -71,9 +72,6 @@ export async function POST(req: Request) {
       killerId,
       webSearch,
     } = await req.json();
-
-    // Allow guest mode
-    const userId = session?.user?.id ?? "guest";
 
     // Support both chatId (legacy) and id (AI SDK default) field names
     const chatIdInput: string = chatId || rawChatId || "";

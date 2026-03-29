@@ -6,7 +6,6 @@ import {
   timestamp,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import type { AdapterAccountType } from "next-auth/adapters";
 
 // ─── NextAuth required tables ───────────────────────────────────────────────
 
@@ -27,7 +26,7 @@ export const accounts = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    type: varchar("type").$type<AdapterAccountType>().notNull(),
+    type: varchar("type").notNull(),
     provider: varchar("provider").notNull(),
     providerAccountId: varchar("providerAccountId").notNull(),
     refresh_token: text("refresh_token"),
