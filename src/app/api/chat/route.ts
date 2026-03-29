@@ -196,10 +196,10 @@ export async function POST(req: Request) {
     headers.set("x-chat-id", resolvedChatId);
     return new Response(response.body, { headers, status: response.status });
   } catch (error) {
-    console.error("Chat API error:", error);
     const message =
       error instanceof Error ? error.message : "Internal server error";
-    return new Response(JSON.stringify({ error: message }), {
+    console.error("Chat API error:", error instanceof Error ? error.stack : error);
+    return new Response(JSON.stringify({ error: message, stack: error instanceof Error ? error.stack : undefined }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
