@@ -13,16 +13,13 @@ const recentChats: { id: string; title: string }[] = [];
 
 const PINNED_KEY = "quill-pinned-chats";
 
-function KillerIcon({ accent }: { accent: string }) {
+function KillerIcon({ accent, icon }: { accent: string; icon: string }) {
   return (
     <div
-      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-      style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}
+      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-[15px] leading-none"
+      style={{ background: `${accent}18`, border: `1px solid ${accent}35` }}
     >
-      <span
-        className="w-2 h-2 rounded-full"
-        style={{ background: accent }}
-      />
+      {icon}
     </div>
   );
 }
@@ -125,7 +122,7 @@ export function Sidebar() {
                 onClick={() => window.location.assign(`/agent?killer=${killer.id}`)}
                 className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-[#16161f] transition-all duration-150 text-left group"
               >
-                <KillerIcon accent={killer.accent} />
+                <KillerIcon accent={killer.accent} icon={killer.icon} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-[#c8c8e0] group-hover:text-[#e8e8f0] truncate transition-colors">
                     {killer.name}

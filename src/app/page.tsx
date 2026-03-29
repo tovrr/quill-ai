@@ -294,8 +294,8 @@ export default function HomePage() {
                 className="flex items-start gap-4 p-5 rounded-2xl border transition-all duration-200 group hover:scale-[1.02]"
                 style={{ borderColor: `${killer.accent}25`, background: `${killer.accent}06` }}
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${killer.accent}15`, border: `1px solid ${killer.accent}30` }}>
-                  <span className="w-3 h-3 rounded-full" style={{ background: killer.accent }} />
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl" style={{ background: `${killer.accent}18`, border: `1px solid ${killer.accent}35` }}>
+                  {killer.icon}
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-[#e8e8f0] group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
@@ -310,26 +310,107 @@ export default function HomePage() {
 
       {/* How it works */}
       <section id="how-it-works" className="px-4 sm:px-6 py-16 sm:py-24">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">How Quill works</h2>
-            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg">Three simple steps. Unlimited complexity.</p>
+            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg">From idea to done — in three steps.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-8">
+
+          {/* Steps — vertical on mobile, horizontal on desktop */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-stretch">
             {[
-              { step: "01", title: "Describe your goal", desc: "Tell Quill what you want in plain English. No prompting expertise needed.", color: "#EF4444" },
-              { step: "02", title: "Quill plans & acts", desc: "Quill breaks your goal into steps, picks the right tools, and executes autonomously.", color: "#F87171" },
-              { step: "03", title: "Review & iterate", desc: "See every action taken. Refine results, ask follow-ups, or start a new task.", color: "#34d399" },
-            ].map((item) => (
-              <div key={item.step} className="flex flex-col gap-4">
-                <div className="text-4xl font-black tabular-nums" style={{ color: `${item.color}40` }}>{item.step}</div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[#e8e8f0] mb-2">{item.title}</h3>
-                  <p className="text-sm text-[#6b6b8a] leading-relaxed">{item.desc}</p>
+              {
+                step: "1",
+                emoji: "💬",
+                title: "Describe your goal",
+                desc: "Type anything in plain English. No special prompts, no setup — just tell Quill what you need.",
+                example: '"Research competitors and write a strategy doc"',
+                color: "#EF4444",
+              },
+              {
+                step: "2",
+                emoji: "⚙️",
+                title: "Quill plans & executes",
+                desc: "Quill breaks your goal into steps, picks the right tools, and autonomously works through each one.",
+                example: "Searching → Reading → Analyzing → Writing…",
+                color: "#f59e0b",
+              },
+              {
+                step: "3",
+                emoji: "✅",
+                title: "Review & refine",
+                desc: "See every action taken, review the result, ask follow-up questions, or kick off the next task.",
+                example: '"Make it shorter and more aggressive in tone"',
+                color: "#10b981",
+              },
+            ].map((item, i) => (
+              <div key={item.step} className="flex flex-col md:flex-row md:flex-1 items-stretch">
+                {/* Card */}
+                <div
+                  className="flex-1 relative flex flex-col gap-4 p-6 sm:p-7 rounded-2xl border bg-[#0d0d15] transition-all duration-200 hover:scale-[1.01]"
+                  style={{ borderColor: `${item.color}30` }}
+                >
+                  {/* Step badge */}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0"
+                    style={{ background: `${item.color}20`, color: item.color, border: `1px solid ${item.color}40` }}
+                  >
+                    {item.step}
+                  </div>
+
+                  {/* Emoji */}
+                  <div className="text-4xl leading-none">{item.emoji}</div>
+
+                  <div>
+                    <h3 className="text-lg font-bold text-[#e8e8f0] mb-2">{item.title}</h3>
+                    <p className="text-sm text-[#6b6b8a] leading-relaxed">{item.desc}</p>
+                  </div>
+
+                  {/* Example callout */}
+                  <div
+                    className="mt-auto pt-4 border-t text-xs font-mono text-[#6b6b8a] italic leading-relaxed"
+                    style={{ borderColor: `${item.color}20` }}
+                  >
+                    {item.example}
+                  </div>
+
+                  {/* Glow bottom accent */}
+                  <div
+                    className="absolute bottom-0 left-6 right-6 h-px rounded-full opacity-60"
+                    style={{ background: `linear-gradient(to right, transparent, ${item.color}, transparent)` }}
+                  />
                 </div>
-                <div className="h-0.5 rounded-full w-12" style={{ background: item.color }} />
+
+                {/* Connector arrow between cards (desktop only) */}
+                {i < 2 && (
+                  <div className="hidden md:flex items-center justify-center w-10 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </div>
+                )}
+                {/* Connector arrow (mobile only) */}
+                {i < 2 && (
+                  <div className="flex md:hidden items-center justify-center h-8 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <polyline points="5 12 12 19 19 12" />
+                    </svg>
+                  </div>
+                )}
               </div>
             ))}
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="mt-10 sm:mt-12 text-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#EF4444] text-sm font-semibold hover:bg-[rgba(239,68,68,0.18)] transition-all"
+            >
+              Try it yourself — free →
+            </Link>
           </div>
         </div>
       </section>
