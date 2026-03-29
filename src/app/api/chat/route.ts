@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    console.log("Chat request body keys:", Object.keys(body));
     const { messages: incomingMessages, chatId, id: rawId, mode, text } = body;
 
     const id: string = chatId || rawId || crypto.randomUUID();
