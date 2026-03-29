@@ -51,6 +51,16 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Updated mode selector to keep paid tiers visible but locked for non-paid users, plus refreshed TODO and deployment docs
 - [x] Added Tavily-backed live web search for signed-in users, with entitlement-aware UI states (available/login required/coming soon)
 - [x] Updated visible plan labels in sidebar/settings to use entitlements instead of hardcoded Free placeholders
+- [x] **Full mobile responsive overhaul**: all breakpoints standardised to `md` (768px); header Share/New-chat become icon-only `size-8` squares; TaskInput toolbar collapses to icon-only below md (attach→+, search→globe, image→sparkles)
+- [x] **Killer short names**: added `shortName` field to Killer interface; header badge swaps between shortName (mobile) and full name (desktop) at md breakpoint
+- [x] **HeroInput component** (`src/components/HeroInput.tsx`): animated typewriter cycling 6 task placeholders at 28ms/char; submits directly to `/agent?q=<task>`; no login required
+- [x] **Homepage hero CTA** replaced with HeroInput widget + "Already have account? Sign in" micro-link (higher conversion, zero-friction start)
+- [x] **Agent page auto-fire**: reads `?q=` URL param on mount and sends it as first message with 120ms delay (one-shot via `heroTaskFiredRef`)
+- [x] **Sidebar guest CTA**: unauthenticated users see a "Sign in to save and access your conversation history" prompt with Sign in button in the history section
+- [x] **Image button icon**: replaced landscape icon with sparkles SVG; unauthenticated state shows "Login" pill badge (mirrors Search button pattern)
+- [x] **CI native binary fixes**: added `lightningcss-linux-x64-gnu/musl` and `@tailwindcss/oxide-linux-x64-gnu/musl` to `optionalDependencies`; CI force-installs each separately with `|| true` fallback
+- [x] **Tailwind token cleanup**: replaced all 62 hardcoded hex colors in `page.tsx` and `HeroInput.tsx` with canonical `quill-*` design tokens
+- [x] **Icon consistency**: replaced placeholder "A" favicon with actual feather quill logo across all icon sizes; added `scripts/generate-icons.mjs` to regenerate PNGs from SVG via `sharp`
 
 ## Current Structure
 
@@ -59,7 +69,8 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - `src/app/layout.tsx`: Root layout with Inter font — ✅ Built
 - `src/app/globals.css`: Design tokens, animations, custom classes — ✅ Built
 - `src/components/ui/QuillLogo.tsx`: SVG feather quill logo — ✅ Built
-- `src/components/layout/Sidebar.tsx`: Sidebar with nav and recent tasks — ✅ Built
+- `src/components/HeroInput.tsx`: Animated typewriter hero input, submits to `/agent?q=` — ✅ Built
+- `src/components/layout/Sidebar.tsx`: Sidebar with nav, recent chats, guest login CTA — ✅ Built
 - `src/components/agent/ChatWindow.tsx`: Scrollable message list — ✅ Built
 - `src/components/agent/MessageBubble.tsx`: User/assistant message bubbles — ✅ Built
 - `src/components/agent/ToolCallCard.tsx`: Tool call status cards — ✅ Built
@@ -76,6 +87,7 @@ Current priorities:
 1. Replace env-based paid entitlements with a DB billing/subscription model
 2. Replace in-memory rate limiting with a distributed limiter
 3. Replace placeholder settings usage/billing stats with real data
+4. PWA offline support (service worker) — required before any app store submission
 
 ## Quick Start Guide
 

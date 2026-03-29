@@ -53,6 +53,16 @@
 - [ ] Add targeted indexes for verification lookups if usage grows
 - [ ] Add periodic cleanup policy for stale sessions/verifications
 
+## PWA & App Store
+
+- [ ] Add offline support via `next-pwa` or a custom service worker (app is currently dead offline)
+- [ ] Generate a maskable icon variant (logo with safe-zone padding) for Android adaptive icons, add `purpose: "maskable"` entry in `manifest.ts`
+- [ ] Generate `favicon.ico` from the SVG for legacy browser/OS compatibility
+- [ ] **Google Play Store**: wrap the PWA as a TWA (Trusted Web Activity) using Bubblewrap — requires offline support first
+- [ ] **Apple App Store**: wrap with Capacitor or Expo — Apple does not accept bare PWAs in the store
+- [ ] Move CI test env values to GitHub Secrets (currently hardcoded in workflow)
+- [ ] Run `scripts/generate-icons.mjs` whenever `public/favicon.svg` changes to keep PNGs in sync
+
 ## Release Readiness Checklist
 
 - [ ] Verify all required env vars are set in hosting platform

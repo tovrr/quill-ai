@@ -88,7 +88,21 @@ npm run db:studio  # Open Drizzle Studio
   "tailwindcss": "^4.1.17",
   "drizzle-kit": "^0.31.10",
   "eslint": "^9.39.1",
-  "eslint-config-next": "^16.0.0"
+  "eslint-config-next": "^16.0.0",
+  "sharp": "latest"             // SVG→PNG icon generation (scripts/generate-icons.mjs)
+}
+```
+
+### Optional Dependencies (cross-platform CI)
+
+Linux-native Rust binaries that Windows lockfiles never install. Listed in `optionalDependencies` and force-installed in CI:
+
+```json
+{
+  "lightningcss-linux-x64-gnu": "1.32.0",
+  "lightningcss-linux-x64-musl": "1.32.0",
+  "@tailwindcss/oxide-linux-x64-gnu": "4.2.2",
+  "@tailwindcss/oxide-linux-x64-musl": "4.2.2"
 }
 ```
 
@@ -98,6 +112,10 @@ npm run db:studio  # Open Drizzle Studio
 src/
   app/
     agent/page.tsx
+scripts/
+  generate-icons.mjs    # Renders public/favicon.svg → all PNG icon sizes via sharp
+                        # Re-run whenever favicon.svg changes
+```
     api/chat/route.ts
     api/chats/route.ts
     api/chats/[chatId]/route.ts

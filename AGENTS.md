@@ -1,3 +1,18 @@
+## ⚠️ HALLUCINATION RISK — Next.js 16
+
+This project uses **Next.js 16**. Most AI training data covers Next.js 13/14/15. Do NOT generate code based on older version assumptions for:
+
+- `middleware.ts` patterns and matchers
+- Proxy / rewrites in `next.config.ts`
+- `next/headers`, `next/cookies`, async APIs
+- API route conventions (`route.ts` App Router only — no `pages/api/`)
+- Turbopack-specific behavior
+- Metadata / viewport export signatures
+
+Always read the existing files in this repo to understand the actual patterns in use before writing new code.
+
+---
+
 ## Optional Feature Guides
 
 When users request features beyond the base template, check for available recipes in `.kilocode/recipes/`.
