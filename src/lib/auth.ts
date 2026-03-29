@@ -6,6 +6,10 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+if (!process.env.AUTH_SECRET) {
+  console.error("[auth] AUTH_SECRET environment variable is not set");
+}
+
 const hasGoogleCredentials =
   !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
@@ -13,6 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(db),
   session: { strategy: "jwt" },
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
