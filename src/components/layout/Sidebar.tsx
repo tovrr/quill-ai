@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
 import { SettingsModal } from "@/components/ui/SettingsModal";
 
@@ -13,13 +14,13 @@ const recentChats: { id: string; title: string }[] = [];
 
 const PINNED_KEY = "quill-pinned-chats";
 
-function KillerIcon({ accent, icon }: { accent: string; icon: string }) {
+function KillerIcon({ accent, iconKey }: { accent: string; iconKey: import("@/lib/killers").KillerIconKey }) {
   return (
     <div
-      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-[15px] leading-none"
-      style={{ background: `${accent}18`, border: `1px solid ${accent}35` }}
+      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+      style={{ background: `${accent}18`, border: `1px solid ${accent}35`, color: accent }}
     >
-      {icon}
+      <KillerSvgIcon iconKey={iconKey} size={16} />
     </div>
   );
 }
@@ -122,7 +123,7 @@ export function Sidebar() {
                 onClick={() => window.location.assign(`/agent?killer=${killer.id}`)}
                 className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-[#16161f] transition-all duration-150 text-left group"
               >
-                <KillerIcon accent={killer.accent} icon={killer.icon} />
+                <KillerIcon accent={killer.accent} iconKey={killer.iconKey} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-[#c8c8e0] group-hover:text-[#e8e8f0] truncate transition-colors">
                     {killer.name}

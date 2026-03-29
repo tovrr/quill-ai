@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
 
 export const metadata: Metadata = {
@@ -294,8 +295,8 @@ export default function HomePage() {
                 className="flex items-start gap-4 p-5 rounded-2xl border transition-all duration-200 group hover:scale-[1.02]"
                 style={{ borderColor: `${killer.accent}25`, background: `${killer.accent}06` }}
               >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl" style={{ background: `${killer.accent}18`, border: `1px solid ${killer.accent}35` }}>
-                  {killer.icon}
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${killer.accent}18`, border: `1px solid ${killer.accent}35`, color: killer.accent }}>
+                  <KillerSvgIcon iconKey={killer.iconKey} size={20} />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-[#e8e8f0] group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
@@ -321,7 +322,11 @@ export default function HomePage() {
             {[
               {
                 step: "1",
-                emoji: "💬",
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                ),
                 title: "Describe your goal",
                 desc: "Type anything in plain English. No special prompts, no setup — just tell Quill what you need.",
                 example: '"Research competitors and write a strategy doc"',
@@ -329,7 +334,12 @@ export default function HomePage() {
               },
               {
                 step: "2",
-                emoji: "⚙️",
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+                  </svg>
+                ),
                 title: "Quill plans & executes",
                 desc: "Quill breaks your goal into steps, picks the right tools, and autonomously works through each one.",
                 example: "Searching → Reading → Analyzing → Writing…",
@@ -337,7 +347,12 @@ export default function HomePage() {
               },
               {
                 step: "3",
-                emoji: "✅",
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 11 12 14 22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                ),
                 title: "Review & refine",
                 desc: "See every action taken, review the result, ask follow-up questions, or kick off the next task.",
                 example: '"Make it shorter and more aggressive in tone"',
@@ -358,8 +373,8 @@ export default function HomePage() {
                     {item.step}
                   </div>
 
-                  {/* Emoji */}
-                  <div className="text-4xl leading-none">{item.emoji}</div>
+                  {/* Icon */}
+                  <div style={{ color: item.color }}>{item.icon}</div>
 
                   <div>
                     <h3 className="text-lg font-bold text-[#e8e8f0] mb-2">{item.title}</h3>
@@ -403,15 +418,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-10 sm:mt-12 text-center">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#EF4444] text-sm font-semibold hover:bg-[rgba(239,68,68,0.18)] transition-all"
-            >
-              Try it yourself — free →
-            </Link>
-          </div>
         </div>
       </section>
 
