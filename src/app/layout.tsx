@@ -53,9 +53,7 @@ export const metadata: Metadata = {
 
   // Icons
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/apple-touch-icon.png",
-    shortcut: "/icons/icon-192.png",
+    icon: "/favicon.svg",
   },
 };
 
@@ -67,6 +65,7 @@ export default function RootLayout({
       <head>
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className={`${inter.variable} antialiased font-sans`}>
         <Providers>{children}</Providers>
