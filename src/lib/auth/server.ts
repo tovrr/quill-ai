@@ -9,12 +9,7 @@ function getAuth() {
       throw new Error("NEON_AUTH_BASE_URL must be set");
     }
 
-    _auth = createNeonAuth({
-      baseUrl,
-      cookies: {
-        secret: process.env.NEON_AUTH_COOKIE_SECRET ?? "quill-ai-default-secret-do-not-use-in-prod",
-      },
-    });
+    _auth = createNeonAuth({ baseUrl } as Parameters<typeof createNeonAuth>[0]);
   }
   return _auth;
 }
