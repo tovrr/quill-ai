@@ -48,7 +48,13 @@ jobs:
             sleep 1
           done
           echo "Server failed to start"
-          cat server.log
+          if [ -f server.log ]; then
+            cat server.log
+          else
+            echo "server.log not found"
+            ps aux | grep -E "next|node" || true
+            ls -la
+          fi
           exit 1
 
       - name: Run API smoke tests
@@ -56,7 +62,14 @@ jobs:
 
       - name: Print server log on failure
         if: failure()
-        run: cat server.log
+        run: |
+          if [ -f server.log ]; then
+            cat server.log
+          else
+            echo "server.log not found"
+            ps aux | grep -E "next|node" || true
+            ls -la
+          fi
 
       - name: Stop app
         if: always()
