@@ -153,10 +153,17 @@ export function Sidebar() {
       {/* ── History section ────────────────────────────────────────────── */}
       <div className="px-3 flex-1 min-h-0 overflow-y-auto">
         <button
-          onClick={() => setHistoryOpen((v) => !v)}
+          onClick={(e) => { e.stopPropagation(); setHistoryOpen((v) => !v); }}
           className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#6b6b8a] hover:text-[#a8a8c0] uppercase tracking-wider transition-all"
         >
-          <span>History</span>
+          <span className="flex items-center gap-1.5">
+            {/* History clock icon */}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            History
+          </span>
           <svg
             width="11"
             height="11"

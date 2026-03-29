@@ -54,18 +54,7 @@ export default function AgentPage() {
     sidebarHideTimer.current = setTimeout(() => setSidebarHovered(false), 200);
   }, []);
 
-  // Click-outside closes sidebar (when not pinned)
-  useEffect(() => {
-    if (!sidebarHovered || sidebarPinned) return;
-    const handler = (e: MouseEvent) => {
-      if (sidebarZoneRef.current && !sidebarZoneRef.current.contains(e.target as Node)) {
-        clearTimeout(sidebarHideTimer.current);
-        setSidebarHovered(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [sidebarHovered, sidebarPinned]);
+  // Sidebar closes on mouse-leave only (no click-outside handler — avoids closing on internal clicks)
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
