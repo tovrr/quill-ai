@@ -15,7 +15,6 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.53",
     "@ai-sdk/react": "^3.0.143",
-    "@neondatabase/auth": "^0.2.0-beta.1",
     "@neondatabase/serverless": "^1.0.2",
     "ai": "^6.0.141",
     "drizzle-orm": "^0.45.2",

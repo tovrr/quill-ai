@@ -2,6 +2,7 @@ import { google } from "@ai-sdk/google";
 import { streamText, stepCountIs } from "ai";
 import { z } from "zod";
 import { auth } from "@/lib/auth/server";
+import { headers as nextHeaders } from "next/headers";
 import { getKillerById } from "@/lib/killers";
 import {
   createChat,
@@ -62,7 +63,9 @@ Always be helpful, direct, and get things done.`;
 
 export async function POST(req: Request) {
   try {
-    const { data: sessionData } = await auth.getSession();
+    const sessionData = await auth.api.getSession({
+      headers: await nextHeaders(),
+    });
     const userId = sessionData?.user?.id ?? "guest";
     const {
       messages: incomingMessages,
