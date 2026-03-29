@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#EF4444"/>
-  <path d="M10 22L16 8L22 22" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <line x1="12.5" y1="18" x2="19.5" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <rect width="32" height="32" rx="6" fill="#0a0a0f"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#F87171"/>
+    </linearGradient>
+  </defs>
+  <!-- Feather quill shape -->
+  <path d="M26 4C20 4 10 10 8 24L12 20C14 14 20 10 26 4Z" fill="url(#g)" opacity="0.9"/>
+  <path d="M8 24C9 20 11 17 14 15L10 19L8 24Z" fill="url(#g)" opacity="0.6"/>
+  <!-- Quill tip -->
+  <path d="M8 24L6 28" stroke="url(#g)" stroke-width="2" stroke-linecap="round"/>
+  <!-- Spine -->
+  <path d="M26 4L8 24" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
 </svg>
