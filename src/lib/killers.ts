@@ -3,6 +3,7 @@ export type KillerIconKey = "code" | "flow" | "idea" | "research" | "pen";
 export interface Killer {
   id: string;
   name: string;
+  shortName: string;
   tagline: string;
   description: string;
   accent: string;
@@ -14,6 +15,7 @@ export const KILLERS: Killer[] = [
   {
     id: "coder",
     name: "Code Wizard",
+    shortName: "Code",
     tagline: "Full-stack engineering",
     description: "Expert programmer for any language or stack — writes, reviews, debugs, and architects code.",
     accent: "#EF4444",
@@ -38,6 +40,7 @@ Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, 
   {
     id: "productivity",
     name: "Flow Master",
+    shortName: "Flow",
     tagline: "Peak performance & focus",
     description: "Optimizes your workflows, habits, and systems — turns chaos into structured execution.",
     accent: "#10b981",
@@ -61,6 +64,7 @@ Areas of expertise: task management, focus systems, habit formation, meeting des
   {
     id: "brainstorm",
     name: "Idea Factory",
+    shortName: "Ideas",
     tagline: "Creative ideation & innovation",
     description: "Unlocks unconventional thinking — pushes beyond the obvious to generate breakthrough ideas.",
     accent: "#f59e0b",
@@ -85,6 +89,7 @@ Areas: product ideation, business models, marketing campaigns, creative projects
   {
     id: "researcher",
     name: "Deep Dive",
+    shortName: "Research",
     tagline: "Research & deep analysis",
     description: "Rigorous researcher who synthesizes complex information into clear, actionable insights.",
     accent: "#06b6d4",
@@ -109,6 +114,7 @@ Areas: market research, competitive analysis, academic topics, technology landsc
   {
     id: "writer",
     name: "Pen Master",
+    shortName: "Writer",
     tagline: "Writing & content creation",
     description: "Craft compelling narratives, sharp copy, and polished content for any audience or format.",
     accent: "#f472b6",

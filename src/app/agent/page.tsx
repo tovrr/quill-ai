@@ -275,7 +275,8 @@ export default function AgentPage() {
               style={{ borderColor: `${killer.accent}40`, background: `${killer.accent}12`, color: killer.accent }}
             >
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: killer.accent }} />
-              {killer.name}
+              <span className="sm:hidden">{killer.shortName}</span>
+              <span className="hidden md:inline">{killer.name}</span>
             </div>
           )}
 
@@ -293,14 +294,14 @@ export default function AgentPage() {
               onClick={handleShare}
               disabled={messages.length === 0}
               title="Copy share link"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {shareCopied ? (
                 <>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span className="hidden sm:inline">Copied</span>
+                  <span className="hidden md:inline">Copied</span>
                 </>
               ) : (
                 <>
@@ -311,7 +312,7 @@ export default function AgentPage() {
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                   </svg>
-                  <span className="hidden sm:inline">Share</span>
+                  <span className="hidden md:inline">Share</span>
                 </>
               )}
             </button>
@@ -319,13 +320,13 @@ export default function AgentPage() {
             {/* New chat */}
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
+              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span className="hidden sm:inline">New chat</span>
+              <span className="hidden md:inline">New chat</span>
             </button>
           </div>
         </header>
