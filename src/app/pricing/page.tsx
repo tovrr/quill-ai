@@ -64,7 +64,7 @@ export default function PricingPage() {
             </svg>
             Home
           </Link>
-          <Link href="/login" className="flex items-center h-8 px-3 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all">
+          <Link href="/login" className="flex items-center h-9 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-95">
             Try Free
           </Link>
         </div>
