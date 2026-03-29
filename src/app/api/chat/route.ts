@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { streamText, stepCountIs, createUIMessageStream, createUIMessageStreamResponse } from "ai";
+import { streamText, stepCountIs } from "ai";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -52,15 +52,15 @@ export async function POST(req: Request) {
       // Guest mode
     }
 
-    const { messages: incomingMessages, id, mode } = await req.json();
+    const { messages: incomingMessages, chatId, id: rawId, mode } = await req.json();
 
-    const chatId: string = id || crypto.randomUUID();
+    const id: string = chatId || rawId || crypto.randomUUID();
     const selectedMode: Mode = (mode as Mode) || "advanced";
 
     // Ensure chat exists
-    const existing = await getChatById(chatId);
+    const existing = await getChatById(id);
     if (!existing) {
-      await createChat(userId, "New chat", chatId);
+      await createChat(userId, "New chat", id);
     }
 
     // Save user message
@@ -74,44 +74,29 @@ export async function POST(req: Request) {
           ? lastUserMsg.content
           : JSON.stringify(lastUserMsg.content);
 
-      await saveMessage({ chatId, role: "user", content });
+      await saveMessage({ chatId: id, role: "user", content });
 
       if (
         (incomingMessages || []).filter((m: { role: string }) => m.role === "user")
           .length === 1
       ) {
-        await updateChatTitle(chatId, content.slice(0, 60));
+        await updateChatTitle(id, content.slice(0, 60));
       }
     }
 
-    const stream = createUIMessageStream({
-      execute: ({ writer }) => {
-        const result = streamText({
-          model: getModel(selectedMode),
-          system: SYSTEM_PROMPT,
-          messages: incomingMessages,
-          stopWhen: stepCountIs(5),
-        });
-
-        writer.merge(result.toUIMessageStream());
-      },
-      onFinish: async ({ messages }) => {
-        for (const msg of messages) {
-          if (msg.role === "assistant") {
-            const parts = msg.parts || [];
-            const text = parts
-              .filter((p): p is { type: "text"; text: string } => p.type === "text")
-              .map((p) => p.text)
-              .join("");
-            if (text) {
-              await saveMessage({ chatId, role: "assistant", content: text });
-            }
-          }
+    const result = streamText({
+      model: getModel(selectedMode),
+      system: SYSTEM_PROMPT,
+      messages: incomingMessages,
+      stopWhen: stepCountIs(5),
+      onFinish: async ({ text }) => {
+        if (text) {
+          await saveMessage({ chatId: id, role: "assistant", content: text });
         }
       },
     });
 
-    return createUIMessageStreamResponse({ stream });
+    return result.toTextStreamResponse();
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";
