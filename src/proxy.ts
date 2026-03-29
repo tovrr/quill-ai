@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Protected routes — require authentication
-const PROTECTED = ["/agent"];
+// Routes that REQUIRE authentication (strictly protected)
+// /agent is intentionally NOT here — guest access is allowed by design
+const PROTECTED = ["/settings", "/billing"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
