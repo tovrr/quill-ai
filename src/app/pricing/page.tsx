@@ -65,7 +65,7 @@ export default function PricingPage() {
             Home
           </Link>
           <Link href="/login" className="flex items-center h-8 px-3 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all">
-            Get started free
+            Try Free
           </Link>
         </div>
       </nav>
