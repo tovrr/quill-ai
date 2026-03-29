@@ -217,8 +217,6 @@ export function TaskInput({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 dropdownOpen
                   ? "bg-[#1e1e2e] text-[#e8e8f0]"
-                  : webSearchEnabled
-                  ? "text-[#34d399] bg-[rgba(52,211,153,0.08)] hover:bg-[rgba(52,211,153,0.12)]"
                   : "text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e]"
               }`}
             >
