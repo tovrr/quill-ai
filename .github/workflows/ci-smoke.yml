@@ -42,7 +42,9 @@ jobs:
         run: npm install
 
       - name: Install Linux native modules
-        run: npm install --no-save lightningcss@1.32.0 && npm install --no-save @next/swc-linux-x64-gnu @next/swc-linux-x64-musl || true
+        run: |
+          npm install --no-save lightningcss@1.32.0 @tailwindcss/oxide@4.2.2 || true
+          npm install --no-save @next/swc-linux-x64-gnu @next/swc-linux-x64-musl || true
 
       - name: Build app
         run: npm run build

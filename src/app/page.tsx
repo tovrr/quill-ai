@@ -122,25 +122,25 @@ const stats = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e8e8f0] overflow-x-hidden">
+    <div className="min-h-screen bg-quill-bg text-quill-text overflow-x-hidden">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-[#1e1e2e]">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-quill-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <QuillLogo size={24} />
             <span className="text-base font-semibold gradient-text tracking-tight">Quill AI</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-6 text-sm text-[#6b6b8a]">
-            <a href="#features" className="hover:text-[#e8e8f0] transition-colors">Features</a>
-            <a href="#agents" className="hover:text-[#e8e8f0] transition-colors">Agents</a>
-            <a href="#how-it-works" className="hover:text-[#e8e8f0] transition-colors">How it works</a>
+          <div className="hidden md:flex items-center gap-6 text-sm text-quill-muted">
+            <a href="#features" className="hover:text-quill-text transition-colors">Features</a>
+            <a href="#agents" className="hover:text-quill-text transition-colors">Agents</a>
+            <a href="#how-it-works" className="hover:text-quill-text transition-colors">How it works</a>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="flex items-center h-9 px-3 rounded-xl text-sm text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e] transition-all hidden sm:flex"
+              className="max-sm:hidden flex items-center h-9 px-3 rounded-xl text-sm text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
             >
               Sign in
             </Link>
@@ -157,7 +157,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 flex flex-col items-center text-center overflow-hidden">
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] sm:w-[800px] h-[400px] sm:h-[500px] rounded-full opacity-20 pointer-events-none"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-150 sm:w-200 h-100 sm:h-125 rounded-full opacity-20 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at center, rgba(239,68,68,0.6) 0%, transparent 70%)", filter: "blur(60px)" }}
         />
 
@@ -173,7 +173,7 @@ export default function HomePage() {
           That Gets Things Done
         </h1>
 
-        <p className="relative mt-5 sm:mt-6 text-base sm:text-xl text-[#6b6b8a] max-w-2xl leading-relaxed px-2">
+        <p className="relative mt-5 sm:mt-6 text-base sm:text-xl text-quill-muted max-w-2xl leading-relaxed px-2">
           Quill researches, writes, codes, and executes complex tasks autonomously.
           Give it a goal — it figures out the rest.
         </p>
@@ -193,7 +193,7 @@ export default function HomePage() {
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-2xl sm:text-3xl font-bold gradient-text">{stat.value}</div>
-              <div className="text-xs text-[#6b6b8a] mt-1">{stat.label}</div>
+              <div className="text-xs text-quill-muted mt-1">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -201,13 +201,13 @@ export default function HomePage() {
 
       {/* Demo preview */}
       <section className="px-4 sm:px-6 pb-16 sm:pb-24 max-w-5xl mx-auto">
-        <div className="relative rounded-2xl sm:rounded-3xl border border-[#1e1e2e] bg-[#0d0d15] overflow-hidden shadow-2xl shadow-black/50">
-          <div className="flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 border-b border-[#1e1e2e] bg-[#0a0a0f]">
+        <div className="relative rounded-2xl sm:rounded-3xl border border-quill-border bg-quill-surface-2 overflow-hidden shadow-2xl shadow-black/50">
+          <div className="flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 border-b border-quill-border bg-quill-bg">
             <div className="w-3 h-3 rounded-full bg-[#f87171]/60" />
-            <div className="w-3 h-3 rounded-full bg-[#fbbf24]/60" />
-            <div className="w-3 h-3 rounded-full bg-[#34d399]/60" />
+            <div className="w-3 h-3 rounded-full bg-quill-yellow/60" />
+            <div className="w-3 h-3 rounded-full bg-quill-green/60" />
             <div className="flex-1 flex items-center justify-center">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#111118] border border-[#1e1e2e] text-xs text-[#6b6b8a]">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-quill-surface border border-quill-border text-xs text-quill-muted">
                 <QuillLogo size={12} />
                 quill.ai/agent
               </div>
@@ -220,7 +220,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
                 <QuillLogo size={16} />
               </div>
               <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -229,10 +229,10 @@ export default function HomePage() {
                   { tool: "Browser", desc: "Reading TechCrunch, Forbes, Crunchbase...", status: "done", color: "#34d399" },
                   { tool: "Analyze", desc: "Synthesizing competitive data", status: "running", color: "#EF4444" },
                 ].map((t) => (
-                  <div key={t.tool} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#1e1e2e] bg-[#111118] text-xs min-w-0">
+                  <div key={t.tool} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-quill-border bg-quill-surface text-xs min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.color }} />
-                    <span className="font-semibold text-[#e8e8f0] shrink-0">{t.tool}</span>
-                    <span className="text-[#6b6b8a] truncate hidden sm:block">{t.desc}</span>
+                    <span className="font-semibold text-quill-text shrink-0">{t.tool}</span>
+                    <span className="text-quill-muted truncate hidden sm:block">{t.desc}</span>
                     {t.status === "running" && (
                       <span className="ml-auto text-[#EF4444] text-[10px] font-medium bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-full shrink-0">
                         Running
@@ -250,25 +250,25 @@ export default function HomePage() {
       <section id="features" className="px-4 sm:px-6 py-16 sm:py-24 max-w-6xl mx-auto">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Everything your AI agent needs</h2>
-          <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg max-w-xl mx-auto">
+          <p className="mt-4 text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
             Quill is equipped with a powerful toolkit to handle any task you throw at it.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {capabilities.map((cap) => (
-            <div key={cap.title} className="p-5 sm:p-6 rounded-2xl border border-[#1e1e2e] bg-[#0d0d15] hover:border-[#2a2a3e] transition-all duration-200 group">
+            <div key={cap.title} className="p-5 sm:p-6 rounded-2xl border border-quill-border bg-quill-surface-2 hover:border-quill-border-2 transition-all duration-200 group">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all group-hover:scale-110" style={{ background: `${cap.color}15`, color: cap.color }}>
                 {cap.icon}
               </div>
-              <h3 className="font-semibold text-[#e8e8f0] mb-2">{cap.title}</h3>
-              <p className="text-sm text-[#6b6b8a] leading-relaxed">{cap.description}</p>
+              <h3 className="font-semibold text-quill-text mb-2">{cap.title}</h3>
+              <p className="text-sm text-quill-muted leading-relaxed">{cap.description}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Specialist Agents */}
-      <section id="agents" className="px-4 sm:px-6 py-16 sm:py-24 bg-[#0d0d15] border-y border-[#1e1e2e]">
+      <section id="agents" className="px-4 sm:px-6 py-16 sm:py-24 bg-quill-surface-2 border-y border-quill-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] text-[#F87171] text-xs font-medium mb-4">
@@ -276,7 +276,7 @@ export default function HomePage() {
               Specialist Agents
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Switch to the right expert instantly</h2>
-            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg max-w-xl mx-auto">
+            <p className="mt-4 text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
               Each agent is fine-tuned for a specific domain — no prompt engineering required.
             </p>
           </div>
@@ -292,8 +292,8 @@ export default function HomePage() {
                   <KillerSvgIcon iconKey={killer.iconKey} size={20} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-[#e8e8f0] group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
-                  <p className="text-sm text-[#6b6b8a] mt-0.5">{killer.tagline}</p>
+                  <p className="font-semibold text-quill-text group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
+                  <p className="text-sm text-quill-muted mt-0.5">{killer.tagline}</p>
                   <p className="text-xs text-[#4a4a6a] mt-1.5 leading-relaxed line-clamp-2">{killer.description}</p>
                 </div>
               </Link>
@@ -307,7 +307,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">How Quill works</h2>
-            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg">From idea to done — in three steps.</p>
+            <p className="mt-4 text-quill-muted text-base sm:text-lg">From idea to done — in three steps.</p>
           </div>
 
           {/* Steps — vertical on mobile, horizontal on desktop */}
@@ -338,7 +338,7 @@ export default function HomePage() {
               <div key={item.step} className="flex flex-col md:flex-row md:flex-1 items-stretch">
                 {/* Card */}
                 <div
-                  className="flex-1 relative flex flex-col gap-4 p-6 sm:p-7 rounded-2xl border bg-[#0d0d15] transition-all duration-200 hover:scale-[1.01]"
+                  className="flex-1 relative flex flex-col gap-4 p-6 sm:p-7 rounded-2xl border bg-quill-surface-2 transition-all duration-200 hover:scale-[1.01]"
                   style={{ borderColor: `${item.color}30` }}
                 >
                   {/* Step badge */}
@@ -350,13 +350,13 @@ export default function HomePage() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-[#e8e8f0] mb-2">{item.title}</h3>
-                    <p className="text-sm text-[#6b6b8a] leading-relaxed">{item.desc}</p>
+                    <h3 className="text-lg font-bold text-quill-text mb-2">{item.title}</h3>
+                    <p className="text-sm text-quill-muted leading-relaxed">{item.desc}</p>
                   </div>
 
                   {/* Example callout */}
                   <div
-                    className="mt-auto pt-4 border-t text-xs font-mono text-[#6b6b8a] italic leading-relaxed"
+                    className="mt-auto pt-4 border-t text-xs font-mono text-quill-muted italic leading-relaxed"
                     style={{ borderColor: `${item.color}20` }}
                   >
                     {item.example}
@@ -394,7 +394,7 @@ export default function HomePage() {
           <div className="mt-10 sm:mt-12 text-center">
             <Link
               href="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl border border-[#1e1e2e] hover:border-[#2a2a3e] text-[#a8a8c0] hover:text-[#e8e8f0] font-medium text-base transition-all"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl border border-quill-border hover:border-quill-border-2 text-quill-text-2 hover:text-quill-text font-medium text-base transition-all"
             >
               See Pricings
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -408,25 +408,25 @@ export default function HomePage() {
       </section>
 
       {/* Example tasks */}
-      <section id="examples" className="px-4 sm:px-6 py-16 sm:py-24 bg-[#0d0d15] border-y border-[#1e1e2e]">
+      <section id="examples" className="px-4 sm:px-6 py-16 sm:py-24 bg-quill-surface-2 border-y border-quill-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">What can you ask Quill?</h2>
-            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg">Real tasks real people are running right now.</p>
+            <p className="mt-4 text-quill-muted text-base sm:text-lg">Real tasks real people are running right now.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {exampleTasks.map((task) => (
               <Link
                 key={task}
                 href="/login"
-                className="flex items-center gap-4 px-4 sm:px-5 py-4 rounded-2xl border border-[#1e1e2e] bg-[#0a0a0f] hover:border-[rgba(239,68,68,0.4)] hover:bg-[rgba(239,68,68,0.04)] transition-all duration-200 group text-left"
+                className="flex items-center gap-4 px-4 sm:px-5 py-4 rounded-2xl border border-quill-border bg-quill-bg hover:border-[rgba(239,68,68,0.4)] hover:bg-[rgba(239,68,68,0.04)] transition-all duration-200 group text-left"
               >
                 <div className="w-8 h-8 rounded-xl bg-[rgba(239,68,68,0.1)] flex items-center justify-center shrink-0 text-[#EF4444] group-hover:bg-[rgba(239,68,68,0.2)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="5 3 19 12 5 21 5 3" />
                   </svg>
                 </div>
-                <p className="text-sm text-[#a8a8c0] group-hover:text-[#e8e8f0] transition-colors leading-snug">{task}</p>
+                <p className="text-sm text-quill-text-2 group-hover:text-quill-text transition-colors leading-snug">{task}</p>
               </Link>
             ))}
           </div>
@@ -440,7 +440,7 @@ export default function HomePage() {
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
             Start your first task <span className="gradient-text">now</span>
           </h2>
-          <p className="text-[#6b6b8a] text-base sm:text-lg mb-8 sm:mb-10">
+          <p className="text-quill-muted text-base sm:text-lg mb-8 sm:mb-10">
             No setup. No credit card. Just describe what you need and let Quill handle the rest.
           </p>
           <Link
@@ -454,18 +454,18 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#1e1e2e] px-4 sm:px-6 py-8">
+      <footer className="border-t border-quill-border px-4 sm:px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <QuillLogo size={18} />
             <span className="text-sm font-semibold gradient-text">Quill AI</span>
           </div>
-          <p className="text-xs text-[#6b6b8a] text-center">© 2026 Quill AI. Your personal AI agent.</p>
-          <div className="flex gap-5 text-xs text-[#6b6b8a]">
-            <Link href="/pricing" className="hover:text-[#e8e8f0] transition-colors">Pricing</Link>
-            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
-            <Link href="/privacy" className="hover:text-[#e8e8f0] transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-[#e8e8f0] transition-colors">Terms</Link>
+          <p className="text-xs text-quill-muted text-center">© 2026 Quill AI. Your personal AI agent.</p>
+          <div className="flex gap-5 text-xs text-quill-muted">
+            <Link href="/pricing" className="hover:text-quill-text transition-colors">Pricing</Link>
+            <Link href="/docs" className="hover:text-quill-text transition-colors">Docs</Link>
+            <Link href="/privacy" className="hover:text-quill-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-quill-text transition-colors">Terms</Link>
           </div>
         </div>
       </footer>

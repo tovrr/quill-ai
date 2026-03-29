@@ -65,7 +65,7 @@ export function HeroInput() {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
           placeholder={isTyping ? displayed + "▌" : displayed}
-          className="flex-1 bg-transparent px-5 py-4 text-sm sm:text-base text-[#e8e8f0] placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0"
+          className="flex-1 bg-transparent px-5 py-4 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0"
           autoComplete="off"
           spellCheck="false"
           aria-label="Describe your task"
@@ -83,7 +83,7 @@ export function HeroInput() {
           </button>
         </div>
       </div>
-      <p className="mt-3 text-center text-xs text-[#4a4a6a]">
+      <p className="mt-3 text-center text-xs text-quill-muted-2">
         No account needed · Free to start · No credit card
       </p>
     </form>
