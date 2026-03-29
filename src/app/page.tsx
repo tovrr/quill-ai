@@ -134,7 +134,6 @@ export default function HomePage() {
             <a href="#features" className="hover:text-[#e8e8f0] transition-colors">Features</a>
             <a href="#agents" className="hover:text-[#e8e8f0] transition-colors">Agents</a>
             <a href="#how-it-works" className="hover:text-[#e8e8f0] transition-colors">How it works</a>
-            <a href="#pricing" className="hover:text-[#e8e8f0] transition-colors">Pricing</a>
           </div>
 
           <div className="flex items-center gap-2">
@@ -448,120 +447,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="px-4 sm:px-6 py-16 sm:py-24 bg-[#0d0d15] border-y border-[#1e1e2e]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Simple, honest pricing</h2>
-            <p className="mt-4 text-[#6b6b8a] text-base sm:text-lg">Start free. Upgrade when you need more.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-start">
-            {/* Free */}
-            <div className="flex flex-col p-6 rounded-2xl border border-[#1e1e2e] bg-[#0a0a0f]">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#6b6b8a] mb-3">Free</p>
-              <div className="flex items-end gap-1 mb-1">
-                <span className="text-4xl font-black text-[#e8e8f0]">$0</span>
-                <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
-              </div>
-              <p className="text-xs text-[#4a4a6a] mb-6">No credit card required</p>
-              <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[#1e1e2e] text-sm font-medium text-[#a8a8c0] hover:border-[#2a2a3e] hover:text-[#e8e8f0] transition-all mb-6">
-                Get started
-              </Link>
-              <ul className="space-y-3">
-                {[
-                  "50 messages / month",
-                  "Fast model only",
-                  "1 specialist agent",
-                  "7-day chat history",
-                  "No web search",
-                  "No image generation",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-[#6b6b8a]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Silver — most popular */}
-            <div className="flex flex-col p-6 rounded-2xl border-2 border-[#EF4444] bg-[#0a0a0f] relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#EF4444] text-white text-[11px] font-bold tracking-wide whitespace-nowrap">
-                MOST POPULAR
-              </div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Silver</p>
-              <div className="flex items-end gap-1 mb-1">
-                <span className="text-4xl font-black text-[#e8e8f0]">$12</span>
-                <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
-              </div>
-              <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
-              <Link href="/login" className="flex items-center justify-center h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all mb-6">
-                Start Silver
-              </Link>
-              <ul className="space-y-3">
-                {[
-                  "1,000 messages / month",
-                  "Fast + Think models",
-                  "All 5 specialist agents",
-                  "90-day chat history",
-                  "Web search included",
-                  "20 image generations / mo",
-                  "File uploads",
-                  "Canvas mode",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Gold */}
-            <div className="flex flex-col p-6 rounded-2xl border border-[rgba(251,191,36,0.3)] bg-[#0a0a0f]" style={{ boxShadow: "0 0 40px rgba(251,191,36,0.04)" }}>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Gold</p>
-              <div className="flex items-end gap-1 mb-1">
-                <span className="text-4xl font-black text-[#e8e8f0]">$29</span>
-                <span className="text-sm text-[#6b6b8a] mb-1">/mo</span>
-              </div>
-              <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
-              <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[rgba(251,191,36,0.4)] text-[#f59e0b] text-sm font-semibold hover:bg-[rgba(251,191,36,0.08)] transition-all mb-6">
-                Start Gold
-              </Link>
-              <ul className="space-y-3">
-                {[
-                  "Unlimited messages",
-                  "Fast + Think + Pro models",
-                  "All 5 specialist agents",
-                  "Unlimited chat history",
-                  "Web search included",
-                  "Unlimited image generation",
-                  "File uploads",
-                  "Canvas mode",
-                  "Priority processing speed",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <p className="text-center text-xs text-[#4a4a6a] mt-8">
-            All plans include a 7-day free trial of Silver. No charge until the trial ends.
-          </p>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="border-t border-[#1e1e2e] px-4 sm:px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -571,9 +456,10 @@ export default function HomePage() {
           </div>
           <p className="text-xs text-[#6b6b8a] text-center">© 2026 Quill AI. Your personal AI agent.</p>
           <div className="flex gap-5 text-xs text-[#6b6b8a]">
+            <Link href="/pricing" className="hover:text-[#e8e8f0] transition-colors">Pricing</Link>
+            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
             <Link href="/privacy" className="hover:text-[#e8e8f0] transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-[#e8e8f0] transition-colors">Terms</Link>
-            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
           </div>
         </div>
       </footer>
