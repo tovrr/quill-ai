@@ -61,139 +61,149 @@ When asked to create a website, landing page, web page, UI, app interface, compo
 Always be helpful, direct, and get things done.`;
 
 export async function POST(req: Request) {
-  const session = await auth();
-  const {
-    messages: incomingMessages,
-    chatId,
-    id: rawChatId,
-    mode,
-    killerId,
-    webSearch,
-  } = await req.json();
+  try {
+    const session = await auth();
+    const {
+      messages: incomingMessages,
+      chatId,
+      id: rawChatId,
+      mode,
+      killerId,
+      webSearch,
+    } = await req.json();
 
-  // Allow guest mode
-  const userId = session?.user?.id ?? "guest";
+    // Allow guest mode
+    const userId = session?.user?.id ?? "guest";
 
-  // Support both chatId (legacy) and id (AI SDK default) field names
-  const chatIdInput: string = chatId || rawChatId || "";
+    // Support both chatId (legacy) and id (AI SDK default) field names
+    const chatIdInput: string = chatId || rawChatId || "";
 
-  // Ensure chat exists in DB
-  let resolvedChatId: string = chatIdInput;
-  if (chatIdInput) {
-    const existing = await getChatById(chatIdInput);
-    if (!existing) {
-      await createChat(userId, "New chat", chatIdInput);
+    // Ensure chat exists in DB
+    let resolvedChatId: string = chatIdInput;
+    if (chatIdInput) {
+      const existing = await getChatById(chatIdInput);
+      if (!existing) {
+        await createChat(userId, "New chat", chatIdInput);
+      }
+    } else {
+      const chat = await createChat(userId, "New chat");
+      resolvedChatId = chat.id;
     }
-  } else {
-    const chat = await createChat(userId, "New chat");
-    resolvedChatId = chat.id;
-  }
 
-  // Save the latest user message
-  const lastUserMsg = [...incomingMessages]
-    .reverse()
-    .find((m: { role: string }) => m.role === "user");
+    // Save the latest user message
+    const lastUserMsg = [...incomingMessages]
+      .reverse()
+      .find((m: { role: string }) => m.role === "user");
 
-  if (lastUserMsg) {
-    await saveMessage({
-      chatId: resolvedChatId,
-      role: "user",
-      content:
-        typeof lastUserMsg.content === "string"
-          ? lastUserMsg.content
-          : JSON.stringify(lastUserMsg.content),
+    if (lastUserMsg) {
+      await saveMessage({
+        chatId: resolvedChatId,
+        role: "user",
+        content:
+          typeof lastUserMsg.content === "string"
+            ? lastUserMsg.content
+            : JSON.stringify(lastUserMsg.content),
+      });
+
+      // Auto-title from first user message
+      if (
+        incomingMessages.filter((m: { role: string }) => m.role === "user")
+          .length === 1
+      ) {
+        const title = (
+          typeof lastUserMsg.content === "string"
+            ? lastUserMsg.content
+            : "New chat"
+        ).slice(0, 60);
+        await updateChatTitle(resolvedChatId, title);
+      }
+    }
+
+    const selectedMode: Mode = (mode as Mode) || "advanced";
+
+    // Use killer's system prompt if a killer agent is selected
+    const killer = killerId ? getKillerById(killerId as string) : undefined;
+    const activeSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
+
+    const result = streamText({
+      model: getModel(selectedMode),
+      system: activeSystemPrompt,
+      messages: incomingMessages,
+      stopWhen: stepCountIs(5),
+      ...(selectedMode === "thinking"
+        ? { providerOptions: { google: { thinkingConfig: { thinkingBudget: 8000 } } } }
+        : {}),
+      tools: {
+        // Real Google Search grounding — only active when user enables web search
+        ...(webSearch ? { google_search: google.tools.googleSearch({}) } : {}),
+        analyzeData: {
+          description:
+            "Analyze structured data or text and extract key insights",
+          inputSchema: z.object({
+            data: z.string().describe("The data or text to analyze"),
+            focus: z
+              .string()
+              .optional()
+              .describe("What aspect to focus the analysis on"),
+          }),
+          execute: async ({
+            data,
+            focus,
+          }: {
+            data: string;
+            focus?: string;
+          }) => ({
+            status: "analyzed",
+            dataLength: data.length,
+            focus: focus ?? "general",
+            note: "Analysis performed by Quill AI reasoning engine.",
+          }),
+        },
+        createDocument: {
+          description:
+            "Create a structured document (report, plan, outline, email, blog post, etc.)",
+          inputSchema: z.object({
+            title: z.string().describe("Document title"),
+            type: z
+              .enum(["report", "plan", "outline", "email", "blog", "other"])
+              .describe("Type of document to create"),
+          }),
+          execute: async ({
+            title,
+            type,
+          }: {
+            title: string;
+            type: "report" | "plan" | "outline" | "email" | "blog" | "other";
+          }) => ({
+            status: "created",
+            title,
+            type,
+            note: `Document '${title}' scaffold ready. Content will follow in the response.`,
+          }),
+        },
+      },
+      onFinish: async ({ text }: { text: string }) => {
+        if (text) {
+          await saveMessage({
+            chatId: resolvedChatId,
+            role: "assistant",
+            content: text,
+          });
+        }
+      },
     });
 
-    // Auto-title from first user message
-    if (
-      incomingMessages.filter((m: { role: string }) => m.role === "user")
-        .length === 1
-    ) {
-      const title = (
-        typeof lastUserMsg.content === "string"
-          ? lastUserMsg.content
-          : "New chat"
-      ).slice(0, 60);
-      await updateChatTitle(resolvedChatId, title);
-    }
+    const response = result.toTextStreamResponse();
+    const headers = new Headers(response.headers);
+    headers.set("x-chat-id", resolvedChatId);
+    return new Response(response.body, { headers, status: response.status });
+  } catch (error) {
+    console.error("Chat API error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-
-  const selectedMode: Mode = (mode as Mode) || "advanced";
-
-  // Use killer's system prompt if a killer agent is selected
-  const killer = killerId ? getKillerById(killerId as string) : undefined;
-  const activeSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
-
-  const result = streamText({
-    model: getModel(selectedMode),
-    system: activeSystemPrompt,
-    messages: incomingMessages,
-    stopWhen: stepCountIs(5),
-    ...(selectedMode === "thinking"
-      ? { providerOptions: { google: { thinkingConfig: { thinkingBudget: 8000 } } } }
-      : {}),
-    tools: {
-      // Real Google Search grounding — only active when user enables web search
-      ...(webSearch ? { google_search: google.tools.googleSearch({}) } : {}),
-      analyzeData: {
-        description:
-          "Analyze structured data or text and extract key insights",
-        inputSchema: z.object({
-          data: z.string().describe("The data or text to analyze"),
-          focus: z
-            .string()
-            .optional()
-            .describe("What aspect to focus the analysis on"),
-        }),
-        execute: async ({
-          data,
-          focus,
-        }: {
-          data: string;
-          focus?: string;
-        }) => ({
-          status: "analyzed",
-          dataLength: data.length,
-          focus: focus ?? "general",
-          note: "Analysis performed by Quill AI reasoning engine.",
-        }),
-      },
-      createDocument: {
-        description:
-          "Create a structured document (report, plan, outline, email, blog post, etc.)",
-        inputSchema: z.object({
-          title: z.string().describe("Document title"),
-          type: z
-            .enum(["report", "plan", "outline", "email", "blog", "other"])
-            .describe("Type of document to create"),
-        }),
-        execute: async ({
-          title,
-          type,
-        }: {
-          title: string;
-          type: "report" | "plan" | "outline" | "email" | "blog" | "other";
-        }) => ({
-          status: "created",
-          title,
-          type,
-          note: `Document '${title}' scaffold ready. Content will follow in the response.`,
-        }),
-      },
-    },
-    onFinish: async ({ text }: { text: string }) => {
-      if (text) {
-        await saveMessage({
-          chatId: resolvedChatId,
-          role: "assistant",
-          content: text,
-        });
-      }
-    },
-  });
-
-  const response = result.toTextStreamResponse();
-  const headers = new Headers(response.headers);
-  headers.set("x-chat-id", resolvedChatId);
-  return new Response(response.body, { headers, status: response.status });
 }

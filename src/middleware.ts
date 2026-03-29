@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 // /agent is intentionally NOT here — guest access is allowed by design
 const PROTECTED = ["/settings", "/billing"];
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED.some(
