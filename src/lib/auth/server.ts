@@ -1,24 +1,32 @@
-import { createNeonAuth } from "@neondatabase/auth/next/server";
+import type { createNeonAuth } from "@neondatabase/auth/next/server";
 
-let _auth: ReturnType<typeof createNeonAuth> | null = null;
+type NeonAuth = ReturnType<typeof createNeonAuth>;
 
-function getAuth() {
+let _auth: NeonAuth | undefined;
+
+function getAuth(): NeonAuth {
   if (!_auth) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return {} as NeonAuth;
+    }
+
     const baseUrl = process.env.NEON_AUTH_BASE_URL;
     if (!baseUrl) {
       throw new Error("NEON_AUTH_BASE_URL must be set");
     }
 
-    _auth = createNeonAuth({ baseUrl } as Parameters<typeof createNeonAuth>[0]);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require("@neondatabase/auth/next/server") as { createNeonAuth: typeof createNeonAuth };
+    _auth = mod.createNeonAuth({ baseUrl } as Parameters<typeof createNeonAuth>[0]);
   }
   return _auth;
 }
 
-// Proxy so auth.handler(), auth.getSession(), etc. work lazily
-export const auth = new Proxy({} as ReturnType<typeof createNeonAuth>, {
+export const auth = new Proxy({} as NeonAuth, {
   get(_target, prop) {
     const instance = getAuth();
-    const value = Reflect.get(instance, prop);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const value = (instance as any)[prop];
     if (typeof value === "function") return value.bind(instance);
     return value;
   },
