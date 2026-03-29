@@ -3,6 +3,7 @@ import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
+import { HeroInput } from "@/components/HeroInput";
 
 export const metadata: Metadata = {
   title: "Quill AI — Your Personal AI Agent That Gets Things Done",
@@ -177,22 +178,14 @@ export default function HomePage() {
           Give it a goal — it figures out the rest.
         </p>
 
-        <div className="relative flex flex-col sm:flex-row items-center gap-3 mt-8 sm:mt-10 w-full sm:w-auto px-4 sm:px-0">
-          <Link
-            href="/login"
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold text-base transition-all shadow-xl shadow-[rgba(239,68,68,0.3)] active:scale-95"
-          >
-            Start for free
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-            </svg>
-          </Link>
-          <a
-            href="#how-it-works"
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl border border-[#1e1e2e] hover:border-[#2a2a3e] text-[#a8a8c0] hover:text-[#e8e8f0] font-medium text-base transition-all"
-          >
-            See how it works
-          </a>
+        <div className="relative flex flex-col items-center gap-4 mt-8 sm:mt-10 w-full px-4 sm:px-0">
+          <HeroInput />
+          <p className="text-xs text-[#4a4a6a]">
+            Already have an account?{" "}
+            <Link href="/login" className="text-[#F87171] hover:text-[#fca5a5] transition-colors">
+              Sign in
+            </Link>
+          </p>
         </div>
 
         {/* Stats */}

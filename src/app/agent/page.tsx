@@ -77,6 +77,21 @@ export default function AgentPage() {
     onError: () => setAgentStatus("error"),
   });
 
+  // Auto-send task from ?q= query param (e.g. from homepage hero input)
+  const heroTaskFiredRef = useRef(false);
+  useEffect(() => {
+    if (heroTaskFiredRef.current) return;
+    const q = getSearchParam("q");
+    if (!q) return;
+    heroTaskFiredRef.current = true;
+    // Small delay so useChat transport is initialised
+    setTimeout(() => {
+      setAgentStatus("thinking");
+      sendMessage({ text: q });
+    }, 120);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Resolve client entitlements to gate mode options for guest/free users.
   useEffect(() => {
     const loadEntitlements = async () => {
