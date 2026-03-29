@@ -3,12 +3,14 @@ import { auth } from "@/lib/auth/server";
 
 export const dynamic = "force-dynamic";
 
-const handler = auth.handler();
+function getHandler() {
+  return auth.handler();
+}
 
 export async function GET(request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   try {
+    const handler = getHandler();
     const params = await ctx.params;
-    console.log("[auth GET]", request.url, "path:", params.path);
     return handler.GET(request, { params: Promise.resolve(params) });
   } catch (err) {
     console.error("[auth GET] error:", err);
@@ -21,6 +23,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ path: strin
 
 export async function POST(request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   try {
+    const handler = getHandler();
     const params = await ctx.params;
     const body = await request.clone().json().catch(() => ({}));
     console.log("[auth POST]", request.url, "path:", params.path, "body keys:", Object.keys(body));
@@ -36,6 +39,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ path: stri
 
 export async function PUT(request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   try {
+    const handler = getHandler();
     const params = await ctx.params;
     return handler.PUT(request, { params: Promise.resolve(params) });
   } catch (err) {
@@ -46,6 +50,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ path: strin
 
 export async function DELETE(request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   try {
+    const handler = getHandler();
     const params = await ctx.params;
     return handler.DELETE(request, { params: Promise.resolve(params) });
   } catch (err) {
@@ -56,6 +61,7 @@ export async function DELETE(request: Request, ctx: { params: Promise<{ path: st
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   try {
+    const handler = getHandler();
     const params = await ctx.params;
     return handler.PATCH(request, { params: Promise.resolve(params) });
   } catch (err) {
