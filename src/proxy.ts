@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+export const runtime = "edge";
+
 // Routes that REQUIRE authentication (strictly protected)
 // /agent is intentionally NOT here — guest access is allowed by design
 const PROTECTED = ["/settings", "/billing"];
