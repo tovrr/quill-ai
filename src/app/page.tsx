@@ -147,7 +147,7 @@ export default function HomePage() {
               href="/login"
               className="flex items-center h-9 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-95"
             >
-              Try Free
+              Get Started Free
             </Link>
           </div>
         </div>

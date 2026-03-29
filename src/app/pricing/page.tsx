@@ -57,7 +57,13 @@ export default function PricingPage() {
           <span className="text-sm font-semibold gradient-text tracking-tight">Quill AI</span>
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-xs text-[#6b6b8a] hover:text-[#e8e8f0] transition-colors hidden sm:block">← Home</Link>
+          <Link href="/" className="flex items-center h-9 px-3 rounded-xl text-sm text-[#6b6b8a] hover:text-[#e8e8f0] hover:bg-[#1e1e2e] transition-all hidden sm:flex">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Home
+          </Link>
           <Link href="/login" className="flex items-center h-8 px-3 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all">
             Get started free
           </Link>
@@ -175,9 +181,10 @@ export default function PricingPage() {
           </div>
           <p className="text-xs text-[#4a4a6a]">© 2026 Quill AI</p>
           <div className="flex gap-5 text-xs text-[#6b6b8a]">
+            <Link href="/pricing" className="hover:text-[#e8e8f0] transition-colors">Pricing</Link>
+            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
             <Link href="/privacy" className="hover:text-[#e8e8f0] transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-[#e8e8f0] transition-colors">Terms</Link>
-            <Link href="/docs" className="hover:text-[#e8e8f0] transition-colors">Docs</Link>
           </div>
         </div>
       </div>
