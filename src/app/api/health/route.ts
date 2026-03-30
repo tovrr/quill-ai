@@ -111,16 +111,27 @@ function summarize(checks: DependencyCheck[]): ReadinessSummary {
 export async function GET(req: Request) {
   const context = createApiRequestContext(req, "/api/health");
   logApiStart(context);
+  const url = new URL(req.url);
+  const strictReadiness = url.searchParams.get("readiness") === "1";
 
   const checks = await Promise.all([runDbCheck(), Promise.resolve(runAuthCheck()), Promise.resolve(runProviderCheck())]);
   const readiness = summarize(checks);
 
-  const statusCode = readiness.status === "ok" ? 200 : 503;
-  const response = NextResponse.json(readiness, { status: statusCode });
+  const statusCode = strictReadiness && readiness.status !== "ok" ? 503 : 200;
+  const body = {
+    status: "ok",
+    mode: strictReadiness ? "readiness" : "liveness",
+    readinessStatus: readiness.status,
+    checks: readiness.checks,
+  };
+  const response = NextResponse.json(body, { status: statusCode });
 
   logApiCompletion(context, {
     status: statusCode,
-    error: readiness.status === "ok" ? undefined : `health_${readiness.status}`,
+    error:
+      strictReadiness && readiness.status !== "ok"
+        ? `health_${readiness.status}`
+        : undefined,
   });
 
   return withRequestHeaders(response, context.requestId);
