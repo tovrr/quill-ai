@@ -23,6 +23,23 @@ function buildCspReportOnlyPolicy(): string {
   ].join("; ");
 }
 
+function buildCspEnforcedPolicy(): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com",
+    "worker-src 'self' blob:",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 const nextConfig: NextConfig = {
   // Remove the X-Powered-By: Next.js header (reduces fingerprinting)
   poweredByHeader: false,
@@ -34,6 +51,7 @@ const nextConfig: NextConfig = {
 
   async headers() {
     const cspReportOnly = buildCspReportOnlyPolicy();
+    const cspEnforced = buildCspEnforcedPolicy();
 
     return [
       {
@@ -56,7 +74,11 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
           },
-          // Phase 1 CSP rollout: collect violations safely before enforcement
+          // Phase 2 CSP rollout: enforce policy while keeping report-only telemetry
+          {
+            key: "Content-Security-Policy",
+            value: cspEnforced,
+          },
           {
             key: "Content-Security-Policy-Report-Only",
             value: cspReportOnly,
