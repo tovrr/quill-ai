@@ -297,9 +297,17 @@ export default function AgentPage() {
   useEffect(() => {
     if (messages.length > 0 && typeof window !== "undefined") {
       const url = new URL(window.location.href);
+      let shouldReplace = false;
       if (!url.searchParams.has("chat")) {
         url.searchParams.set("chat", chatId);
         if (killer) url.searchParams.set("killer", killer.id);
+        shouldReplace = true;
+      }
+      if (url.searchParams.has("q")) {
+        url.searchParams.delete("q");
+        shouldReplace = true;
+      }
+      if (shouldReplace) {
         window.history.replaceState({}, "", url.toString());
       }
     }

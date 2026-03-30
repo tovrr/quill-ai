@@ -9,6 +9,7 @@ import {
   logApiCompletion,
   logApiStart,
 } from "@/lib/observability";
+import { recordModelUsage } from "@/lib/model-usage";
 
 export const maxDuration = 60;
 
@@ -65,10 +66,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { image } = await generateImage({
-      model: google.image("imagen-4.0-fast-generate-001"),
+    const modelId = "imagen-4.0-fast-generate-001";
+    const { image, usage, providerMetadata } = await generateImage({
+      model: google.image(modelId),
       prompt,
       aspectRatio: "1:1",
+    });
+
+    await recordModelUsage({
+      userId: sessionData.user.id,
+      route: "/api/generate-image",
+      feature: "image",
+      provider: "google",
+      model: modelId,
+      imageCount: 1,
+      usage,
+      providerMetadata,
     });
 
     logApiCompletion(requestContext, { status: 200 });

@@ -6,6 +6,9 @@ import {
   timestamp,
   boolean,
   index,
+  integer,
+  doublePrecision,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // ─── Better Auth tables ──────────────────────────────────────────────────────
@@ -100,4 +103,36 @@ export const messages = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [index("message_chat_id_idx").on(table.chatId)]
+);
+
+export const modelUsageEvents = pgTable(
+  "model_usage_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId").references(() => users.id, { onDelete: "set null" }),
+    chatId: text("chatId").references(() => chats.id, { onDelete: "set null" }),
+    route: varchar("route").notNull(),
+    feature: varchar("feature", { enum: ["chat", "image"] }).notNull(),
+    mode: varchar("mode", { enum: ["fast", "thinking", "advanced"] }),
+    provider: varchar("provider").notNull(),
+    model: varchar("model").notNull(),
+    inputTokens: integer("inputTokens"),
+    outputTokens: integer("outputTokens"),
+    totalTokens: integer("totalTokens"),
+    reasoningTokens: integer("reasoningTokens"),
+    cachedInputTokens: integer("cachedInputTokens"),
+    imageCount: integer("imageCount").notNull().default(0),
+    estimatedCostUsd: doublePrecision("estimatedCostUsd"),
+    rawUsage: jsonb("rawUsage"),
+    providerMetadata: jsonb("providerMetadata"),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("model_usage_event_user_id_idx").on(table.userId),
+    index("model_usage_event_chat_id_idx").on(table.chatId),
+    index("model_usage_event_model_idx").on(table.model),
+    index("model_usage_event_created_at_idx").on(table.createdAt),
+  ]
 );

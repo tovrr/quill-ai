@@ -11,6 +11,7 @@ import {
   countUserMessagesToday,
 } from "@/lib/db-helpers";
 import { KILLERS } from "@/lib/killers";
+import { recordModelUsage } from "@/lib/model-usage";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getBestFreeModel } from "@/lib/openrouter-models";
 import { buildWebSearchContext, isWebSearchConfigured, searchWeb } from "@/lib/web-search";
@@ -25,6 +26,12 @@ import {
 export const maxDuration = 60;
 
 type Mode = "fast" | "thinking" | "advanced";
+
+type ResolvedModel = {
+  model: ReturnType<typeof google> | ReturnType<typeof openrouter>;
+  provider: "google" | "openrouter";
+  modelId: string;
+};
 
 const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -55,11 +62,15 @@ function getDailyLimit(mode: Mode) {
   }
 }
 
-async function getModel(mode: Mode, preferVision: boolean) {
+async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
   // Free/fast mode auto-selects best available OpenRouter free model.
   if (mode === "fast" && process.env.OPENROUTER_API_KEY && !preferVision) {
     const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
-    return openrouter(freeModel);
+    return {
+      model: openrouter(freeModel),
+      provider: "openrouter",
+      modelId: freeModel,
+    };
   }
 
   const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -67,11 +78,23 @@ async function getModel(mode: Mode, preferVision: boolean) {
 
   switch (mode) {
     case "fast":
-      return google("gemini-2.5-flash");
+      return {
+        model: google("gemini-2.5-flash"),
+        provider: "google",
+        modelId: "gemini-2.5-flash",
+      };
     case "thinking":
-      return google("gemini-2.5-pro");
+      return {
+        model: google("gemini-2.5-pro"),
+        provider: "google",
+        modelId: "gemini-2.5-pro",
+      };
     default:
-      return google("gemini-2.5-flash");
+      return {
+        model: google("gemini-2.5-pro"),
+        provider: "google",
+        modelId: "gemini-2.5-pro",
+      };
   }
 }
 
@@ -456,15 +479,29 @@ export async function POST(req: Request) {
       }
     }
 
+    const resolvedModel = await getModel(selectedMode, preferVision);
+
     const result = streamText({
-      model: await getModel(selectedMode, preferVision),
+      model: resolvedModel.model,
       system: systemPrompt,
       messages: modelMessages,
       stopWhen: stepCountIs(5),
-      onFinish: async ({ text }) => {
+      onFinish: async ({ text, totalUsage, providerMetadata }) => {
         if (text && shouldPersist) {
           await saveMessage({ chatId: id, role: "assistant", content: text });
         }
+
+        await recordModelUsage({
+          userId: shouldPersist ? userId : undefined,
+          chatId: shouldPersist ? id : undefined,
+          route: "/api/chat",
+          feature: "chat",
+          mode: selectedMode,
+          provider: resolvedModel.provider,
+          model: resolvedModel.modelId,
+          usage: totalUsage,
+          providerMetadata,
+        });
       },
     });
 

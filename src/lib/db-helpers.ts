@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { chats, messages } from "@/db/schema";
+import { chats, messages, modelUsageEvents } from "@/db/schema";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 
 export async function getChatsByUserId(userId: string) {
@@ -80,4 +80,11 @@ export async function countUserMessagesToday(userId: string) {
     );
 
   return result[0]?.value ?? 0;
+}
+
+export async function getRecentModelUsage(limit = 200) {
+  return db.query.modelUsageEvents.findMany({
+    orderBy: [desc(modelUsageEvents.createdAt)],
+    limit,
+  });
 }
