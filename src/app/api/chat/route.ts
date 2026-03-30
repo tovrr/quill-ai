@@ -428,6 +428,13 @@ export async function POST(req: Request) {
     if (shouldPersist) {
       // Ensure chat exists
       const existing = await getChatById(id);
+      if (existing && existing.userId !== userId) {
+        logApiCompletion(requestContext, { status: 403, error: "chat_forbidden" });
+        return jsonResponse({ error: "You do not have access to this chat." }, 403, {
+          "x-request-id": requestContext.requestId,
+        });
+      }
+
       if (!existing) {
         await createChat(userId, "New chat", id);
       }

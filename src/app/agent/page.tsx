@@ -12,6 +12,84 @@ import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
 import { CanvasPanel, isHTMLContent } from "@/components/agent/CanvasPanel";
 import { getKillerById, type Killer } from "@/lib/killers";
 
+const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
+const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
+
+type StoredGuestSession = {
+  chatId: string;
+  messages: UIMessage[];
+  selectedMode: Mode;
+  updatedAt: number;
+};
+
+type ImportableMessage = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+function readGuestSession(): StoredGuestSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(GUEST_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredGuestSession;
+    if (!parsed?.chatId || !Array.isArray(parsed.messages) || !parsed.updatedAt) {
+      return null;
+    }
+    if (Date.now() - parsed.updatedAt > GUEST_SESSION_MAX_AGE_MS) {
+      localStorage.removeItem(GUEST_SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeGuestSession(session: StoredGuestSession): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Ignore storage quota/privacy mode failures
+  }
+}
+
+function clearGuestSession(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(GUEST_SESSION_KEY);
+  } catch {
+    // Ignore storage failures
+  }
+}
+
+function toImportableMessages(messages: UIMessage[]): ImportableMessage[] {
+  return messages
+    .map((message) => {
+      const role = (message as { role?: unknown }).role;
+      if (role !== "user" && role !== "assistant" && role !== "system" && role !== "tool") {
+        return null;
+      }
+
+      const content = message.parts
+        .map((part) => {
+          if (typeof part !== "object" || part === null) return "";
+          if ((part as { type?: string }).type === "text") {
+            const text = (part as { text?: unknown }).text;
+            return typeof text === "string" ? text : "";
+          }
+          return "";
+        })
+        .join("\n")
+        .trim();
+
+      if (!content) return null;
+      return { role, content } as ImportableMessage;
+    })
+    .filter((item): item is ImportableMessage => Boolean(item));
+}
+
 // Read URL search params safely on the client
 function getSearchParam(key: string): string | null {
   if (typeof window === "undefined") return null;
@@ -20,7 +98,7 @@ function getSearchParam(key: string): string | null {
 
 export default function AgentPage() {
   // Initialise chatId from URL or generate new
-  const [chatId] = useState(() => getSearchParam("chat") ?? crypto.randomUUID());
+  const [chatId] = useState(() => getSearchParam("chat") ?? readGuestSession()?.chatId ?? crypto.randomUUID());
 
   // Active killer agent (from URL ?killer=id)
   const [killer] = useState<Killer | null>(() => {
@@ -31,6 +109,7 @@ export default function AgentPage() {
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("idle");
   const [selectedMode, setSelectedMode] = useState<Mode>("fast");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
   const [canUsePaidModes, setCanUsePaidModes] = useState(false);
   const [webSearchState, setWebSearchState] = useState<"available" | "auth-required" | "coming-soon">("coming-soon");
   const [canvasMode, setCanvasMode] = useState(false);
@@ -41,10 +120,13 @@ export default function AgentPage() {
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
 
   const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const guestSessionRestoredRef = useRef(false);
+  const guestSessionImportTriedRef = useRef(false);
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
@@ -97,7 +179,12 @@ export default function AgentPage() {
     const loadEntitlements = async () => {
       try {
         const res = await fetch("/api/me/entitlements", { cache: "no-store" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setIsAuthenticated(false);
+          setCanUsePaidModes(false);
+          setWebSearchState("coming-soon");
+          return;
+        }
         const data = (await res.json()) as {
           authenticated?: boolean;
           canUsePaidModes?: boolean;
@@ -110,11 +197,95 @@ export default function AgentPage() {
         setIsAuthenticated(false);
         setCanUsePaidModes(false);
         setWebSearchState("coming-soon");
+      } finally {
+        setAuthResolved(true);
       }
     };
 
     void loadEntitlements();
   }, []);
+
+  // Restore one active guest session on first load.
+  useEffect(() => {
+    if (!authResolved || isAuthenticated || guestSessionRestoredRef.current) return;
+    guestSessionRestoredRef.current = true;
+
+    const stored = readGuestSession();
+    if (!stored || stored.messages.length === 0) return;
+    if (messages.length > 0) return;
+
+    setMessages(stored.messages);
+    if (stored.selectedMode === "fast") {
+      setSelectedMode("fast");
+    }
+  }, [authResolved, isAuthenticated, messages.length, setMessages]);
+
+  // Persist exactly one active guest conversation locally.
+  useEffect(() => {
+    if (!authResolved) return;
+
+    if (isAuthenticated) return;
+
+    writeGuestSession({
+      chatId,
+      messages,
+      selectedMode,
+      updatedAt: Date.now(),
+    });
+  }, [authResolved, isAuthenticated, chatId, messages, selectedMode]);
+
+  // One-time migration: import guest conversation into user history after login.
+  useEffect(() => {
+    if (!authResolved || !isAuthenticated || guestSessionImportTriedRef.current) return;
+    guestSessionImportTriedRef.current = true;
+
+    const stored = readGuestSession();
+    if (!stored || stored.messages.length === 0) {
+      clearGuestSession();
+      setGuestImportStatus("done");
+      return;
+    }
+
+    const importableMessages = toImportableMessages(stored.messages);
+    if (importableMessages.length === 0) {
+      clearGuestSession();
+      setGuestImportStatus("done");
+      return;
+    }
+
+    const runImport = async () => {
+      setGuestImportStatus("importing");
+      try {
+        const response = await fetch("/api/chats/import-guest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatId: stored.chatId,
+            messages: importableMessages,
+          }),
+        });
+
+        if (!response.ok) throw new Error("Guest import failed");
+
+        const data = (await response.json().catch(() => null)) as { chatId?: string } | null;
+
+        clearGuestSession();
+        setGuestImportStatus("done");
+
+        if (data?.chatId && data.chatId !== chatId) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("chat", data.chatId);
+          url.searchParams.delete("q");
+          window.location.href = url.toString();
+        }
+      } catch {
+        // Keep local session if import fails so user does not lose conversation.
+        setGuestImportStatus("error");
+      }
+    };
+
+    void runImport();
+  }, [authResolved, isAuthenticated]);
 
   useEffect(() => {
     if (!canUsePaidModes && selectedMode !== "fast") {
@@ -233,6 +404,16 @@ export default function AgentPage() {
     });
   }, [chatId]);
 
+  const handleNewChat = useCallback(() => {
+    if (!isAuthenticated) {
+      clearGuestSession();
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("chat");
+    url.searchParams.delete("q");
+    window.location.href = url.toString();
+  }, [isAuthenticated]);
+
   const isLoading = status === "streaming" || status === "submitted";
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
@@ -334,7 +515,7 @@ export default function AgentPage() {
 
             {/* New chat */}
             <button
-              onClick={() => window.location.reload()}
+              onClick={handleNewChat}
               className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -343,6 +524,10 @@ export default function AgentPage() {
               </svg>
               <span className="hidden md:inline">New chat</span>
             </button>
+
+            {guestImportStatus === "importing" && (
+              <span className="hidden md:inline text-[11px] text-quill-muted">Importing guest chat...</span>
+            )}
           </div>
         </header>
 
