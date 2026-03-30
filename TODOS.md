@@ -1,5 +1,54 @@
 # Quill AI TODOs
 
+## Execution Rules (Keep This Doc Effective)
+
+- Every new task should include: scope, acceptance criteria, and where it will be verified (local, CI, production).
+- Limit active work-in-progress to 3 major tasks at a time to reduce context switching.
+- When a task is completed, link the PR/commit next to it and add a one-line outcome note.
+- Re-prioritize weekly: move stale tasks down, pull blockers up.
+
+## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
+
+### Critical - Security
+
+- [ ] Add a strict Content Security Policy in `next.config.ts`.
+- [ ] Roll out CSP in two phases: `Content-Security-Policy-Report-Only` first, then enforcing `Content-Security-Policy`.
+- [ ] Add CSP reporting endpoint and alerting for violations.
+- [ ] Define trusted script/connect/font/image origins explicitly (avoid wildcard sources).
+- [ ] Verify no regressions in auth, streaming chat, and image generation under enforced CSP.
+
+### High - Reliability
+
+- [ ] Upgrade `/api/health` from shallow status check to readiness checks (DB, auth/session, model provider reachability).
+- [ ] Add timeout-bounded checks so readiness cannot hang and cause cascading failures.
+- [ ] Return a structured readiness payload with component-level status and degraded mode hints.
+- [ ] Add external uptime + latency monitoring (e.g., Better Stack/UptimeRobot) for `/`, `/agent`, `/api/health`, `/api/chat`.
+- [ ] Define and document SLO targets (availability, p95 latency) and alert thresholds.
+
+### High - Maintainability
+
+- [ ] Add bundle analysis in CI (`@next/bundle-analyzer`) with per-route JS/CSS budgets.
+- [ ] Fail CI when budgets regress beyond agreed thresholds.
+- [ ] Add dependency security checks (`npm audit` gate or equivalent) with an explicit policy for moderate/high vulnerabilities.
+- [ ] Create a quarterly dependency upgrade routine for Next.js/AI SDK/Auth stack.
+
+### PWA/App Readiness (from audit)
+
+- [ ] Add service worker + offline fallback strategy for critical routes.
+- [ ] Add maskable icon entry in `manifest.ts` with `purpose: "maskable"`.
+- [ ] Add `.well-known/assetlinks.json` for Android Trusted Web Activity readiness.
+- [ ] Validate installability and offline behavior using Lighthouse PWA audits in CI.
+
+## Next 7 Execution Targets
+
+- [ ] Security Sprint 1: ship CSP report-only + violation collection.
+- [ ] Security Sprint 2: enforce CSP after fixing violations.
+- [ ] Reliability Sprint: implement readiness checks with dependency probes.
+- [ ] Observability Sprint: uptime checks + alert routing to on-call channel.
+- [ ] Performance Sprint: bundle analyzer + baseline budgets.
+- [ ] PWA Sprint: service worker + offline shell.
+- [ ] Mobile Distribution Prep: maskable icons + assetlinks + store packaging checklist.
+
 ## High Priority (Production Safety)
 
 - [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash)
@@ -55,13 +104,11 @@
 
 ## PWA & App Store
 
-- [ ] Add offline support via `next-pwa` or a custom service worker (app is currently dead offline)
-- [ ] Generate a maskable icon variant (logo with safe-zone padding) for Android adaptive icons, add `purpose: "maskable"` entry in `manifest.ts`
-- [ ] Generate `favicon.ico` from the SVG for legacy browser/OS compatibility
+- [ ] Keep this section focused on distribution packaging tasks; implementation tasks are tracked in "Audit-Driven Remediation Backlog"
 - [ ] **Google Play Store**: wrap the PWA as a TWA (Trusted Web Activity) using Bubblewrap — requires offline support first
 - [ ] **Apple App Store**: wrap with Capacitor or Expo — Apple does not accept bare PWAs in the store
-- [ ] Move CI test env values to GitHub Secrets (currently hardcoded in workflow)
-- [ ] Run `scripts/generate-icons.mjs` whenever `public/favicon.svg` changes to keep PNGs in sync
+- [ ] Add `assetlinks.json` validation in release pipeline for TWA verification
+- [ ] Add store-release checklist with signing, screenshots, privacy labels, and rollback steps
 
 ## Release Readiness Checklist
 
@@ -70,3 +117,6 @@
 - [ ] Run API smoke tests on every push/PR
 - [ ] Verify metrics endpoint auth in production
 - [ ] Perform post-deploy smoke: chat, attachments, image generation, share, delete
+- [ ] Verify CSP is enforced with no critical violations
+- [ ] Verify readiness endpoint reports dependency health (DB, auth, provider)
+- [ ] Verify external uptime checks and alert routing are active
