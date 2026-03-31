@@ -49,6 +49,11 @@ function estimateTextCostUsd(input: {
   let inputPerMillion: number | undefined;
   let outputPerMillion: number | undefined;
 
+  if (input.provider === "google" && input.model === "gemini-2.5-flash-lite") {
+    inputPerMillion = parseUsdEnv("PRICE_GEMINI_25_FLASH_LITE_INPUT_PER_1M_USD");
+    outputPerMillion = parseUsdEnv("PRICE_GEMINI_25_FLASH_LITE_OUTPUT_PER_1M_USD");
+  }
+
   if (input.provider === "google" && input.model === "gemini-2.5-flash") {
     inputPerMillion = parseUsdEnv("PRICE_GEMINI_25_FLASH_INPUT_PER_1M_USD");
     outputPerMillion = parseUsdEnv("PRICE_GEMINI_25_FLASH_OUTPUT_PER_1M_USD");

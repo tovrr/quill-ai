@@ -24,7 +24,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Inter font, gradient text, glow borders, typing indicator, custom scrollbars
 - [x] **Migrated database from SQLite to Neon PostgreSQL** — updated schema (pg-core), driver (@neondatabase/serverless), drizzle config, and db helpers
 - [x] Added db scripts: `db:generate`, `db:push`, `db:studio`
-- [x] **3 model modes**: Fast (`gemini-2.5-flash` or optional OpenRouter free model), Think (`gemini-2.5-pro`), Pro (`gemini-2.5-flash`)
+- [x] **3 model modes**: Fast (OpenRouter free model when available, otherwise `gemini-2.5-flash-lite`), Think (`gemini-2.5-flash`), Pro (`gemini-2.5-pro`)
 - [x] **File upload**: multimodal file/image attachments via AI SDK `sendMessage({ text, files })`
 - [x] **Image generation**: `/api/generate-image` route using Imagen 4, dedicated image mode toggle in TaskInput
 - [x] **Canvas mode**: split-pane document view (CanvasPanel) showing last AI response in clean document format
@@ -44,6 +44,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Tuned production defaults for daily quotas and per-minute burst limits in `.env.example`
 - [x] Added root `DEPLOYMENT_CHECKLIST.md` with env, validation, smoke-test, and triage steps
 - [x] Added OpenRouter best-free-model auto-selection with 48h caching
+- [x] Added per-tier model overrides (`FAST_MODEL_OVERRIDE`, `THINKING_MODEL_OVERRIDE`, `ADVANCED_MODEL_OVERRIDE`) for zero-redeploy routing changes
 - [x] Added Neon foreign-key indexes for auth/chat/message relations and verified them live
 - [x] Refined chat input UX: separate attach button, mode selector near send, clickable non-image attachments
 - [x] Preserved attachment parts end-to-end for multimodal requests and improved file-only persistence fallbacks
@@ -61,6 +62,9 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] **CI native binary fixes**: added `lightningcss-linux-x64-gnu/musl` and `@tailwindcss/oxide-linux-x64-gnu/musl` to `optionalDependencies`; CI force-installs each separately with `|| true` fallback
 - [x] **Tailwind token cleanup**: replaced all 62 hardcoded hex colors in `page.tsx` and `HeroInput.tsx` with canonical `quill-*` design tokens
 - [x] **Icon consistency**: replaced placeholder "A" favicon with actual feather quill logo across all icon sizes; added `scripts/generate-icons.mjs` to regenerate PNGs from SVG via `sharp`
+- [x] Added guest-session persistence and automatic guest-to-login chat import so one active guest conversation survives reloads and is moved into history after sign-in
+- [x] Added DB-backed model usage telemetry with `/admin/model-usage` dashboard and local pricing env support for Gemini Flash Lite / Flash / Pro / Imagen 4 Fast
+- [x] Upgraded `/api/health` into a readiness endpoint with DB ping, auth session-store probe, real provider reachability checks, timeout bounds, and degraded-mode hints
 
 ## Current Structure
 
@@ -86,7 +90,7 @@ Current priorities:
 
 1. Replace env-based paid entitlements with a DB billing/subscription model
 2. Replace in-memory rate limiting with a distributed limiter
-3. Replace placeholder settings usage/billing stats with real data
+3. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
 4. PWA offline support (service worker) — required before any app store submission
 
 ## Quick Start Guide
@@ -153,3 +157,5 @@ export async function GET() {
 - 2026-03-29: Added OpenRouter auto-selection, audited Neon indexes, and improved multimodal attachment handling
 - 2026-03-29: Added entitlement endpoint and paid-mode enforcement; updated selector UX to show locked paid tiers for free users
 - 2026-03-29: Implemented live web search with Tavily retrieval, auth gating, and entitlement-driven search button states
+- 2026-03-31: Added guest session persistence, guest-to-login import, and fixed hero `?q=` reload replay
+- 2026-03-31: Added model usage telemetry, `/admin/model-usage`, Flash Lite / Flash / Pro tiering, and provider-aware readiness checks

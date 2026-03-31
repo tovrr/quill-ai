@@ -62,6 +62,11 @@ function getDailyLimit(mode: Mode) {
   }
 }
 
+// Tier IDs — can be overridden per-tier via env vars without redeploying.
+const FAST_MODEL_ID = process.env.FAST_MODEL_OVERRIDE ?? "gemini-2.5-flash-lite";
+const THINKING_MODEL_ID = process.env.THINKING_MODEL_OVERRIDE ?? "gemini-2.5-flash";
+const ADVANCED_MODEL_ID = process.env.ADVANCED_MODEL_OVERRIDE ?? "gemini-2.5-pro";
+
 async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
   // Free/fast mode auto-selects best available OpenRouter free model.
   if (mode === "fast" && process.env.OPENROUTER_API_KEY && !preferVision) {
@@ -79,21 +84,21 @@ async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedMode
   switch (mode) {
     case "fast":
       return {
-        model: google("gemini-2.5-flash"),
+        model: google(FAST_MODEL_ID),
         provider: "google",
-        modelId: "gemini-2.5-flash",
+        modelId: FAST_MODEL_ID,
       };
     case "thinking":
       return {
-        model: google("gemini-2.5-pro"),
+        model: google(THINKING_MODEL_ID),
         provider: "google",
-        modelId: "gemini-2.5-pro",
+        modelId: THINKING_MODEL_ID,
       };
     default:
       return {
-        model: google("gemini-2.5-pro"),
+        model: google(ADVANCED_MODEL_ID),
         provider: "google",
-        modelId: "gemini-2.5-pro",
+        modelId: ADVANCED_MODEL_ID,
       };
   }
 }

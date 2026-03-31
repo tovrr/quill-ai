@@ -11,17 +11,17 @@
 
 ### Critical - Security
 
-- [ ] Add a strict Content Security Policy in `next.config.ts`.
-- [ ] Roll out CSP in two phases: `Content-Security-Policy-Report-Only` first, then enforcing `Content-Security-Policy`.
-- [ ] Add CSP reporting endpoint and alerting for violations.
-- [ ] Define trusted script/connect/font/image origins explicitly (avoid wildcard sources).
-- [ ] Verify no regressions in auth, streaming chat, and image generation under enforced CSP.
+- [x] Add a strict Content Security Policy in `next.config.ts`. — commit `77408d8`, enforcing CSP live.
+- [x] Roll out CSP in two phases: `Content-Security-Policy-Report-Only` first, then enforcing `Content-Security-Policy`. — both phases complete.
+- [ ] Add CSP reporting endpoint and alerting for violations. — report-only telemetry active; no dedicated ingest endpoint yet.
+- [x] Define trusted script/connect/font/image origins explicitly (avoid wildcard sources). — explicit origins set in `next.config.ts`.
+- [x] Verify no regressions in auth, streaming chat, and image generation under enforced CSP. — build + typecheck pass, no violations observed.
 
 ### High - Reliability
 
-- [ ] Upgrade `/api/health` from shallow status check to readiness checks (DB, auth/session, model provider reachability).
-- [ ] Add timeout-bounded checks so readiness cannot hang and cause cascading failures.
-- [ ] Return a structured readiness payload with component-level status and degraded mode hints.
+- [x] Upgrade `/api/health` from shallow status check to readiness checks (DB, auth/session, model provider reachability). — implemented locally; verifies database ping, session table access, and provider reachability.
+- [x] Add timeout-bounded checks so readiness cannot hang and cause cascading failures. — implemented locally via `HEALTH_CHECK_TIMEOUT_MS`.
+- [x] Return a structured readiness payload with component-level status and degraded mode hints. — implemented locally with per-check details and fallback guidance.
 - [ ] Add external uptime + latency monitoring (e.g., Better Stack/UptimeRobot) for `/`, `/agent`, `/api/health`, `/api/chat`.
 - [ ] Define and document SLO targets (availability, p95 latency) and alert thresholds.
 
@@ -41,9 +41,9 @@
 
 ## Next 7 Execution Targets
 
-- [ ] Security Sprint 1: ship CSP report-only + violation collection.
-- [ ] Security Sprint 2: enforce CSP after fixing violations.
-- [ ] Reliability Sprint: implement readiness checks with dependency probes.
+- [x] Security Sprint 1: ship CSP report-only + violation collection. — commit `77408d8`.
+- [x] Security Sprint 2: enforce CSP after fixing violations. — commit `77408d8`, enforcing header live.
+- [x] Reliability Sprint: implement readiness checks with dependency probes. — implemented locally; pending external uptime/alerting.
 - [ ] Observability Sprint: uptime checks + alert routing to on-call channel.
 - [ ] Performance Sprint: bundle analyzer + baseline budgets.
 - [ ] PWA Sprint: service worker + offline shell.
@@ -82,6 +82,9 @@
 
 ## Medium Priority (Observability)
 
+- [x] Per-model usage + cost telemetry (`model_usage_event` table, `recordModelUsage()` lib, `/api/admin/model-usage`, `/admin/model-usage` UI). — commit `a590f99`.
+- [x] Set local pricing env vars for Gemini Flash Lite / Flash / Pro / Imagen 4 Fast so admin cost telemetry is meaningful during development. — `.env.local` updated from official Google pricing.
+- [ ] Set pricing env vars in Vercel (Flash Lite/Flash/Pro/Imagen 4 Fast) so estimated cost shows real numbers in admin dashboard.
 - [ ] Track feature metrics: attachment usage, image generation failure rate, OpenRouter fallback rate
 - [ ] Add request-level correlation from API logs to user-visible errors
 - [ ] Add alert thresholds for 5xx spikes and repeated quota/rate-limit errors
@@ -90,6 +93,8 @@
 
 - [x] Auto-select OpenRouter free model when key is configured
 - [x] Cache auto-selection result (48h)
+- [x] Fix model tier ordering: `advanced` now correctly maps to `gemini-2.5-pro` (was `gemini-2.5-flash`). — commit `a590f99`.
+- [x] **Implement 3-tier model ladder: `fast` → `gemini-2.5-flash-lite`, `thinking` → `gemini-2.5-flash`, `advanced` → `gemini-2.5-pro`.** Reduces COGS on free tier, higher quota headroom. Added per-tier env overrides for zero-redeploy switching.
 - [ ] Add optional health check to proactively rotate to next-best free model on provider failures
 - [ ] Add manual allowlist/denylist for free model candidates
 - [ ] Keep the paid-user workflow documented around `PAID_USER_EMAILS`, since paid access is currently managed by email
