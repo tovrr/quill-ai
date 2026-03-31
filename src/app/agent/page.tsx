@@ -427,7 +427,7 @@ export default function AgentPage() {
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
 
   return (
-    <div className="relative flex h-screen bg-quill-bg overflow-hidden">
+    <div className="agent-screen relative flex h-screen bg-quill-bg overflow-hidden">
 
       {/* Desktop: always-visible sidebar */}
       <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
@@ -545,7 +545,7 @@ export default function AgentPage() {
         <div className="flex flex-1 min-h-0">
           <div className="flex flex-col flex-1 min-w-0">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-5">
+            <div className="agent-messages flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-5">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
@@ -604,7 +604,7 @@ export default function AgentPage() {
             </div>
 
             {/* Input — safe-area bottom padding for iPhone home indicator */}
-            <div className="shrink-0 px-4 md:px-6 pb-6 pt-3 border-t border-quill-border bg-quill-bg pb-safe">
+            <div className="agent-composer-shell shrink-0 px-4 md:px-6 pb-6 pt-3 border-t border-quill-border bg-quill-bg pb-safe">
               <div className="max-w-3xl mx-auto">
                 <TaskInput
                   onSend={handleSend}
@@ -622,6 +622,7 @@ export default function AgentPage() {
                   canGenerateImage={isAuthenticated}
                   disabled={isLoading}
                   isGeneratingImage={isGeneratingImage}
+                  isWorking={isLoading || isGeneratingImage}
                   placeholder={killer ? `Ask ${killer.name}...` : "Give Quill a task to execute..."}
                 />
               </div>

@@ -21,6 +21,7 @@ interface TaskInputProps {
   canGenerateImage?: boolean;
   disabled?: boolean;
   isGeneratingImage?: boolean;
+  isWorking?: boolean;
   placeholder?: string;
 }
 
@@ -46,6 +47,7 @@ export function TaskInput({
   canGenerateImage,
   disabled,
   isGeneratingImage,
+  isWorking,
   placeholder,
 }: TaskInputProps) {
   const router = useRouter();
@@ -53,6 +55,7 @@ export function TaskInput({
   const [imageMode, setImageMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileList | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,20 +135,19 @@ export function TaskInput({
   const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Fast";
   const hasLockedModes = visibleModes.some((m) => !enabledModes.has(m.id));
   const imageGenerationEnabled = canGenerateImage ?? true;
+  const hasTypedContent = value.trim().length > 0;
+  const isActiveComposer = isFocused || hasTypedContent || imageMode;
+  const showWorkingGlow = Boolean(isWorking) || Boolean(isGeneratingImage);
 
   return (
     <div className="flex flex-col gap-2">
       {/* Input area */}
       <div
-        className="glow-border rounded-2xl bg-quill-surface transition-all duration-200 focus-within:border-[rgba(239,68,68,0.6)] focus-within:shadow-[0_0_24px_rgba(239,68,68,0.15)]"
-        style={
-          imageMode
-            ? {
-                borderColor: "rgba(239,68,68,0.5)",
-                boxShadow: "0 0 20px rgba(239,68,68,0.1)",
-              }
-            : {}
-        }
+        className={`rounded-2xl bg-quill-surface transition-all duration-300 border ${
+          isActiveComposer
+            ? "border-[rgba(239,68,68,0.55)] shadow-[0_0_24px_rgba(239,68,68,0.16)]"
+            : "border-quill-border shadow-[inset_0_0_0_1px_rgba(239,68,68,0.03)]"
+        } ${showWorkingGlow ? "composer-working-glow" : ""}`}
       >
         {/* Attached file chips */}
         {attachedFiles && attachedFiles.length > 0 && (
@@ -204,6 +206,8 @@ export function TaskInput({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           disabled={isDisabled}
           placeholder={currentPlaceholder}
           rows={1}
@@ -488,7 +492,7 @@ export function TaskInput({
       </div>
 
       {/* Hint */}
-      <p className="text-center text-[11px] text-quill-muted">
+      <p className="keyboard-hint text-center text-[11px] text-quill-muted">
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Enter</kbd>{" "}
         to send &middot;{" "}
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}

@@ -113,6 +113,15 @@ body {
   100% { background-position: 200% center; }
 }
 
+@keyframes composer-working-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.10), inset 0 0 10px rgba(239, 68, 68, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.22), inset 0 0 16px rgba(239, 68, 68, 0.10);
+  }
+}
+
 .animate-fade-in        { animation: fade-in 0.25s ease-out forwards; }
 .animate-slide-in-left  { animation: slide-in-left 0.25s ease-out forwards; }
 .animate-slide-up       { animation: slide-up 0.25s ease-out forwards; }
@@ -126,6 +135,17 @@ body {
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
+}
+
+.composer-working-glow {
+  animation: composer-working-glow 2.6s ease-in-out infinite;
+}
+
+/* Keyboard shortcut hint is unnecessary on touch devices. */
+@media (hover: none), (pointer: coarse) {
+  .keyboard-hint {
+    display: none;
+  }
 }
 
 /* ── Utility classes ─────────────────────────────────────────────────────────── */
@@ -167,4 +187,40 @@ body {
     align-items: center;
     justify-content: center;
   }
+}
+
+/* ── Device-aware adaptive shell (mobile app-like) ─────────────────────────── */
+html.is-mobile .agent-screen {
+  height: 100dvh;
+}
+
+html.is-mobile .agent-messages {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+html.is-mobile .agent-composer-shell {
+  position: sticky;
+  bottom: 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+/* iOS profile: tighter glass + softer top edge */
+html.os-ios.is-mobile .agent-composer-shell {
+  border-top-color: rgba(248, 113, 113, 0.2);
+  box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(180deg, rgba(10, 10, 15, 0.78), rgba(10, 10, 15, 0.94));
+}
+
+/* Android profile: denser spacing and stronger separation from feed */
+html.os-android.is-mobile .agent-composer-shell {
+  border-top-color: rgba(239, 68, 68, 0.24);
+  box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(180deg, rgba(10, 10, 15, 0.84), rgba(10, 10, 15, 0.97));
+}
+
+/* Safari-specific optimization to avoid UI jump with dynamic bars */
+html.browser-safari.is-mobile .agent-screen {
+  min-height: -webkit-fill-available;
 }

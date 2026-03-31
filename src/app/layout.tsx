@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
+import { DeviceAwareness } from "@/components/DeviceAwareness";
 import "./globals.css";
 
 const inter = Inter({
@@ -69,6 +70,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className={`${inter.variable} antialiased font-sans`}>
+        <DeviceAwareness />
         <Providers>{children}</Providers>
       </body>
     </html>
