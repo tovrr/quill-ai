@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseBuilderArtifact, type FileBundleArtifact } from "@/lib/builder-artifacts";
 
 // ---------------------------------------------------------------------------
@@ -399,6 +399,57 @@ function FileBundlePreview({
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  // When the content changes and resolves to a react-app artifact, POST the
+  // files to /api/preview and load the returned HTML via a blob: URL.  Blob-URL
+  // documents are not subject to the parent page's CSP, so Babel + esm.sh work.
+  useEffect(() => {
+    const localArtifact = parseBuilderArtifact(content);
+    const bundle =
+      localArtifact && localArtifact.type === "react-app" ? localArtifact : null;
+
+    if (!bundle) return;
+
+    let cancelled = false;
+
+    fetch("/api/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: bundle.payload.files,
+        entry: bundle.payload.entry,
+      }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error("Preview generation failed");
+        return r.text();
+      })
+      .then((html) => {
+        if (cancelled) return;
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+        previewUrlRef.current = blobUrl;
+        setPreviewUrl(blobUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewUrl(null);
+      })
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content]);
+
+  // Revoke blob URL on unmount to prevent memory leaks.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const artifact = parseBuilderArtifact(content);
   const hasArtifactEnvelope = /<quill-artifact>/i.test(content) || /```json\n[\s\S]*artifactVersion/i.test(content);
@@ -425,9 +476,10 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   const fileBundle: FileBundleArtifact | null =
     artifact && (artifact.type === "react-app" || artifact.type === "nextjs-bundle") ? artifact : null;
-  const canRunReactPreview = false;
-  const reactPreviewSrcDoc =
-    fileBundle?.type === "react-app" ? createReactRuntimeSrcDoc(fileBundle.payload.files, fileBundle.payload.entry) : "";
+  const isReactApp = fileBundle?.type === "react-app";
+  // Loading is implicit: react-app but no blob URL yet = fetch in progress.
+  const canRunReactPreview = isReactApp && Boolean(previewUrl);
+  const previewLoading = isReactApp && !previewUrl;
   const effectiveTab: Tab = fileBundle?.type === "react-app" && !canRunReactPreview ? "code" : tab;
 
   const copyText = isArtifact
@@ -673,28 +725,26 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             </div>
           )
         ) : fileBundle?.type === "react-app" ? (
-          effectiveTab === "preview" && canRunReactPreview ? (
-            <iframe
-              key={reactPreviewSrcDoc}
-              srcDoc={reactPreviewSrcDoc}
-              sandbox="allow-scripts"
-              className="w-full h-full border-0 bg-[#0d0d15]"
-              title="React app preview"
-            />
-          ) : (
-            <div className="h-full flex flex-col">
-              {!canRunReactPreview && (
-                <div className="mx-4 mt-4 rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-3">
-                  <p className="text-sm font-semibold text-[#f7b0b0]">Live React preview is disabled under current CSP</p>
-                  <p className="text-xs text-[#d2d2e6] mt-1">
-                    Your CSP blocks inline/eval/external scripts required by in-browser transpilation. Use Code view for now.
-                  </p>
-                </div>
-              )}
-              <div className="min-h-0 flex-1 mt-3">
-                <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
+          effectiveTab === "preview" ? (
+            previewUrl ? (
+              <iframe
+                key={previewUrl}
+                src={previewUrl}
+                sandbox="allow-scripts allow-forms allow-popups"
+                className="w-full h-full border-0 bg-[#0d0d15]"
+                title="React app preview"
+              />
+            ) : (
+              /* Loading state while the server generates the preview blob */
+              <div className="flex items-center justify-center h-full gap-3 text-[#9b9bb7]">
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                <span className="text-sm">Building preview…</span>
               </div>
-            </div>
+            )
+          ) : (
+            <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
           )
         ) : fileBundle ? (
           <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
