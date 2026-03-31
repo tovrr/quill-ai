@@ -23,6 +23,10 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability";
+import { parseBuilderArtifact } from "@/lib/builder-artifacts";
+import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
+import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
+import { recordBuilderMetric } from "@/lib/api-metrics";
 
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
@@ -59,28 +63,47 @@ function getDailyLimit(mode: Mode) {
 const FAST_MODEL_ID = process.env.FAST_MODEL_OVERRIDE ?? "gemini-2.5-flash-lite";
 const THINKING_MODEL_ID = process.env.THINKING_MODEL_OVERRIDE ?? "gemini-2.5-flash";
 const ADVANCED_MODEL_ID = process.env.ADVANCED_MODEL_OVERRIDE ?? "gemini-2.5-pro";
+const OPENROUTER_FAST_ENABLED = process.env.OPENROUTER_FAST_ENABLED === "true";
 
 async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
-  // Free/fast mode auto-selects best available OpenRouter free model.
-  if (mode === "fast" && process.env.OPENROUTER_API_KEY && !preferVision) {
-    const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
-    return {
-      model: openrouter(freeModel),
-      provider: "openrouter",
-      modelId: freeModel,
-    };
-  }
-
   const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!key) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set (required for Think/Pro)");
 
-  switch (mode) {
-    case "fast":
+  // Reliability-first strategy:
+  // - Default fast mode to Gemini unless OpenRouter fast is explicitly enabled.
+  // - If Google key is unavailable, still fall back to OpenRouter as last resort.
+  if (mode === "fast") {
+    if (!preferVision && OPENROUTER_FAST_ENABLED && process.env.OPENROUTER_API_KEY) {
+      const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
+      return {
+        model: openrouter(freeModel),
+        provider: "openrouter",
+        modelId: freeModel,
+      };
+    }
+
+    if (key) {
       return {
         model: google(FAST_MODEL_ID),
         provider: "google",
         modelId: FAST_MODEL_ID,
       };
+    }
+
+    if (!preferVision && process.env.OPENROUTER_API_KEY) {
+      const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
+      return {
+        model: openrouter(freeModel),
+        provider: "openrouter",
+        modelId: freeModel,
+      };
+    }
+
+    throw new Error("No model provider configured for fast mode. Set GOOGLE_GENERATIVE_AI_API_KEY or OPENROUTER_API_KEY.");
+  }
+
+  if (!key) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set (required for Think/Pro)");
+
+  switch (mode) {
     case "thinking":
       return {
         model: google(THINKING_MODEL_ID),
@@ -130,8 +153,152 @@ Your personality:
 
 Always be helpful, direct, and get things done.`;
 
+function isCanvasBuildIntent(input: string | null): boolean {
+  if (!input) return false;
+
+  const lower = input.toLowerCase();
+  const buildWords = ["build", "create", "make", "design", "generate"];
+  const previewTargets = [
+    "landing page",
+    "website",
+    "web app",
+    "webapp",
+    "page",
+    "dashboard",
+    "component",
+    "ui",
+    "hero section",
+    "next.js",
+    "react",
+    "tailwind",
+  ];
+
+  return buildWords.some((word) => lower.includes(word)) && previewTargets.some((word) => lower.includes(word));
+}
+
+function normalizeBuilderTarget(value: unknown): BuilderTarget {
+  return value === "page" || value === "react-app" || value === "nextjs-bundle" ? value : "auto";
+}
+
+function normalizeBuilderLocks(value: unknown): BuilderLocks {
+  const candidate = typeof value === "object" && value !== null ? (value as Partial<BuilderLocks>) : {};
+  return {
+    layout: Boolean(candidate.layout),
+    colors: Boolean(candidate.colors),
+    sectionOrder: Boolean(candidate.sectionOrder),
+    copy: Boolean(candidate.copy),
+  };
+}
+
+function normalizeBuilderSession(value: unknown): BuilderSessionContext {
+  if (typeof value !== "object" || value === null) return {};
+  const candidate = value as Record<string, unknown>;
+  const recentRefinements = Array.isArray(candidate.recentRefinements)
+    ? candidate.recentRefinements.filter((item): item is string => typeof item === "string").slice(0, 5)
+    : undefined;
+
+  return {
+    lastArtifactType:
+      candidate.lastArtifactType === "page" ||
+      candidate.lastArtifactType === "react-app" ||
+      candidate.lastArtifactType === "nextjs-bundle" ||
+      candidate.lastArtifactType === "document"
+        ? candidate.lastArtifactType
+        : undefined,
+    lastArtifactTitle: typeof candidate.lastArtifactTitle === "string" ? candidate.lastArtifactTitle : undefined,
+    recentRefinements,
+  };
+}
+
+function buildIterationConstraintsPrompt(locks: BuilderLocks, session: BuilderSessionContext): string | null {
+  const activeLocks: string[] = [];
+  if (locks.layout) activeLocks.push("layout structure");
+  if (locks.colors) activeLocks.push("color palette");
+  if (locks.sectionOrder) activeLocks.push("section ordering");
+  if (locks.copy) activeLocks.push("copy/text wording");
+
+  const lines: string[] = [];
+  if (activeLocks.length > 0) {
+    lines.push(`Iteration locks are active: ${activeLocks.join(", ")}.`);
+    lines.push("Preserve all locked elements unless the user explicitly asks to change them.");
+  }
+
+  if (session.lastArtifactType) {
+    lines.push(`Current working artifact type: ${session.lastArtifactType}.`);
+  }
+  if (session.lastArtifactTitle) {
+    lines.push(`Current artifact title: ${session.lastArtifactTitle}.`);
+  }
+  if (session.recentRefinements && session.recentRefinements.length > 0) {
+    lines.push(`Recent refinements to preserve: ${session.recentRefinements.join("; ")}.`);
+  }
+
+  if (lines.length === 0) return null;
+  return ["Builder iteration context:", ...lines].join("\n");
+}
+
+function buildCanvasArtifactPrompt(input: string | null, requestedTarget: BuilderTarget): string {
+  const lower = (input ?? "").toLowerCase();
+  const wantsFrameworkCode =
+    lower.includes("next.js") ||
+    lower.includes("nextjs") ||
+    lower.includes("react") ||
+    lower.includes("tsx");
+
+  const targetHint =
+    requestedTarget === "auto"
+      ? "Choose the best artifact type for the request."
+      : `Use artifact type=${requestedTarget}.`;
+
+  const shouldPrioritizePageQuality =
+    requestedTarget === "page" ||
+    (requestedTarget === "auto" &&
+      ["landing page", "website", "hero", "marketing", "tailwind"].some((token) => lower.includes(token)));
+
+  const pageQualityRules = shouldPrioritizePageQuality
+    ? [
+        "Page quality requirements:",
+        "- Return a complete, polished page (not a skeleton).",
+        "- Mobile-first responsive layout, then desktop enhancement.",
+        "- Include clear visual hierarchy, meaningful typography scale, and strong spacing rhythm.",
+        "- Use at least one intentional motion effect (subtle reveal, hover, or transition) without over-animating.",
+        "- Include practical sections when relevant: hero, social proof, features, CTA.",
+        "- Ensure accessible contrast, semantic HTML landmarks, and visible focus styles.",
+        "- Avoid placeholder copy like lorem ipsum unless explicitly requested.",
+      ]
+    : [];
+
+  const reactRuntimeRules =
+    requestedTarget === "react-app" || (requestedTarget === "auto" && lower.includes("react"))
+      ? [
+          "React app requirements:",
+          "- Provide payload.files with a runnable React app and set payload.entry explicitly.",
+          "- The entry file must mount to document.getElementById('root') using react-dom/client.",
+          "- Use only React + ReactDOM plus local relative imports within payload.files.",
+          "- Avoid Node APIs, server-only code, and external npm dependencies unless absolutely necessary.",
+        ]
+      : [];
+
+  return [
+    "The user is asking for something that should render in the app canvas.",
+    targetHint,
+    "Return a typed builder artifact as valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
+    "Output the artifact block first, then optional explanation after it.",
+    "Use this shape:",
+    '{ "artifactVersion": 1, "artifact": { "type": "page|document|react-app|nextjs-bundle", "title": "...", "payload": { ... } } }',
+    "For landing pages and visual previews, choose type=page and payload.html as a complete self-contained HTML document.",
+    "Page HTML must run in iframe srcDoc with no local imports or build step.",
+    "Use Tailwind via https://cdn.tailwindcss.com when Tailwind styling is requested.",
+    "For react-app or nextjs-bundle, put a files object in payload.files where keys are file paths and values are full file contents.",
+    wantsFrameworkCode
+      ? "If the user asks for Next.js or React, prefer type=react-app or type=nextjs-bundle with realistic file paths and runnable file contents."
+      : "After the HTML artifact, you may include brief implementation notes only if they add clear value.",
+    ...pageQualityRules,
+    ...reactRuntimeRules,
+  ].join("\n");
+}
+
 function extractTextMessages(body: Record<string, unknown>): Array<{ role: string; content: string }> {
-  // Format 1 + 2: AI SDK v6 messages with either content (string) or parts (array)
   if (Array.isArray(body.messages) && body.messages.length > 0) {
     return body.messages
       .map((m: any) => {
@@ -344,6 +511,9 @@ export async function POST(req: Request) {
     const id: string = (body.chatId as string) || (body.id as string) || crypto.randomUUID();
     const shouldPersist = userId !== "guest";
     const selectedMode: Mode = (body.mode as Mode) || "advanced";
+    const requestedBuilderTarget = normalizeBuilderTarget(body.builderTarget);
+    const requestedBuilderLocks = normalizeBuilderLocks(body.builderLocks ?? DEFAULT_BUILDER_LOCKS);
+    const builderSession = normalizeBuilderSession(body.builderSession);
     const preferVision = requestHasImageInput(body);
     const webSearchRequested = body.webSearch === true;
     const entitlement = shouldPersist
@@ -447,6 +617,19 @@ export async function POST(req: Request) {
       }
     }
 
+    const canvasBuildIntent =
+      requestedBuilderTarget !== "auto" || isCanvasBuildIntent(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null);
+    if (canvasBuildIntent) {
+      systemPromptParts.push(
+        buildCanvasArtifactPrompt(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null, requestedBuilderTarget)
+      );
+
+      const iterationPrompt = buildIterationConstraintsPrompt(requestedBuilderLocks, builderSession);
+      if (iterationPrompt) {
+        systemPromptParts.push(iterationPrompt);
+      }
+    }
+
     const systemPrompt = systemPromptParts.join("\n\n");
 
     if (shouldPersist) {
@@ -488,6 +671,15 @@ export async function POST(req: Request) {
       messages: modelMessages,
       stopWhen: stepCountIs(5),
       onFinish: async ({ text, totalUsage, providerMetadata }) => {
+        if (canvasBuildIntent) {
+          const artifact = parseBuilderArtifact(text ?? "");
+          recordBuilderMetric({
+            parseSuccess: Boolean(artifact),
+            artifactType: artifact?.type,
+            requestedTarget: requestedBuilderTarget,
+          });
+        }
+
         if (text && shouldPersist) {
           await saveMessage({ chatId: id, role: "assistant", content: text });
         }

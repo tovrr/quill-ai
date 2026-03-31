@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import type { BuilderTarget } from "@/lib/builder-artifacts";
 
 export type Mode = "fast" | "thinking" | "advanced";
 
@@ -10,6 +11,8 @@ interface TaskInputProps {
   onGenerateImage?: (prompt: string) => Promise<void>;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
+  builderTarget: BuilderTarget;
+  onBuilderTargetChange: (target: BuilderTarget) => void;
   canvasMode: boolean;
   onCanvasToggle: () => void;
   webSearchEnabled: boolean;
@@ -25,6 +28,13 @@ interface TaskInputProps {
   placeholder?: string;
 }
 
+const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }> = [
+  { id: "auto", label: "Auto", desc: "Infer from prompt" },
+  { id: "page", label: "Page", desc: "HTML live preview" },
+  { id: "react-app", label: "React", desc: "Multi-file app" },
+  { id: "nextjs-bundle", label: "Next.js", desc: "Bundle files" },
+];
+
 const MODES: { id: Mode; label: string; desc: string }[] = [
   { id: "fast", label: "Fast", desc: "Quick responses" },
   { id: "thinking", label: "Think", desc: "Deep reasoning" },
@@ -36,6 +46,8 @@ export function TaskInput({
   onGenerateImage,
   mode,
   onModeChange,
+  builderTarget,
+  onBuilderTargetChange,
   canvasMode,
   onCanvasToggle,
   webSearchEnabled,
@@ -439,6 +451,34 @@ export function TaskInput({
                         </button>
                       </div>
                     )}
+
+                    <div className="border-t border-quill-border mx-2 my-1" />
+
+                    <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
+                      Builder target
+                    </div>
+
+                    {BUILDER_TARGETS.map((target) => (
+                      <button
+                        key={target.id}
+                        onClick={() => {
+                          onBuilderTargetChange(target.id);
+                          setDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
+                        style={{ color: builderTarget === target.id ? "#F87171" : "#a8a8c0" }}
+                      >
+                        <span className="flex-1">
+                          {target.label}
+                          <span className="ml-2 text-[11px] text-quill-muted">{target.desc}</span>
+                        </span>
+                        {builderTarget === target.id && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
 
                     <div className="border-t border-quill-border mx-2 my-1" />
 

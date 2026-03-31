@@ -3,6 +3,7 @@
 import type { UIMessage } from "ai";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import Image from "next/image";
+import { parseBuilderArtifact } from "@/lib/builder-artifacts";
 
 function ToolCallBadge({
   toolName,
@@ -212,6 +213,38 @@ function MarkdownText({ text }: { text: string }) {
   );
 }
 
+function ArtifactSummary({ text }: { text: string }) {
+  const artifact = parseBuilderArtifact(text);
+  if (!artifact) return null;
+
+  if (artifact.type === "page") {
+    return (
+      <div className="text-sm text-quill-text">
+        Built page artifact ready in Canvas preview.
+      </div>
+    );
+  }
+
+  if (artifact.type === "react-app" || artifact.type === "nextjs-bundle") {
+    const fileCount = Object.keys(artifact.payload.files ?? {}).length;
+    return (
+      <div className="text-sm text-quill-text">
+        Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open Canvas to inspect code.
+      </div>
+    );
+  }
+
+  if (artifact.type === "document") {
+    return (
+      <div className="text-sm text-quill-text">
+        Built document artifact. Open Canvas to read and export.
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export function RealMessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
 
@@ -241,6 +274,8 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         {message.parts.map((part, i) => {
           // Text part
           if (part.type === "text" && part.text) {
+            const artifactSummary = !isUser ? <ArtifactSummary text={part.text} /> : null;
+
             return isUser ? (
               <div
                 key={i}
@@ -253,7 +288,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
                 key={i}
                 className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
               >
-                <MarkdownText text={part.text} />
+                {artifactSummary ?? <MarkdownText text={part.text} />}
               </div>
             );
           }

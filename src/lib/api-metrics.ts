@@ -1,7 +1,19 @@
+import type { BuilderArtifactType } from "@/lib/builder-artifacts";
+import type { BuilderTarget } from "@/lib/builder-artifacts";
+
 type RouteMetric = {
   total: number;
   statuses: Record<string, number>;
   errors: Record<string, number>;
+};
+
+type BuilderMetric = {
+  prompts: number;
+  artifacts: number;
+  parseFailures: number;
+  mismatches: number;
+  byType: Record<BuilderArtifactType, number>;
+  byRequestedTarget: Record<BuilderTarget, number>;
 };
 
 type MetricsStore = {
@@ -13,6 +25,7 @@ type MetricsStore = {
     status5xx: number;
   };
   routes: Record<string, RouteMetric>;
+  builder: BuilderMetric;
 };
 
 const globalStore = globalThis as typeof globalThis & {
@@ -29,6 +42,24 @@ function createStore(): MetricsStore {
       status5xx: 0,
     },
     routes: {},
+    builder: {
+      prompts: 0,
+      artifacts: 0,
+      parseFailures: 0,
+      mismatches: 0,
+      byType: {
+        page: 0,
+        document: 0,
+        "react-app": 0,
+        "nextjs-bundle": 0,
+      },
+      byRequestedTarget: {
+        auto: 0,
+        page: 0,
+        "react-app": 0,
+        "nextjs-bundle": 0,
+      },
+    },
   };
 }
 
@@ -74,10 +105,34 @@ export function recordApiMetric(input: {
   }
 }
 
+export function recordBuilderMetric(input: {
+  parseSuccess: boolean;
+  artifactType?: BuilderArtifactType;
+  requestedTarget?: BuilderTarget;
+}): void {
+  store.builder.prompts += 1;
+  const target = input.requestedTarget ?? "auto";
+  store.builder.byRequestedTarget[target] += 1;
+
+  if (!input.parseSuccess) {
+    store.builder.parseFailures += 1;
+    return;
+  }
+
+  store.builder.artifacts += 1;
+  if (input.artifactType) {
+    store.builder.byType[input.artifactType] += 1;
+    if (target !== "auto" && input.artifactType !== target) {
+      store.builder.mismatches += 1;
+    }
+  }
+}
+
 export function getApiMetricsSnapshot() {
   return {
     startedAt: store.startedAt,
     totals: { ...store.totals },
     routes: JSON.parse(JSON.stringify(store.routes)) as Record<string, RouteMetric>,
+    builder: JSON.parse(JSON.stringify(store.builder)) as BuilderMetric,
   };
 }

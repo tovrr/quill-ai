@@ -10,8 +10,10 @@ import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatus
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
-import { CanvasPanel, isHTMLContent } from "@/components/agent/CanvasPanel";
+import { CanvasPanel, isCanvasRenderableContent, isHTMLContent } from "@/components/agent/CanvasPanel";
 import { getKillerById, type Killer } from "@/lib/killers";
+import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
+import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
@@ -111,6 +113,9 @@ export default function AgentPage() {
 
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("idle");
   const [selectedMode, setSelectedMode] = useState<Mode>("fast");
+  const [builderTarget, setBuilderTarget] = useState<BuilderTarget>("auto");
+  const [builderLocks, setBuilderLocks] = useState<BuilderLocks>(DEFAULT_BUILDER_LOCKS);
+  const [recentRefinements, setRecentRefinements] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
   const [canUsePaidModes, setCanUsePaidModes] = useState(false);
@@ -127,6 +132,12 @@ export default function AgentPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
 
+  const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
+  const canUsePageRefineActions =
+    builderTarget === "page" ||
+    artifact?.type === "page" ||
+    (builderTarget === "auto" && isHTMLContent(canvasContent));
+
   const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
   const isTrialPlan = planLabel.toLowerCase().startsWith("trial") || trialDaysLeft !== null;
   const shouldShowTrialUpgradeCta = isTrialPlan && (trialDaysLeft ?? 0) <= 2;
@@ -137,10 +148,23 @@ export default function AgentPage() {
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
+  const builderTargetRef = useRef<BuilderTarget>(builderTarget);
+  const builderLocksRef = useRef<BuilderLocks>(builderLocks);
+  const builderSessionRef = useRef<BuilderSessionContext>({});
   const killerRef = useRef<string | null>(killer?.id ?? null);
   const webSearchRef = useRef(webSearchEnabled);
   useEffect(() => { modeRef.current = selectedMode; }, [selectedMode]);
+  useEffect(() => { builderTargetRef.current = builderTarget; }, [builderTarget]);
+  useEffect(() => { builderLocksRef.current = builderLocks; }, [builderLocks]);
   useEffect(() => { webSearchRef.current = webSearchEnabled; }, [webSearchEnabled]);
+
+  useEffect(() => {
+    builderSessionRef.current = {
+      lastArtifactType: artifact?.type,
+      lastArtifactTitle: artifact?.title,
+      recentRefinements,
+    };
+  }, [artifact, recentRefinements]);
 
   const transport = useMemo(
     () =>
@@ -152,6 +176,9 @@ export default function AgentPage() {
             messages,
             chatId: id,
             mode: modeRef.current,
+            builderTarget: builderTargetRef.current,
+            builderLocks: builderLocksRef.current,
+            builderSession: builderSessionRef.current,
             webSearch: webSearchRef.current,
             ...(killerRef.current ? { killerId: killerRef.current } : {}),
           },
@@ -342,7 +369,7 @@ export default function AgentPage() {
     return () => clearTimeout(timer);
   }, [status, messages.length]);
 
-  // Update canvas content; auto-open for HTML
+  // Update canvas content; auto-open for renderable artifacts/pages
   useEffect(() => {
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
     if (lastAssistant) {
@@ -354,7 +381,7 @@ export default function AgentPage() {
         .join("\n");
       if (text) {
         setCanvasContent(text);
-        if (isHTMLContent(text)) setCanvasMode(true);
+        if (isCanvasRenderableContent(text)) setCanvasMode(true);
       }
     }
   }, [messages]);
@@ -375,6 +402,39 @@ export default function AgentPage() {
     },
     [sendMessage]
   );
+
+  const handleQuickPageRefine = useCallback(
+    (label: string, instruction: string) => {
+      setRecentRefinements((prev) => {
+        const next = [label, ...prev.filter((item) => item !== label)];
+        return next.slice(0, 5);
+      });
+      setAgentStatus("thinking");
+      sendMessage({
+        text: [
+          "Refine the current page artifact.",
+          `Instruction: ${instruction}`,
+          "Keep the existing structure unless needed.",
+          "Return only an updated artifact block.",
+        ].join("\n"),
+      });
+    },
+    [sendMessage]
+  );
+
+  const toggleBuilderLock = useCallback((lock: keyof BuilderLocks) => {
+    setBuilderLocks((prev) => ({
+      ...prev,
+      [lock]: !prev[lock],
+    }));
+  }, []);
+
+  const pageRefineActions = [
+    { id: "premium", label: "More premium", instruction: "Increase visual polish with stronger hierarchy and refined spacing." },
+    { id: "mobile", label: "Improve mobile", instruction: "Optimize spacing, typography, and tap targets for small screens." },
+    { id: "cta", label: "Stronger CTA", instruction: "Make the primary call-to-action clearer and more conversion-focused." },
+    { id: "motion", label: "Softer motion", instruction: "Reduce motion intensity and keep only subtle, meaningful transitions." },
+  ] as const;
 
   const handleGenerateImage = useCallback(
     async (prompt: string) => {
@@ -643,6 +703,8 @@ export default function AgentPage() {
                   onGenerateImage={handleGenerateImage}
                   mode={selectedMode}
                   onModeChange={setSelectedMode}
+                  builderTarget={builderTarget}
+                  onBuilderTargetChange={setBuilderTarget}
                   canvasMode={canvasMode}
                   onCanvasToggle={() => setCanvasMode((v) => !v)}
                   webSearchEnabled={webSearchEnabled}
@@ -657,6 +719,47 @@ export default function AgentPage() {
                   isWorking={isLoading || isGeneratingImage}
                   placeholder={killer ? `Ask ${killer.name}...` : "Give Quill a task to execute..."}
                 />
+
+                {canUsePageRefineActions && messages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {pageRefineActions.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleQuickPageRefine(action.label, action.instruction)}
+                        disabled={isLoading || isGeneratingImage}
+                        className="px-2.5 py-1.5 rounded-lg border border-quill-border text-[11px] text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {canUsePageRefineActions && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {([
+                      ["layout", "Lock layout"],
+                      ["colors", "Lock colors"],
+                      ["sectionOrder", "Lock sections"],
+                      ["copy", "Lock copy"],
+                    ] as Array<[keyof BuilderLocks, string]>).map(([key, label]) => {
+                      const active = builderLocks[key];
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleBuilderLock(key)}
+                          className={`px-2.5 py-1.5 rounded-lg border text-[11px] transition-all ${
+                            active
+                              ? "border-[rgba(239,68,68,0.45)] bg-[rgba(239,68,68,0.1)] text-[#f7b0b0]"
+                              : "border-quill-border text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseBuilderArtifact, type FileBundleArtifact } from "@/lib/builder-artifacts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -8,9 +9,22 @@ import { useState } from "react";
 
 function extractHTML(content: string): string {
   const trimmed = content.trim();
-  // Strip markdown code fences if the model wrapped the output
-  const fenceMatch = trimmed.match(/^```(?:html)?\n([\s\S]*?)```\s*$/i);
-  if (fenceMatch) return fenceMatch[1].trim();
+
+  // Fast path: the entire response is a fenced HTML block.
+  const fullFenceMatch = trimmed.match(/^```(?:html)?\n([\s\S]*?)```\s*$/i);
+  if (fullFenceMatch) return fullFenceMatch[1].trim();
+
+  // Common case: the model adds commentary, then includes a fenced HTML artifact.
+  const htmlFenceMatch = trimmed.match(/```html\n([\s\S]*?)```/i);
+  if (htmlFenceMatch) return htmlFenceMatch[1].trim();
+
+  // Fallback: find a standalone HTML document embedded anywhere in the response.
+  const htmlDocumentMatch = trimmed.match(/<!doctype html[\s\S]*?<\/html>/i);
+  if (htmlDocumentMatch) return htmlDocumentMatch[0].trim();
+
+  const htmlBlockMatch = trimmed.match(/<html[\s\S]*?<\/html>/i);
+  if (htmlBlockMatch) return htmlBlockMatch[0].trim();
+
   return trimmed;
 }
 
@@ -21,6 +35,13 @@ export function isHTMLContent(content: string): boolean {
     src.startsWith("<html") ||
     (src.includes("<html") && src.includes("</html>"))
   );
+}
+
+export function isCanvasRenderableContent(content: string): boolean {
+  if (!content.trim()) return false;
+  const artifact = parseBuilderArtifact(content);
+  if (artifact) return true;
+  return isHTMLContent(content);
 }
 
 // ---------------------------------------------------------------------------
@@ -155,30 +176,289 @@ interface CanvasPanelProps {
 
 type Tab = "preview" | "code";
 
+function getBundleEntry(files: Record<string, string>, preferred?: string): string | null {
+  if (preferred && files[preferred]) return preferred;
+
+  const candidates = [
+    "src/main.tsx",
+    "src/main.jsx",
+    "src/index.tsx",
+    "src/index.jsx",
+    "main.tsx",
+    "main.jsx",
+    "index.tsx",
+    "index.jsx",
+    "App.tsx",
+    "App.jsx",
+  ];
+
+  for (const path of candidates) {
+    if (files[path]) return path;
+  }
+
+  const firstTsx = Object.keys(files).find((key) => key.endsWith(".tsx") || key.endsWith(".jsx"));
+  return firstTsx ?? Object.keys(files)[0] ?? null;
+}
+
+function toEmbeddedJson(value: unknown): string {
+  return JSON.stringify(value).replace(/<\//g, "<\\/");
+}
+
+function createReactRuntimeSrcDoc(files: Record<string, string>, entry?: string): string {
+  const resolvedEntry = getBundleEntry(files, entry);
+  const filesJson = toEmbeddedJson(files);
+  const entryJson = toEmbeddedJson(resolvedEntry ?? "");
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Preview</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19",
+          "react-dom": "https://esm.sh/react-dom@19",
+          "react-dom/client": "https://esm.sh/react-dom@19/client",
+          "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime"
+        }
+      }
+    </script>
+    <style>
+      html, body, #root { height: 100%; margin: 0; }
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: #0b0b13; color: #e7e7f0; }
+      .preview-error { padding: 12px 14px; margin: 10px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.1); color: #f7b0b0; font-size: 12px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="preview-error" class="preview-error" style="display:none"></div>
+    <script type="module">
+      const files = ${filesJson};
+      const entry = ${entryJson};
+
+      const errorEl = document.getElementById("preview-error");
+      const showError = (message) => {
+        if (!errorEl) return;
+        errorEl.style.display = "block";
+        errorEl.textContent = message;
+      };
+
+      window.addEventListener("error", (event) => {
+        showError("Runtime error: " + (event.error?.message || event.message || "Unknown error"));
+      });
+
+      const moduleUrlCache = new Map();
+
+      const dirname = (path) => {
+        const idx = path.lastIndexOf("/");
+        return idx >= 0 ? path.slice(0, idx) : "";
+      };
+
+      const normalize = (path) => path
+        .replace(/\\\\/g, "/")
+        .replace(/\/\.\//g, "/")
+        .replace(/^\.\//, "")
+        .replace(/\/+/g, "/");
+
+      const resolveRelative = (fromPath, request) => {
+        if (!request.startsWith(".")) return request;
+        const fromDir = dirname(fromPath).split("/").filter(Boolean);
+        const reqParts = request.split("/");
+
+        for (const part of reqParts) {
+          if (!part || part === ".") continue;
+          if (part === "..") fromDir.pop();
+          else fromDir.push(part);
+        }
+
+        return normalize(fromDir.join("/"));
+      };
+
+      const resolveFile = (fromPath, request) => {
+        const resolved = resolveRelative(fromPath, request);
+        if (!request.startsWith(".")) return request;
+
+        if (files[resolved]) return resolved;
+
+        const extensions = [".tsx", ".ts", ".jsx", ".js"];
+        for (const ext of extensions) {
+          if (files[resolved + ext]) return resolved + ext;
+        }
+
+        const indexExtensions = ["/index.tsx", "/index.ts", "/index.jsx", "/index.js"];
+        for (const suffix of indexExtensions) {
+          if (files[resolved + suffix]) return resolved + suffix;
+        }
+
+        return resolved;
+      };
+
+      const rewriteImports = (code, fromPath) => {
+        const rewriteSpecifier = (spec) => {
+          if (!spec.startsWith(".")) return spec;
+          const resolved = resolveFile(fromPath, spec);
+          return toModuleUrl(resolved);
+        };
+
+        code = code.replace(/(import\\s+[^\"']*?from\\s*[\"'])([^\"']+)([\"'])/g, (_, a, spec, c) => {
+          return a + rewriteSpecifier(spec) + c;
+        });
+
+        code = code.replace(/(export\\s+[^\"']*?from\\s*[\"'])([^\"']+)([\"'])/g, (_, a, spec, c) => {
+          return a + rewriteSpecifier(spec) + c;
+        });
+
+        code = code.replace(/(import\\(\\s*[\"'])([^\"']+)([\"']\\s*\\))/g, (_, a, spec, c) => {
+          return a + rewriteSpecifier(spec) + c;
+        });
+
+        return code;
+      };
+
+      const toModuleUrl = (filePath) => {
+        if (moduleUrlCache.has(filePath)) return moduleUrlCache.get(filePath);
+
+        const source = files[filePath];
+        if (typeof source !== "string") {
+          throw new Error("Missing module in artifact files: " + filePath);
+        }
+
+        const transformed = Babel.transform(source, {
+          sourceType: "module",
+          presets: ["typescript", "react"],
+          filename: filePath,
+        }).code;
+
+        const rewritten = rewriteImports(transformed, filePath);
+        const blob = new Blob([rewritten], { type: "text/javascript" });
+        const url = URL.createObjectURL(blob);
+        moduleUrlCache.set(filePath, url);
+        return url;
+      };
+
+      if (!entry) {
+        showError("No entry file found for React preview.");
+      } else {
+        try {
+          const entryUrl = toModuleUrl(entry);
+          await import(entryUrl);
+        } catch (error) {
+          showError("Preview failed: " + (error instanceof Error ? error.message : String(error)));
+        }
+      }
+    </script>
+  </body>
+</html>`;
+}
+
+function FileBundlePreview({
+  files,
+  entry,
+  type,
+}: {
+  files: Record<string, string>;
+  entry?: string;
+  type: "react-app" | "nextjs-bundle";
+}) {
+  const paths = Object.keys(files).sort();
+  const activePath = entry && files[entry] ? entry : paths[0];
+  const activeCode = activePath ? files[activePath] : "";
+
+  return (
+    <div className="h-full grid grid-cols-[220px_1fr] bg-[#0d0d15]">
+      <div className="border-r border-quill-border overflow-auto">
+        <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
+          {type === "react-app" ? "React app files" : "Next.js bundle files"}
+        </div>
+        <div className="p-2 space-y-1">
+          {paths.map((path) => (
+            <div
+              key={path}
+              className={`px-2 py-1 rounded text-[12px] font-mono truncate ${
+                path === activePath ? "bg-quill-border text-quill-text" : "text-[#9b9bb7]"
+              }`}
+              title={path}
+            >
+              {path}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-auto">
+        <pre className="p-5 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+          {activeCode}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
 
-  const isHTML = isHTMLContent(content);
-  const htmlSrc = isHTML ? extractHTML(content) : "";
+  const artifact = parseBuilderArtifact(content);
+  const hasArtifactEnvelope = /<quill-artifact>/i.test(content) || /```json\n[\s\S]*artifactVersion/i.test(content);
+  const artifactParseFailed = hasArtifactEnvelope && !artifact;
+  const isArtifact = Boolean(artifact);
+  const artifactType = artifact?.type ?? (isHTMLContent(content) ? "page" : "document");
+
+  const isHTML = artifactType === "page";
+  const htmlSrc = isArtifact
+    ? artifact?.type === "page"
+      ? artifact.payload.html
+      : ""
+    : isHTML
+    ? extractHTML(content)
+    : "";
+
+  const markdownSrc = isArtifact
+    ? artifact?.type === "document"
+      ? artifact.payload.markdown
+      : ""
+    : !isHTML
+    ? content
+    : "";
+
+  const fileBundle: FileBundleArtifact | null =
+    artifact && (artifact.type === "react-app" || artifact.type === "nextjs-bundle") ? artifact : null;
+  const canRunReactPreview = false;
+  const reactPreviewSrcDoc =
+    fileBundle?.type === "react-app" ? createReactRuntimeSrcDoc(fileBundle.payload.files, fileBundle.payload.entry) : "";
+  const effectiveTab: Tab = fileBundle?.type === "react-app" && !canRunReactPreview ? "code" : tab;
+
+  const copyText = isArtifact
+    ? JSON.stringify({ artifactVersion: 1, artifact }, null, 2)
+    : isHTML
+    ? htmlSrc
+    : content;
+
+  const downloadText = isArtifact
+    ? JSON.stringify({ artifactVersion: 1, artifact }, null, 2)
+    : isHTML
+    ? htmlSrc
+    : content;
+
+  const downloadMime = isArtifact ? "application/json" : isHTML ? "text/html" : "text/markdown";
+  const downloadExt = isArtifact ? "json" : isHTML ? "html" : "md";
+  const artifactLabel = artifactType === "react-app" ? "react app" : artifactType === "nextjs-bundle" ? "next.js bundle" : artifactType;
 
   const handleCopy = () => {
-    const text = isHTML ? htmlSrc : content;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(copyText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
   const handleDownload = () => {
-    const text = isHTML ? htmlSrc : content;
-    const mime = isHTML ? "text/html" : "text/markdown";
-    const ext = isHTML ? "html" : "md";
-    const blob = new Blob([text], { type: mime });
+    const blob = new Blob([downloadText], { type: downloadMime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `quill-${isHTML ? "page" : "document"}.${ext}`;
+    a.download = `quill-${artifactType}.${downloadExt}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -189,7 +469,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
     window.open(url, "_blank");
   };
 
-  const dark = isHTML;
+  const dark = isHTML || artifactType === "react-app" || artifactType === "nextjs-bundle";
 
   return (
     <div
@@ -228,25 +508,27 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               Canvas
             </span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}>
-              {isHTML ? "page" : "document"}
+              {artifactLabel}
             </span>
           </div>
 
-          {/* Preview / Code tabs — HTML only */}
-          {isHTML && content && (
+          {/* Preview / Code tabs */}
+          {(isHTML || fileBundle?.type === "react-app") && content && (
             <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-quill-surface border border-quill-border">
-              <button
-                onClick={() => setTab("preview")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
-                }`}
-              >
-                Preview
-              </button>
+              {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
+                <button
+                  onClick={() => setTab("preview")}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                    effectiveTab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
+                  }`}
+                >
+                  Preview
+                </button>
+              )}
               <button
                 onClick={() => setTab("code")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  tab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
+                    effectiveTab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
                 }`}
               >
                 Code
@@ -300,7 +582,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
           <button
             onClick={handleDownload}
             disabled={!content}
-            title={`Download .${isHTML ? "html" : "md"}`}
+            title={`Download .${downloadExt}`}
             className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
               dark
                 ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -352,8 +634,28 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               </p>
             </div>
           </div>
+        ) : artifactParseFailed ? (
+          <div className="h-full overflow-y-auto bg-[#0d0d15]">
+            <div className="p-5 space-y-3">
+              <div className="rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-3">
+                <p className="text-sm font-semibold text-[#f7b0b0]">Builder artifact could not be parsed</p>
+                <p className="text-xs text-[#d2d2e6] mt-1">
+                  Ask Quill to re-send the response as a valid artifact block wrapped in &lt;quill-artifact&gt; with artifactVersion=1.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-quill-border bg-[#11111a]">
+                <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
+                  Raw response
+                </div>
+                <pre className="p-4 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all max-h-120 overflow-auto">
+                  {content}
+                </pre>
+              </div>
+            </div>
+          </div>
         ) : isHTML ? (
-          tab === "preview" ? (
+          effectiveTab === "preview" ? (
             /* Live iframe */
             <iframe
               key={htmlSrc}
@@ -370,11 +672,37 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
               </pre>
             </div>
           )
+        ) : fileBundle?.type === "react-app" ? (
+          effectiveTab === "preview" && canRunReactPreview ? (
+            <iframe
+              key={reactPreviewSrcDoc}
+              srcDoc={reactPreviewSrcDoc}
+              sandbox="allow-scripts"
+              className="w-full h-full border-0 bg-[#0d0d15]"
+              title="React app preview"
+            />
+          ) : (
+            <div className="h-full flex flex-col">
+              {!canRunReactPreview && (
+                <div className="mx-4 mt-4 rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-3">
+                  <p className="text-sm font-semibold text-[#f7b0b0]">Live React preview is disabled under current CSP</p>
+                  <p className="text-xs text-[#d2d2e6] mt-1">
+                    Your CSP blocks inline/eval/external scripts required by in-browser transpilation. Use Code view for now.
+                  </p>
+                </div>
+              )}
+              <div className="min-h-0 flex-1 mt-3">
+                <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
+              </div>
+            </div>
+          )
+        ) : fileBundle ? (
+          <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
         ) : (
           /* Markdown document */
           <div className="h-full overflow-y-auto">
             <div className="px-10 py-8">
-              <MarkdownDocument text={content} />
+              <MarkdownDocument text={markdownSrc || content} />
             </div>
           </div>
         )}

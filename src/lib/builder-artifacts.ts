@@ -1,0 +1,266 @@
+export type BuilderArtifactType = "page" | "react-app" | "nextjs-bundle" | "document";
+export type BuilderTarget = "auto" | "page" | "react-app" | "nextjs-bundle";
+
+export type BuilderLocks = {
+  layout: boolean;
+  colors: boolean;
+  sectionOrder: boolean;
+  copy: boolean;
+};
+
+export const DEFAULT_BUILDER_LOCKS: BuilderLocks = {
+  layout: false,
+  colors: false,
+  sectionOrder: false,
+  copy: false,
+};
+
+export type BuilderSessionContext = {
+  lastArtifactType?: BuilderArtifactType;
+  lastArtifactTitle?: string;
+  recentRefinements?: string[];
+};
+
+type BuilderArtifactBase = {
+  artifactVersion: 1;
+  type: BuilderArtifactType;
+  title?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type PageArtifact = BuilderArtifactBase & {
+  type: "page";
+  payload: {
+    html: string;
+  };
+};
+
+export type DocumentArtifact = BuilderArtifactBase & {
+  type: "document";
+  payload: {
+    markdown: string;
+  };
+};
+
+export type FileBundleArtifact = BuilderArtifactBase & {
+  type: "react-app" | "nextjs-bundle";
+  payload: {
+    files: Record<string, string>;
+    entry?: string;
+    dependencies?: string[];
+  };
+};
+
+export type BuilderArtifact = PageArtifact | DocumentArtifact | FileBundleArtifact;
+
+function safeJsonParse(input: string): unknown {
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+}
+
+function hasRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (!hasRecord(value)) return false;
+  return Object.values(value).every((entry) => typeof entry === "string");
+}
+
+function inferEntryFromFiles(files: Record<string, string>): string | undefined {
+  const candidates = [
+    "src/main.tsx",
+    "src/main.jsx",
+    "src/index.tsx",
+    "src/index.jsx",
+    "main.tsx",
+    "main.jsx",
+    "index.tsx",
+    "index.jsx",
+    "App.tsx",
+    "App.jsx",
+  ];
+
+  for (const path of candidates) {
+    if (files[path]) return path;
+  }
+
+  return Object.keys(files).find((key) => key.endsWith(".tsx") || key.endsWith(".jsx"));
+}
+
+function looksLikeFilePath(key: string): boolean {
+  if (!key) return false;
+  return /\.(tsx|ts|jsx|js|css|scss|json|md|html)$/i.test(key) && (key.includes("/") || key.includes("\\"));
+}
+
+function decodeJsonStringValue(rawValue: string): string {
+  try {
+    return JSON.parse(`"${rawValue}"`) as string;
+  } catch {
+    return rawValue
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\r/g, "\r")
+      .replace(/\\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+  }
+}
+
+function coerceLooseToArtifact(candidate: unknown): BuilderArtifact | null {
+  if (!hasRecord(candidate)) return null;
+
+  // Shape: { files: { ... }, entry?: ... }
+  if (isStringRecord(candidate.files)) {
+    const files = candidate.files;
+    if (Object.keys(files).length === 0) return null;
+    const entry = typeof candidate.entry === "string" ? candidate.entry : inferEntryFromFiles(files);
+
+    return {
+      artifactVersion: 1,
+      type: "react-app",
+      title: typeof candidate.title === "string" ? candidate.title : "React App",
+      payload: {
+        files,
+        entry,
+      },
+    };
+  }
+
+  // Shape: { "src/...tsx": "...", ... }
+  const keys = Object.keys(candidate);
+  if (keys.length > 0 && keys.every((key) => looksLikeFilePath(key)) && Object.values(candidate).every((v) => typeof v === "string")) {
+    const files = candidate as Record<string, string>;
+    return {
+      artifactVersion: 1,
+      type: "react-app",
+      title: "React App",
+      payload: {
+        files,
+        entry: inferEntryFromFiles(files),
+      },
+    };
+  }
+
+  return null;
+}
+
+function salvageFileMapFromRawText(content: string): BuilderArtifact | null {
+  const fileEntryRegex = /"([^"\n\r]+\.(?:tsx|ts|jsx|js|css|scss|json|md|html))"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"[^"\n\r]+\.(?:tsx|ts|jsx|js|css|scss|json|md|html)"\s*:|\s*}\s*$|\s*$)/gi;
+  const files: Record<string, string> = {};
+
+  let match: RegExpExecArray | null = null;
+  while ((match = fileEntryRegex.exec(content)) !== null) {
+    const path = match[1]?.trim();
+    const rawValue = match[2] ?? "";
+    if (!path || !looksLikeFilePath(path)) continue;
+    files[path] = decodeJsonStringValue(rawValue);
+  }
+
+  if (Object.keys(files).length === 0) return null;
+
+  return {
+    artifactVersion: 1,
+    type: "react-app",
+    title: "React App",
+    payload: {
+      files,
+      entry: inferEntryFromFiles(files),
+    },
+  };
+}
+
+function validateArtifact(candidate: unknown): BuilderArtifact | null {
+  if (!hasRecord(candidate)) return null;
+  if (candidate.artifactVersion !== 1) return null;
+
+  const type = candidate.type;
+  const payload = candidate.payload;
+  if (type !== "page" && type !== "react-app" && type !== "nextjs-bundle" && type !== "document") {
+    return null;
+  }
+
+  if (!hasRecord(payload)) return null;
+
+  if (type === "page") {
+    if (typeof payload.html !== "string" || !payload.html.trim()) return null;
+    return candidate as BuilderArtifact;
+  }
+
+  if (type === "document") {
+    if (typeof payload.markdown !== "string" || !payload.markdown.trim()) return null;
+    return candidate as BuilderArtifact;
+  }
+
+  if (!isStringRecord(payload.files) || Object.keys(payload.files).length === 0) return null;
+  if (payload.entry !== undefined && typeof payload.entry !== "string") return null;
+  if (
+    payload.dependencies !== undefined &&
+    (!Array.isArray(payload.dependencies) || payload.dependencies.some((dep) => typeof dep !== "string"))
+  ) {
+    return null;
+  }
+
+  return candidate as BuilderArtifact;
+}
+
+function unwrapEnvelope(parsed: unknown): unknown {
+  if (!hasRecord(parsed)) return parsed;
+  if (hasRecord(parsed.artifact)) return parsed.artifact;
+  return parsed;
+}
+
+function extractTaggedArtifactJson(content: string): string | null {
+  const tagged = content.match(/<quill-artifact>\s*([\s\S]*?)\s*<\/quill-artifact>/i);
+  if (tagged?.[1]) return tagged[1].trim();
+  return null;
+}
+
+function extractJsonFence(content: string): string | null {
+  const fences = content.match(/```json\n([\s\S]*?)```/gi);
+  if (!fences || fences.length === 0) return null;
+
+  for (const fence of fences) {
+    const body = fence.replace(/^```json\n/i, "").replace(/```$/i, "").trim();
+    if (body.includes("artifactVersion") || body.includes("\"type\"")) {
+      return body;
+    }
+  }
+  return null;
+}
+
+export function parseBuilderArtifact(content: string): BuilderArtifact | null {
+  if (!content.trim()) return null;
+
+  const tagged = extractTaggedArtifactJson(content);
+  if (tagged) {
+    const parsed = unwrapEnvelope(safeJsonParse(tagged));
+    const artifact = validateArtifact(parsed);
+    if (artifact) return artifact;
+  }
+
+  const jsonFence = extractJsonFence(content);
+  if (jsonFence) {
+    const parsed = unwrapEnvelope(safeJsonParse(jsonFence));
+    const artifact = validateArtifact(parsed);
+    if (artifact) return artifact;
+  }
+
+  const direct = unwrapEnvelope(safeJsonParse(content.trim()));
+  const validatedDirect = validateArtifact(direct);
+  if (validatedDirect) return validatedDirect;
+
+  const coercedDirect = coerceLooseToArtifact(direct);
+  if (coercedDirect) return coercedDirect;
+
+  // Last-resort salvage for partial file-map outputs that are not valid standalone JSON.
+  return salvageFileMapFromRawText(content);
+}
+
+export function shouldAutoOpenCanvas(content: string): boolean {
+  const artifact = parseBuilderArtifact(content);
+  if (!artifact) return false;
+  return artifact.type === "page";
+}
