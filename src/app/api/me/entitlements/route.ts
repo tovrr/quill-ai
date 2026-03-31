@@ -2,17 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { isWebSearchConfigured } from "@/lib/web-search";
+import { resolveUserEntitlements } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
-
-function parseCsvEnv(value: string | undefined): Set<string> {
-  return new Set(
-    (value ?? "")
-      .split(",")
-      .map((v) => v.trim().toLowerCase())
-      .filter(Boolean)
-  );
-}
 
 export async function GET() {
   const webSearchConfigured = isWebSearchConfigured();
@@ -32,22 +24,21 @@ export async function GET() {
     );
   }
 
-  const allowAll = process.env.ALLOW_ALL_AUTH_MODES === "true";
-  const paidUserIds = parseCsvEnv(process.env.PAID_USER_IDS);
-  const paidUserEmails = parseCsvEnv(process.env.PAID_USER_EMAILS);
-
-  const userId = sessionData.user.id.toLowerCase();
-  const userEmail = (sessionData.user.email ?? "").toLowerCase();
-  const canUsePaidModes =
-    allowAll || paidUserIds.has(userId) || (userEmail ? paidUserEmails.has(userEmail) : false);
+  const entitlement = await resolveUserEntitlements({
+    userId: sessionData.user.id,
+    email: sessionData.user.email ?? "",
+  });
 
   return NextResponse.json(
     {
       authenticated: true,
       userId: sessionData.user.id,
       email: sessionData.user.email ?? "",
-      canUsePaidModes,
-      planLabel: canUsePaidModes ? "Paid access" : "Free",
+      canUsePaidModes: entitlement.canUsePaidModes,
+      planLabel: entitlement.planLabel,
+      trialEndsAt: entitlement.trialEndsAt,
+      trialDaysLeft: entitlement.trialDaysLeft,
+      entitlementsSource: entitlement.source,
       canUseWebSearch: webSearchConfigured,
       webSearchState: webSearchConfigured ? "available" : "coming-soon",
     },

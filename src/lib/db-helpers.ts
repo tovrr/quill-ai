@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { chats, messages, modelUsageEvents } from "@/db/schema";
+import { chats, messages, modelUsageEvents, userEntitlements } from "@/db/schema";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 
 export async function getChatsByUserId(userId: string) {
@@ -87,4 +87,55 @@ export async function getRecentModelUsage(limit = 200) {
     orderBy: [desc(modelUsageEvents.createdAt)],
     limit,
   });
+}
+
+export async function getUserEntitlementByUserId(userId: string) {
+  return db.query.userEntitlements.findFirst({
+    where: eq(userEntitlements.userId, userId),
+  });
+}
+
+export async function createUserEntitlement(input: {
+  userId: string;
+  plan: "free" | "trial" | "paid";
+  status?: "active" | "expired" | "canceled";
+  trialStartedAt?: Date;
+  trialEndsAt?: Date;
+  paidStartsAt?: Date;
+  paidEndsAt?: Date;
+}) {
+  const [row] = await db
+    .insert(userEntitlements)
+    .values({
+      userId: input.userId,
+      plan: input.plan,
+      status: input.status ?? "active",
+      trialStartedAt: input.trialStartedAt,
+      trialEndsAt: input.trialEndsAt,
+      paidStartsAt: input.paidStartsAt,
+      paidEndsAt: input.paidEndsAt,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function updateUserEntitlement(
+  userId: string,
+  updates: Partial<{
+    plan: "free" | "trial" | "paid";
+    status: "active" | "expired" | "canceled";
+    trialStartedAt: Date | null;
+    trialEndsAt: Date | null;
+    paidStartsAt: Date | null;
+    paidEndsAt: Date | null;
+  }>
+) {
+  const [row] = await db
+    .update(userEntitlements)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(userEntitlements.userId, userId))
+    .returning();
+
+  return row;
 }

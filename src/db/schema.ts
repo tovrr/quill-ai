@@ -105,6 +105,28 @@ export const messages = pgTable(
   (table) => [index("message_chat_id_idx").on(table.chatId)]
 );
 
+export const userEntitlements = pgTable(
+  "user_entitlement",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    plan: varchar("plan", { enum: ["free", "trial", "paid"] }).notNull().default("free"),
+    status: varchar("status", { enum: ["active", "expired", "canceled"] }).notNull().default("active"),
+    trialStartedAt: timestamp("trialStartedAt", { mode: "date" }),
+    trialEndsAt: timestamp("trialEndsAt", { mode: "date" }),
+    paidStartsAt: timestamp("paidStartsAt", { mode: "date" }),
+    paidEndsAt: timestamp("paidEndsAt", { mode: "date" }),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("user_entitlement_user_id_idx").on(table.userId), index("user_entitlement_plan_idx").on(table.plan)]
+);
+
 export const modelUsageEvents = pgTable(
   "model_usage_event",
   {

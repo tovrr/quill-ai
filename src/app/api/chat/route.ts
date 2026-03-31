@@ -14,6 +14,7 @@ import { KILLERS } from "@/lib/killers";
 import { recordModelUsage } from "@/lib/model-usage";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getBestFreeModel } from "@/lib/openrouter-models";
+import { resolveUserEntitlements } from "@/lib/entitlements";
 import { buildWebSearchContext, isWebSearchConfigured, searchWeb } from "@/lib/web-search";
 import {
   buildRateLimitHeaders,
@@ -37,15 +38,6 @@ const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
 });
-
-function parseCsvEnv(value: string | undefined): Set<string> {
-  return new Set(
-    (value ?? "")
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean)
-  );
-}
 
 function getDailyLimit(mode: Mode) {
   const free = Number(process.env.FREE_DAILY_MESSAGES ?? "80");
@@ -349,11 +341,10 @@ export async function POST(req: Request) {
     const selectedMode: Mode = (body.mode as Mode) || "advanced";
     const preferVision = requestHasImageInput(body);
     const webSearchRequested = body.webSearch === true;
-    const paidUserIds = parseCsvEnv(process.env.PAID_USER_IDS);
-    const paidUserEmails = parseCsvEnv(process.env.PAID_USER_EMAILS);
-    const hasPaidAccess =
-      shouldPersist &&
-      (process.env.ALLOW_ALL_AUTH_MODES === "true" || paidUserIds.has(userId) || (userEmail && paidUserEmails.has(userEmail)));
+    const entitlement = shouldPersist
+      ? await resolveUserEntitlements({ userId, email: userEmail })
+      : null;
+    const hasPaidAccess = shouldPersist && Boolean(entitlement?.canUsePaidModes);
 
     // Guest users are limited to free mode; auth is required for think/pro tiers.
     if (!shouldPersist && selectedMode !== "fast") {
@@ -399,7 +390,7 @@ export async function POST(req: Request) {
     }
 
     // Paid mode enforcement for authenticated users.
-    if (shouldPersist && selectedMode !== "fast" && process.env.ALLOW_ALL_AUTH_MODES !== "true") {
+    if (shouldPersist && selectedMode !== "fast") {
       if (!hasPaidAccess) {
         logApiCompletion(requestContext, { status: 402, error: "paid_mode_required" });
         return jsonResponse(

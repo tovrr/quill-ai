@@ -70,7 +70,7 @@ function ToolCallBadge({
 }
 
 function renderInline(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*\n]+\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
@@ -87,6 +87,13 @@ function renderInline(text: string) {
         >
           {part.slice(1, -1)}
         </code>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return (
+        <em key={i} className="italic text-[#c8c8e0]">
+          {part.slice(1, -1)}
+        </em>
       );
     }
     return part;
