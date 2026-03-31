@@ -11,6 +11,7 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 3. **Weak conversation management**: Provides history, pinning, sharing, and deletion from the sidebar.
 4. **Onboarding friction**: Supports guest chat for immediate usage while keeping advanced features behind authentication.
 5. **Limited output usability**: Canvas mode renders long-form and HTML output in a review-friendly panel.
+6. **Weak app-generation reliability**: Uses typed builder artifacts, target-aware generation, and export diagnostics for predictable output.
 
 ## How It Should Work (User Flow)
 
@@ -21,6 +22,8 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 5. Unauthenticated users are prompted to sign in inside the sidebar history section to save conversations.
 6. User can manage conversations in sidebar: revisit, pin, share, or delete.
 7. For complex output, user uses Canvas mode to inspect generated docs/pages.
+8. For app-building tasks, user selects a builder target (Auto/Page/React/Next.js) and iterates with lock controls.
+9. For Next.js bundles, user checks export-readiness diagnostics and can download a setup script for local install/build.
 
 ## Key User Experience Goals
 
@@ -28,6 +31,7 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 - **Clear mode semantics**: Fast for speed, Think for deeper reasoning, Pro for best quality.
 - **Operational reliability**: Valid model routing, robust request parsing, and stable streaming behavior.
 - **Trust and control**: Ownership-scoped chat deletion and authenticated history access.
+- **Deterministic build output**: Builder artifacts and target-specific prompts reduce format drift.
 
 ## Current Product Surface
 
@@ -39,6 +43,8 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 6. **Auth + Persistence**: Better Auth + Drizzle + Neon for user-linked history.
 7. **Quota Controls**: Daily mode limits via environment settings.
 8. **PWA**: `manifest.webmanifest`, apple-touch-icon, and correct quill-feather icons across all sizes — installable but not yet offline-capable.
+9. **No-code/Low-code Builder**: Artifact-based outputs for `page`, `react-app`, and `nextjs-bundle` with CSP-safe React preview.
+10. **Export Guidance**: Next.js bundle readiness panel and downloadable PowerShell setup script for local validation.
 
 ## Integration Points
 

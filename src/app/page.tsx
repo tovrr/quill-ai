@@ -8,7 +8,7 @@ import { HeroInput } from "@/components/HeroInput";
 export const metadata: Metadata = {
   title: "Quill AI — Your Personal AI Agent That Gets Things Done",
   description:
-    "Quill is your personal AI agent. Research, write, code, analyze data, and execute complex multi-step tasks autonomously. Free to start — no credit card required.",
+    "Quill is your personal AI agent and no-code/low-code app builder. Research, write, code, generate pages, preview React apps, and export Next.js bundles. Free to start — no credit card required.",
   keywords: [
     "AI agent",
     "personal AI assistant",
@@ -52,8 +52,8 @@ const capabilities = [
         <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
       </svg>
     ),
-    title: "Code & Build",
-    description: "Generate full applications, components, scripts, and automation pipelines with production-quality code.",
+    title: "App Builder",
+    description: "Generate landing pages, React apps, and export-ready Next.js bundles with artifact-based output.",
     color: "#F87171",
   },
   {
@@ -108,6 +108,7 @@ const capabilities = [
 const exampleTasks = [
   "Research all Series A AI startups from Q1 2026 and create a competitive landscape report",
   "Build me a full Next.js landing page with Tailwind, animations, and a waitlist form",
+  "Create a React dashboard app with auth UI and preview it live in canvas",
   "Analyze my Q4 sales CSV and identify the top 3 revenue growth opportunities",
   "Write 5 cold email variants for my B2B SaaS product targeting CTOs",
   "Find the top 20 newsletters in the productivity space and their subscriber counts",
@@ -116,8 +117,8 @@ const exampleTasks = [
 
 const stats = [
   { value: "6+", label: "Specialist Agents" },
+  { value: "4", label: "Builder Targets" },
   { value: "3", label: "AI Model Modes" },
-  { value: "∞", label: "Tasks, no limits" },
 ];
 
 export default function HomePage() {
@@ -174,8 +175,8 @@ export default function HomePage() {
         </h1>
 
         <p className="relative mt-5 sm:mt-6 text-base sm:text-xl text-quill-muted max-w-2xl leading-relaxed px-2">
-          Quill researches, writes, codes, and executes complex tasks autonomously.
-          Give it a goal — it figures out the rest.
+          Quill researches, writes, codes, and now builds no-code/low-code app artifacts.
+          Give it a goal and choose a target: page, react app, or next.js bundle.
         </p>
 
         <div className="relative flex flex-col items-center gap-4 mt-8 sm:mt-10 w-full px-4 sm:px-0">

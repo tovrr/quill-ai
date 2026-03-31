@@ -11,6 +11,8 @@ const FREE_FEATURES = [
   "Fast mode",
   "Quick start (guest access)",
   "Specialist agents",
+  "Builder target selector (Auto/Page/React/Next.js)",
+  "Page artifact generation + canvas preview",
   "Share + delete controls",
   "Limited web search (account required)",
   "Sign in to unlock Think + Pro",
@@ -21,6 +23,9 @@ const THINK_FEATURES = [
   "Fast + Think modes",
   "Deeper reasoning quality",
   "Higher daily usage limits",
+  "React app artifact generation",
+  "Live React preview sandbox in Canvas",
+  "Builder iteration locks + quick refine actions",
   "Saved history (account required)",
   "Web search included",
   "Image generation",
@@ -32,6 +37,9 @@ const PRO_FEATURES = [
   "Fast + Think + Pro models",
   "Highest quality responses",
   "Highest daily usage limits",
+  "Next.js bundle generation (export-first)",
+  "Bundle export-readiness diagnostics",
+  "One-click setup script export for local run/build",
   "Saved history + sharing",
   "Web search included",
   "Image generation",
@@ -77,7 +85,7 @@ export default function PricingPage() {
           Simple, honest pricing
         </h1>
         <p className="text-quill-muted text-base sm:text-lg max-w-lg mx-auto">
-          Start free. Upgrade when you need more power. No hidden fees, no surprises.
+          Start free. Upgrade when you need deeper models and stronger builder workflows.
         </p>
         <p className="mt-3 text-xs text-[#EF4444] font-medium">
           Plan details evolve as quotas and provider costs are tuned.
@@ -164,7 +172,8 @@ export default function PricingPage() {
               { q: "What happens when I hit my message limit?", a: "Requests are paused until your next billing cycle resets. You can upgrade at any time to get more immediately." },
               { q: "Is there an annual discount?", a: "Annual billing (2 months free) is coming soon. Sign up free and we'll notify you when it's available." },
               { q: "Do you store my conversations?", a: "If you are signed in, conversations are stored in your account history and can be deleted from the sidebar. Guest sessions are not persisted." },
-              { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.5 Flash by default (or optional OpenRouter free-model routing when configured). Think uses Gemini 2.5 Pro. Pro uses a high-quality Gemini route tuned for quality and reliability." },
+              { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.5 Flash Lite by default (or optional OpenRouter free-model routing when configured). Think uses Gemini 2.5 Flash. Pro uses Gemini 2.5 Pro." },
+              { q: "Does every plan include app builder?", a: "Yes. Free includes page artifacts. Think unlocks stronger React app iteration workflows. Pro is best for high-quality Next.js bundle output and export diagnostics." },
             ].map(({ q, a }) => (
               <div key={q} className="border-b border-quill-border pb-5">
                 <p className="text-sm font-semibold text-quill-text mb-2">{q}</p>

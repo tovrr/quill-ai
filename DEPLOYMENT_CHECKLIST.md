@@ -70,6 +70,10 @@ curl -si -X POST https://yourdomain.com/api/chat \
 - Generate an image from image mode
 - Delete a chat from sidebar and confirm removal
 - Open shared route for owned chat and non-owned chat
+- Generate a `page` artifact and confirm canvas preview renders
+- Generate a `react-app` artifact and confirm live preview sandbox loads
+- Generate a `nextjs-bundle` artifact and confirm readiness panel appears
+- Download `Export PS` script from canvas and validate it writes project files locally
 
 ## 7) Monitoring and Incident Triage
 

@@ -4,7 +4,7 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 
 export const metadata: Metadata = {
   title: "Documentation — Quill AI",
-  description: "Learn how to get the most out of Quill AI. Guides, references, and tips.",
+  description: "Learn how to use Quill AI chat, specialist agents, and no-code/low-code app builder workflows.",
 };
 
 const sections = [
@@ -23,10 +23,23 @@ const sections = [
     color: "#f59e0b",
     articles: [
       { title: "Modes: Fast, Think, Pro", desc: "When to use each model mode and what to expect.", slug: "model-modes" },
+      { title: "Builder targets", desc: "When to choose Auto, Page, React App, or Next.js Bundle.", slug: "builder-targets" },
+      { title: "Artifact format", desc: "Understand Quill artifact envelopes and canvas rendering behavior.", slug: "artifact-format" },
       { title: "Web Search", desc: "How Quill searches the web and uses live results in responses.", slug: "web-search" },
       { title: "File attachments", desc: "Supported file types, size limits, and how Quill reads them.", slug: "file-attachments" },
       { title: "Image generation", desc: "Generate images with Imagen 4 directly from the chat input.", slug: "image-generation" },
       { title: "Canvas mode", desc: "Split-pane document view for reviewing long-form AI output.", slug: "canvas-mode" },
+    ],
+  },
+  {
+    category: "App Builder",
+    color: "#8b5cf6",
+    articles: [
+      { title: "Build pages quickly", desc: "Create polished page artifacts and preview instantly in canvas.", slug: "builder-pages" },
+      { title: "React preview sandbox", desc: "How live React previews run safely under strict CSP.", slug: "builder-react-preview" },
+      { title: "Next.js bundle export", desc: "Generate export-first Next.js bundles and inspect readiness checks.", slug: "builder-nextjs-export" },
+      { title: "Iteration locks", desc: "Lock layout, colors, section order, and copy while refining output.", slug: "builder-locks" },
+      { title: "Setup script export", desc: "Download the PowerShell scaffold script and run install/build locally.", slug: "builder-setup-script" },
     ],
   },
   {
@@ -86,7 +99,7 @@ export default function DocsPage() {
       <div className="border-b border-quill-border px-4 sm:px-6 py-12 sm:py-16 text-center" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.06) 0%, transparent 70%)" }}>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Documentation</h1>
         <p className="text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
-          Everything you need to get the most out of Quill AI.
+          Everything you need to get the most out of Quill AI and the artifact-based app builder.
         </p>
 
         {/* Search placeholder */}

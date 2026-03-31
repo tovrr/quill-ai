@@ -49,6 +49,19 @@
 - [ ] PWA Sprint: service worker + offline shell.
 - [ ] Mobile Distribution Prep: maskable icons + assetlinks + store packaging checklist.
 
+## Builder Roadmap (2026-04)
+
+- [x] Step 1: Typed artifact schema/parser + canvas integration + telemetry.
+- [x] Step 2: Builder target selector + deterministic artifact routing.
+- [x] Step 3: Page quality hardening + quick refine actions + parse-failure UX.
+- [x] Step 4: Iteration memory + lock constraints (layout, colors, section order, copy).
+- [x] Step 5: React preview sandbox (CSP-safe blob URL runtime).
+- [x] Step 6: Next.js bundle export-first hardening (prompt constraints, type inference, readiness diagnostics, setup script export).
+- [ ] Phase 7: Isolated validation runner (materialize bundle, install, typecheck, lint, build).
+- [ ] Phase 8: One-click apply/export into target project with execution summary.
+- [ ] Phase 9: Dependency conflict guardrails + peer dependency diagnostics.
+- [ ] Phase 10: Publish/deploy pipeline scaffolding.
+
 ## High Priority (Production Safety)
 
 - [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash)

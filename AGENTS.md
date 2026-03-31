@@ -13,6 +13,18 @@ Always read the existing files in this repo to understand the actual patterns in
 
 ---
 
+## Builder Behavior (Artifact Discipline)
+
+For app-builder requests in this repository:
+
+1. Always return typed artifact envelopes first (`<quill-artifact>...</quill-artifact>`) before any optional explanation text.
+2. Respect builder targets explicitly (`auto`, `page`, `react-app`, `nextjs-bundle`) and do not drift between output formats.
+3. Prefer complete runnable outputs over partial snippets for `react-app` and `nextjs-bundle` targets.
+4. For `nextjs-bundle`, generate export-first App Router structures (no `pages/api`) and include realistic project files.
+5. Preserve active iteration locks (layout/colors/section order/copy) unless user explicitly requests changes.
+
+---
+
 ## Optional Feature Guides
 
 When users request features beyond the base template, check for available recipes in `.kilocode/recipes/`.
