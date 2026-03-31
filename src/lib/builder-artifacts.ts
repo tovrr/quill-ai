@@ -53,6 +53,12 @@ export type FileBundleArtifact = BuilderArtifactBase & {
 
 export type BuilderArtifact = PageArtifact | DocumentArtifact | FileBundleArtifact;
 
+export type BundleReadiness = {
+  inferredType: "react-app" | "nextjs-bundle";
+  errors: string[];
+  warnings: string[];
+};
+
 function safeJsonParse(input: string): unknown {
   try {
     return JSON.parse(input);
@@ -91,6 +97,97 @@ function inferEntryFromFiles(files: Record<string, string>): string | undefined 
   return Object.keys(files).find((key) => key.endsWith(".tsx") || key.endsWith(".jsx"));
 }
 
+function hasNextAppRouterFiles(files: Record<string, string>): boolean {
+  const hasRootAppRouter = Boolean(files["app/layout.tsx"] && files["app/page.tsx"]);
+  const hasSrcAppRouter = Boolean(files["src/app/layout.tsx"] && files["src/app/page.tsx"]);
+  return hasRootAppRouter || hasSrcAppRouter;
+}
+
+function packageJsonLooksNextJs(pkgSource: string | undefined): boolean {
+  if (!pkgSource) return false;
+  const parsed = safeJsonParse(pkgSource);
+  if (!hasRecord(parsed)) return false;
+
+  const deps = hasRecord(parsed.dependencies) ? parsed.dependencies : {};
+  const devDeps = hasRecord(parsed.devDependencies) ? parsed.devDependencies : {};
+  const hasNextDep = typeof deps.next === "string" || typeof devDeps.next === "string";
+  return hasNextDep;
+}
+
+function inferBundleTypeFromFiles(files: Record<string, string>): "react-app" | "nextjs-bundle" {
+  if (hasNextAppRouterFiles(files)) return "nextjs-bundle";
+  if (files["next.config.ts"] || files["next.config.js"] || files["next.config.mjs"]) return "nextjs-bundle";
+  if (packageJsonLooksNextJs(files["package.json"])) return "nextjs-bundle";
+  return "react-app";
+}
+
+export function analyzeBundleReadiness(
+  type: "react-app" | "nextjs-bundle",
+  files: Record<string, string>,
+  entry?: string,
+): BundleReadiness {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const inferredType = inferBundleTypeFromFiles(files);
+
+  if (inferredType !== type) {
+    warnings.push(`Bundle looks like ${inferredType} but artifact type is ${type}.`);
+  }
+
+  if (type === "react-app") {
+    const resolvedEntry = entry ?? inferEntryFromFiles(files);
+    if (!resolvedEntry) {
+      errors.push("Missing React entry file (expected src/main.tsx, src/index.tsx, or App.tsx). ");
+    }
+    if (!files["index.html"]) {
+      warnings.push("Missing index.html; runtime preview may still work, but export quality is lower.");
+    }
+    return { inferredType, errors, warnings };
+  }
+
+  const pkgSource = files["package.json"];
+  if (!pkgSource) {
+    errors.push("Missing package.json.");
+  }
+
+  if (!hasNextAppRouterFiles(files)) {
+    errors.push("Missing App Router core files (app/layout.tsx + app/page.tsx, or src/app equivalents).");
+  }
+
+  if (!files["tsconfig.json"]) {
+    warnings.push("Missing tsconfig.json.");
+  }
+
+  if (!files["next.config.ts"] && !files["next.config.js"] && !files["next.config.mjs"]) {
+    warnings.push("Missing next.config file.");
+  }
+
+  if (!files["app/globals.css"] && !files["src/app/globals.css"]) {
+    warnings.push("Missing app/globals.css (or src/app/globals.css).");
+  }
+
+  if (pkgSource) {
+    const parsed = safeJsonParse(pkgSource);
+    if (!hasRecord(parsed)) {
+      errors.push("package.json is not valid JSON.");
+    } else {
+      const deps = hasRecord(parsed.dependencies) ? parsed.dependencies : {};
+      const devDeps = hasRecord(parsed.devDependencies) ? parsed.devDependencies : {};
+      if (typeof deps.next !== "string" && typeof devDeps.next !== "string") {
+        errors.push("package.json missing Next.js dependency (next).");
+      }
+      if (typeof deps.react !== "string" && typeof devDeps.react !== "string") {
+        errors.push("package.json missing react dependency.");
+      }
+      if (typeof deps["react-dom"] !== "string" && typeof devDeps["react-dom"] !== "string") {
+        errors.push("package.json missing react-dom dependency.");
+      }
+    }
+  }
+
+  return { inferredType, errors, warnings };
+}
+
 function looksLikeFilePath(key: string): boolean {
   if (!key) return false;
   return /\.(tsx|ts|jsx|js|css|scss|json|md|html)$/i.test(key) && (key.includes("/") || key.includes("\\"));
@@ -116,15 +213,16 @@ function coerceLooseToArtifact(candidate: unknown): BuilderArtifact | null {
   if (isStringRecord(candidate.files)) {
     const files = candidate.files;
     if (Object.keys(files).length === 0) return null;
+    const inferredType = inferBundleTypeFromFiles(files);
     const entry = typeof candidate.entry === "string" ? candidate.entry : inferEntryFromFiles(files);
 
     return {
       artifactVersion: 1,
-      type: "react-app",
-      title: typeof candidate.title === "string" ? candidate.title : "React App",
+      type: inferredType,
+      title: typeof candidate.title === "string" ? candidate.title : inferredType === "nextjs-bundle" ? "Next.js Bundle" : "React App",
       payload: {
         files,
-        entry,
+        entry: inferredType === "react-app" ? entry : undefined,
       },
     };
   }
@@ -133,13 +231,14 @@ function coerceLooseToArtifact(candidate: unknown): BuilderArtifact | null {
   const keys = Object.keys(candidate);
   if (keys.length > 0 && keys.every((key) => looksLikeFilePath(key)) && Object.values(candidate).every((v) => typeof v === "string")) {
     const files = candidate as Record<string, string>;
+    const inferredType = inferBundleTypeFromFiles(files);
     return {
       artifactVersion: 1,
-      type: "react-app",
-      title: "React App",
+      type: inferredType,
+      title: inferredType === "nextjs-bundle" ? "Next.js Bundle" : "React App",
       payload: {
         files,
-        entry: inferEntryFromFiles(files),
+        entry: inferredType === "react-app" ? inferEntryFromFiles(files) : undefined,
       },
     };
   }
@@ -161,13 +260,15 @@ function salvageFileMapFromRawText(content: string): BuilderArtifact | null {
 
   if (Object.keys(files).length === 0) return null;
 
+  const inferredType = inferBundleTypeFromFiles(files);
+
   return {
     artifactVersion: 1,
-    type: "react-app",
-    title: "React App",
+    type: inferredType,
+    title: inferredType === "nextjs-bundle" ? "Next.js Bundle" : "React App",
     payload: {
       files,
-      entry: inferEntryFromFiles(files),
+      entry: inferredType === "react-app" ? inferEntryFromFiles(files) : undefined,
     },
   };
 }

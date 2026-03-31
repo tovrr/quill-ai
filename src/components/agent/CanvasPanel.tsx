@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { parseBuilderArtifact, type FileBundleArtifact } from "@/lib/builder-artifacts";
+import {
+  analyzeBundleReadiness,
+  parseBuilderArtifact,
+  type FileBundleArtifact,
+} from "@/lib/builder-artifacts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -364,7 +368,9 @@ function FileBundlePreview({
   type: "react-app" | "nextjs-bundle";
 }) {
   const paths = Object.keys(files).sort();
-  const activePath = entry && files[entry] ? entry : paths[0];
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const defaultPath = entry && files[entry] ? entry : paths[0] ?? null;
+  const activePath = selectedPath && files[selectedPath] ? selectedPath : defaultPath;
   const activeCode = activePath ? files[activePath] : "";
 
   return (
@@ -375,15 +381,17 @@ function FileBundlePreview({
         </div>
         <div className="p-2 space-y-1">
           {paths.map((path) => (
-            <div
+            <button
               key={path}
+              type="button"
+              onClick={() => setSelectedPath(path)}
               className={`px-2 py-1 rounded text-[12px] font-mono truncate ${
                 path === activePath ? "bg-quill-border text-quill-text" : "text-[#9b9bb7]"
               }`}
               title={path}
             >
               {path}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -394,6 +402,35 @@ function FileBundlePreview({
       </div>
     </div>
   );
+}
+
+function createNextJsSetupScript(files: Record<string, string>): string {
+  const escaped = JSON.stringify(files, null, 2).replace(/<\//g, "<\\/");
+
+  return [
+    "$ErrorActionPreference = \"Stop\"",
+    "$Target = if ($args.Length -gt 0) { $args[0] } else { \"./quill-nextjs-app\" }",
+    "New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+    "$json = @'",
+    escaped,
+    "'@",
+    "$files = $json | ConvertFrom-Json -AsHashtable",
+    "foreach ($path in $files.Keys) {",
+    "  $fullPath = Join-Path $Target $path",
+    "  $dir = Split-Path $fullPath -Parent",
+    "  if ($dir) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }",
+    "  Set-Content -Path $fullPath -Value $files[$path] -Encoding UTF8",
+    "}",
+    "Write-Host \"Next.js bundle files written to $Target\"",
+    "Push-Location $Target",
+    "try {",
+    "  npm install",
+    "  npm run build",
+    "  Write-Host \"Bundle validated. Run: npm run dev\"",
+    "} finally {",
+    "  Pop-Location",
+    "}",
+  ].join("\n");
 }
 
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
@@ -476,6 +513,9 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   const fileBundle: FileBundleArtifact | null =
     artifact && (artifact.type === "react-app" || artifact.type === "nextjs-bundle") ? artifact : null;
+  const bundleReadiness = fileBundle
+    ? analyzeBundleReadiness(fileBundle.type, fileBundle.payload.files, fileBundle.payload.entry)
+    : null;
   const isReactApp = fileBundle?.type === "react-app";
   // Loading is implicit: react-app but no blob URL yet = fetch in progress.
   const canRunReactPreview = isReactApp && Boolean(previewUrl);
@@ -511,6 +551,18 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
     const a = document.createElement("a");
     a.href = url;
     a.download = `quill-${artifactType}.${downloadExt}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSetupScript = () => {
+    if (!fileBundle || fileBundle.type !== "nextjs-bundle") return;
+    const script = createNextJsSetupScript(fileBundle.payload.files);
+    const blob = new Blob([script], { type: "text/x-powershell" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "quill-nextjs-setup.ps1";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -648,6 +700,16 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             </svg>
           </button>
 
+          {fileBundle?.type === "nextjs-bundle" && (
+            <button
+              onClick={handleDownloadSetupScript}
+              title="Download setup script"
+              className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
+            >
+              Export PS
+            </button>
+          )}
+
           {/* Close */}
           <button
             onClick={onClose}
@@ -747,7 +809,37 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
           )
         ) : fileBundle ? (
-          <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
+          <div className="h-full flex flex-col">
+            {fileBundle.type === "nextjs-bundle" && bundleReadiness && (
+              <div className="mx-4 mt-4 rounded-xl border border-quill-border bg-[#11111a] p-3 space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#8f90aa]">
+                  Export readiness
+                </p>
+                <p className={`text-sm ${bundleReadiness.errors.length > 0 ? "text-[#f7b0b0]" : "text-[#9be7b5]"}`}>
+                  {bundleReadiness.errors.length > 0
+                    ? `${bundleReadiness.errors.length} blocking issue(s) found`
+                    : "Core structure looks runnable"}
+                </p>
+                {bundleReadiness.errors.length > 0 && (
+                  <ul className="text-xs text-[#f7b0b0] space-y-1">
+                    {bundleReadiness.errors.slice(0, 3).map((err) => (
+                      <li key={err}>• {err}</li>
+                    ))}
+                  </ul>
+                )}
+                {bundleReadiness.warnings.length > 0 && (
+                  <ul className="text-xs text-[#d2d2e6] space-y-1">
+                    {bundleReadiness.warnings.slice(0, 3).map((warn) => (
+                      <li key={warn}>• {warn}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="min-h-0 flex-1 mt-3">
+              <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
+            </div>
+          </div>
         ) : (
           /* Markdown document */
           <div className="h-full overflow-y-auto">

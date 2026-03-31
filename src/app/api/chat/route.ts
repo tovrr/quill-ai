@@ -279,6 +279,20 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
         ]
       : [];
 
+  const nextBundleRules =
+    requestedTarget === "nextjs-bundle" ||
+    (requestedTarget === "auto" && (lower.includes("next.js") || lower.includes("nextjs")))
+      ? [
+          "Next.js bundle requirements (export-first):",
+          "- Use type=nextjs-bundle and provide payload.files as a complete runnable project snapshot.",
+          "- Include package.json with scripts: dev, build, start and dependencies for next, react, react-dom.",
+          "- Use App Router only (no pages/api). Include app/layout.tsx and app/page.tsx (or src/app equivalents).",
+          "- Include tsconfig.json and next.config.ts (or next.config.js/mjs).",
+          "- Keep imports local and deterministic; avoid placeholders and TODO stubs.",
+          "- Prefer minimal external packages; only include dependencies actually used by the files.",
+        ]
+      : [];
+
   return [
     "The user is asking for something that should render in the app canvas.",
     targetHint,
@@ -295,6 +309,7 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
       : "After the HTML artifact, you may include brief implementation notes only if they add clear value.",
     ...pageQualityRules,
     ...reactRuntimeRules,
+    ...nextBundleRules,
   ].join("\n");
 }
 

@@ -65,6 +65,10 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Added guest-session persistence and automatic guest-to-login chat import so one active guest conversation survives reloads and is moved into history after sign-in
 - [x] Added DB-backed model usage telemetry with `/admin/model-usage` dashboard and local pricing env support for Gemini Flash Lite / Flash / Pro / Imagen 4 Fast
 - [x] Upgraded `/api/health` into a readiness endpoint with DB ping, auth session-store probe, real provider reachability checks, timeout bounds, and degraded-mode hints
+- [x] Shipped builder artifacts V1-V5: typed parser (`builder-artifacts.ts`), target modes (auto/page/react-app/nextjs-bundle), iteration locks, refinement memory, and artifact metrics
+- [x] Fixed builder reliability regressions: OpenRouter fast mode is opt-in (`OPENROUTER_FAST_ENABLED`), parser now salvages loose file maps, and chat bubbles summarize artifacts instead of dumping raw code
+- [x] Added CSP-safe React preview sandbox: `/api/preview` generates runtime HTML and Canvas loads it via blob URL iframe
+- [x] Step 6 started: Next.js bundle export hardening with stricter generation rules, inferred bundle typing from file maps, export-readiness diagnostics in Canvas, and downloadable PowerShell setup script
 
 ## Current Structure
 
@@ -159,3 +163,5 @@ export async function GET() {
 - 2026-03-29: Implemented live web search with Tavily retrieval, auth gating, and entitlement-driven search button states
 - 2026-03-31: Added guest session persistence, guest-to-login import, and fixed hero `?q=` reload replay
 - 2026-03-31: Added model usage telemetry, `/admin/model-usage`, Flash Lite / Flash / Pro tiering, and provider-aware readiness checks
+- 2026-04-01: Builder marathon completed through Step 5 (typed artifacts, locks, refine actions, parser fallbacks, CSP-safe React preview sandbox)
+- 2026-04-01: Began Step 6 export-first hardening for `nextjs-bundle` (prompt constraints, readiness checks, setup-script export)
