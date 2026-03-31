@@ -64,16 +64,13 @@ export function HeroInput() {
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full max-w-2xl mx-auto">
-      <div className="rounded-2xl border border-quill-border bg-[#0d0d15] focus-within:border-[rgba(239,68,68,0.55)] focus-within:shadow-[0_0_24px_rgba(239,68,68,0.1)] transition-all duration-200">
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <div className="inline-flex items-center gap-1.5 text-[11px] text-[#9b9bb8] font-medium tracking-wide uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-            Task for Quill
-          </div>
-          <span className="text-[11px] text-quill-muted">Agent mode</span>
+      <div className="rounded-2xl border border-[rgba(239,68,68,0.22)] bg-[#0d0d15] focus-within:border-[rgba(239,68,68,0.45)] focus-within:shadow-[0_0_20px_rgba(239,68,68,0.08)] transition-all duration-200">
+        <div className="flex items-center gap-2 px-4 pt-3 pb-0.5 text-[11px] text-[#8b8ba8]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+          Describe a task
         </div>
 
-        <div className="flex items-end gap-2 px-3 pb-3">
+        <div className="flex items-end gap-2 px-3 pb-3 pt-1">
           <textarea
             ref={inputRef}
             value={value}
@@ -86,7 +83,7 @@ export function HeroInput() {
             }}
             placeholder={isTyping ? displayed + "▌" : displayed}
             rows={1}
-            className="flex-1 bg-transparent resize-none px-2 py-2 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0"
+            className="flex-1 bg-transparent resize-none px-2 py-2.5 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0"
             autoComplete="off"
             spellCheck="false"
             aria-label="Describe your task"
@@ -95,7 +92,7 @@ export function HeroInput() {
           <button
             type="submit"
             title="Run task"
-            className="shrink-0 w-10 h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white transition-all shadow-[0_0_0_1px_rgba(239,68,68,0.35)] active:scale-95 flex items-center justify-center"
+            className="shrink-0 w-10 h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white transition-all active:scale-95 flex items-center justify-center"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -106,7 +103,7 @@ export function HeroInput() {
       </div>
 
       <p className="mt-2 text-center text-[11px] text-quill-muted">
-        Enter to run · Shift+Enter for new line
+        No sign-in required
       </p>
     </form>
   );
