@@ -25,6 +25,7 @@ import {
 } from "@/lib/observability";
 
 export const maxDuration = 60;
+const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
 
 type Mode = "fast" | "thinking" | "advanced";
 
@@ -320,10 +321,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    console.log("[chat] body keys:", JSON.stringify(Object.keys(body)));
+    if (DEBUG_CHAT_LOGS) {
+      console.log("[chat] body keys:", JSON.stringify(Object.keys(body)));
+    }
 
     const modelMessages = await extractModelMessages(body);
-    console.log("[chat] extracted model messages:", modelMessages.length);
+    if (DEBUG_CHAT_LOGS) {
+      console.log("[chat] extracted model messages:", modelMessages.length);
+    }
 
     const textMsgs = extractTextMessages(body);
     const summarizedUserInput = summarizeLastUserInput(body);

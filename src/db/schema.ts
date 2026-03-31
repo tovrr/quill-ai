@@ -102,7 +102,10 @@ export const messages = pgTable(
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("message_chat_id_idx").on(table.chatId)]
+  (table) => [
+    index("message_chat_id_idx").on(table.chatId),
+    index("message_role_created_chat_idx").on(table.role, table.createdAt, table.chatId),
+  ]
 );
 
 export const userEntitlements = pgTable(

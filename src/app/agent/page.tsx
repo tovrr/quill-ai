@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import type { UIMessage } from "ai";
@@ -97,6 +98,8 @@ function getSearchParam(key: string): string | null {
 }
 
 export default function AgentPage() {
+  const router = useRouter();
+
   // Initialise chatId from URL or generate new
   const [chatId] = useState(() => getSearchParam("chat") ?? readGuestSession()?.chatId ?? crypto.randomUUID());
 
@@ -111,6 +114,8 @@ export default function AgentPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
   const [canUsePaidModes, setCanUsePaidModes] = useState(false);
+  const [planLabel, setPlanLabel] = useState("Free");
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [webSearchState, setWebSearchState] = useState<"available" | "auth-required" | "coming-soon">("coming-soon");
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasContent, setCanvasContent] = useState("");
@@ -123,6 +128,8 @@ export default function AgentPage() {
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
 
   const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
+  const isTrialPlan = planLabel.toLowerCase().startsWith("trial") || trialDaysLeft !== null;
+  const shouldShowTrialUpgradeCta = isTrialPlan && (trialDaysLeft ?? 0) <= 2;
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const guestSessionRestoredRef = useRef(false);
@@ -182,20 +189,28 @@ export default function AgentPage() {
         if (!res.ok) {
           setIsAuthenticated(false);
           setCanUsePaidModes(false);
+          setPlanLabel("Free");
+          setTrialDaysLeft(null);
           setWebSearchState("coming-soon");
           return;
         }
         const data = (await res.json()) as {
           authenticated?: boolean;
           canUsePaidModes?: boolean;
+          planLabel?: string;
+          trialDaysLeft?: number;
           webSearchState?: "available" | "auth-required" | "coming-soon";
         };
         setIsAuthenticated(Boolean(data.authenticated));
         setCanUsePaidModes(Boolean(data.canUsePaidModes));
+        setPlanLabel(data.planLabel ?? (data.canUsePaidModes ? "Paid access" : "Free"));
+        setTrialDaysLeft(typeof data.trialDaysLeft === "number" ? data.trialDaysLeft : null);
         setWebSearchState(data.webSearchState ?? "coming-soon");
       } catch {
         setIsAuthenticated(false);
         setCanUsePaidModes(false);
+        setPlanLabel("Free");
+        setTrialDaysLeft(null);
         setWebSearchState("coming-soon");
       } finally {
         setAuthResolved(true);
@@ -285,7 +300,7 @@ export default function AgentPage() {
     };
 
     void runImport();
-  }, [authResolved, isAuthenticated]);
+  }, [authResolved, isAuthenticated, chatId]);
 
   useEffect(() => {
     if (!canUsePaidModes && selectedMode !== "fast") {
@@ -490,6 +505,23 @@ export default function AgentPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
               <span className="text-[11px] font-medium text-[#a8a8c0]">{modeLabels[selectedMode]}</span>
             </div>
+          )}
+
+          {isTrialPlan && (
+            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] text-[11px] font-medium text-[#FCA5A5]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] shrink-0" />
+              <span>{trialDaysLeft !== null ? `Trial ${trialDaysLeft}d left` : planLabel}</span>
+            </div>
+          )}
+
+          {shouldShowTrialUpgradeCta && (
+            <button
+              onClick={() => router.push("/pricing")}
+              className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
+              title="Upgrade before trial expires"
+            >
+              Upgrade
+            </button>
           )}
 
           <div className="ml-auto flex items-center gap-2">

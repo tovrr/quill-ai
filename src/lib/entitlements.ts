@@ -26,6 +26,10 @@ function getTrialDays(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 7;
 }
 
+function strictEntitlementsEnabled(): boolean {
+  return process.env.ENTITLEMENTS_STRICT_MODE === "true";
+}
+
 function resolveFromEnv(userId: string, email?: string): ResolvedEntitlement {
   const allowAll = process.env.ALLOW_ALL_AUTH_MODES === "true";
   const paidUserIds = parseCsvEnv(process.env.PAID_USER_IDS);
@@ -61,13 +65,26 @@ export async function resolveUserEntitlements(input: {
 
     if (!record) {
       const trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
-      record = await createUserEntitlement({
-        userId: input.userId,
-        plan: "trial",
-        status: "active",
-        trialStartedAt: now,
-        trialEndsAt,
-      });
+      try {
+        record = await createUserEntitlement({
+          userId: input.userId,
+          plan: "trial",
+          status: "active",
+          trialStartedAt: now,
+          trialEndsAt,
+        });
+      } catch {
+        // Concurrent first-request race: another request may have created it.
+        record = await getUserEntitlementByUserId(input.userId);
+      }
+    }
+
+    if (!record) {
+      return {
+        canUsePaidModes: false,
+        planLabel: "Free",
+        source: "db",
+      };
     }
 
     if (record.plan === "paid" && record.status === "active") {
@@ -110,8 +127,25 @@ export async function resolveUserEntitlements(input: {
       source: "db",
       trialEndsAt: record.trialEndsAt?.toISOString(),
     };
-  } catch {
-    // Safe fallback while the new table is not migrated yet.
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        event: "entitlements.resolve.failed",
+        userId: input.userId,
+        strict: strictEntitlementsEnabled(),
+        message: error instanceof Error ? error.message : "unknown",
+      })
+    );
+
+    if (strictEntitlementsEnabled()) {
+      return {
+        canUsePaidModes: false,
+        planLabel: "Free (entitlements unavailable)",
+        source: "env",
+      };
+    }
+
+    // Non-strict mode fallback for migration windows.
     return envEntitlement;
   }
 }

@@ -25,10 +25,24 @@ type ReadinessSummary = {
 };
 
 const DEFAULT_CHECK_TIMEOUT_MS = 1500;
+const DEFAULT_PROVIDER_PROBE_CACHE_MS = 30_000;
+
+type ProviderProbeSnapshot = {
+  googleProbe: { ok: boolean; status?: number } | null;
+  openrouterProbe: { ok: boolean; status?: number } | null;
+  measuredAt: number;
+};
+
+const providerProbeCache = new Map<string, { expiresAt: number; snapshot: ProviderProbeSnapshot }>();
 
 function getCheckTimeoutMs(): number {
   const parsed = Number(process.env.HEALTH_CHECK_TIMEOUT_MS ?? String(DEFAULT_CHECK_TIMEOUT_MS));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_CHECK_TIMEOUT_MS;
+}
+
+function getProviderProbeCacheMs(): number {
+  const parsed = Number(process.env.HEALTH_PROVIDER_PROBE_CACHE_MS ?? String(DEFAULT_PROVIDER_PROBE_CACHE_MS));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_PROVIDER_PROBE_CACHE_MS;
 }
 
 async function withTimeout<T>(task: Promise<T>, timeoutMs: number): Promise<T> {
@@ -154,21 +168,43 @@ async function runProviderCheck(): Promise<DependencyCheck> {
     };
   }
 
-  const [googleProbe, openrouterProbe] = await Promise.all([
-    googleKey
-      ? probeUrl({
-          url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(googleKey)}&pageSize=1`,
-        })
-      : Promise.resolve(null),
-    openrouterKey
-      ? probeUrl({
-          url: "https://openrouter.ai/api/v1/models",
-          headers: {
-            Authorization: `Bearer ${openrouterKey}`,
-          },
-        })
-      : Promise.resolve(null),
-  ]);
+  const cacheKey = `${Boolean(googleKey)}:${Boolean(openrouterKey)}`;
+  const now = Date.now();
+  const cacheTtl = getProviderProbeCacheMs();
+  const cached = providerProbeCache.get(cacheKey);
+
+  let googleProbe: { ok: boolean; status?: number } | null;
+  let openrouterProbe: { ok: boolean; status?: number } | null;
+
+  if (cached && cached.expiresAt > now) {
+    googleProbe = cached.snapshot.googleProbe;
+    openrouterProbe = cached.snapshot.openrouterProbe;
+  } else {
+    [googleProbe, openrouterProbe] = await Promise.all([
+      googleKey
+        ? probeUrl({
+            url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(googleKey)}&pageSize=1`,
+          })
+        : Promise.resolve(null),
+      openrouterKey
+        ? probeUrl({
+            url: "https://openrouter.ai/api/v1/models",
+            headers: {
+              Authorization: `Bearer ${openrouterKey}`,
+            },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    providerProbeCache.set(cacheKey, {
+      expiresAt: now + cacheTtl,
+      snapshot: {
+        googleProbe,
+        openrouterProbe,
+        measuredAt: now,
+      },
+    });
+  }
 
   if (googleProbe?.ok) {
     if (openrouterKey && !openrouterProbe?.ok) {
