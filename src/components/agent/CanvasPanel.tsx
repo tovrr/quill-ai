@@ -460,6 +460,12 @@ function applyMobilePreviewGuardrails(html: string): string {
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
+  const [bundleValidation, setBundleValidation] = useState<{
+    running: boolean;
+    ok: boolean | null;
+    phase?: string;
+    output?: string;
+  }>({ running: false, ok: null });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const previewUrlRef = useRef<string | null>(null);
 
@@ -591,6 +597,50 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
     a.download = "quill-nextjs-setup.ps1";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleValidateBundle = async () => {
+    if (!fileBundle || fileBundle.type !== "nextjs-bundle") return;
+
+    setBundleValidation({ running: true, ok: null, phase: "starting" });
+    try {
+      const response = await fetch("/api/validate-bundle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: fileBundle.type,
+          files: fileBundle.payload.files,
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { ok?: boolean; phase?: string; output?: string; error?: string }
+        | null;
+
+      if (!response.ok) {
+        setBundleValidation({
+          running: false,
+          ok: false,
+          phase: data?.phase ?? "request",
+          output: data?.error ?? "Validation request failed.",
+        });
+        return;
+      }
+
+      setBundleValidation({
+        running: false,
+        ok: Boolean(data?.ok),
+        phase: data?.phase,
+        output: data?.output,
+      });
+    } catch (error) {
+      setBundleValidation({
+        running: false,
+        ok: false,
+        phase: "request",
+        output: error instanceof Error ? error.message : "Validation failed.",
+      });
+    }
   };
 
   const handleOpenInTab = () => {
@@ -735,6 +785,17 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             </button>
           )}
 
+          {fileBundle?.type === "nextjs-bundle" && (
+            <button
+              onClick={handleValidateBundle}
+              disabled={bundleValidation.running}
+              title="Validate bundle locally"
+              className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all disabled:opacity-40"
+            >
+              {bundleValidation.running ? "Validating..." : "Validate"}
+            </button>
+          )}
+
           {/* Close */}
           <button
             onClick={onClose}
@@ -875,6 +936,20 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
                       <li key={warn}>• {warn}</li>
                     ))}
                   </ul>
+                )}
+
+                {bundleValidation.ok !== null && (
+                  <div className="mt-2 pt-2 border-t border-quill-border space-y-1">
+                    <p className={`text-xs font-medium ${bundleValidation.ok ? "text-[#9be7b5]" : "text-[#f7b0b0]"}`}>
+                      Local validation {bundleValidation.ok ? "passed" : "failed"}
+                      {bundleValidation.phase ? ` (${bundleValidation.phase})` : ""}
+                    </p>
+                    {bundleValidation.output && (
+                      <pre className="max-h-32 overflow-auto text-[10px] text-[#bcbcd6] bg-[#0d0d15] border border-quill-border rounded p-2 whitespace-pre-wrap break-all">
+                        {bundleValidation.output}
+                      </pre>
+                    )}
+                  </div>
                 )}
               </div>
             )}
