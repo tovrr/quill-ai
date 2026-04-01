@@ -374,8 +374,8 @@ function FileBundlePreview({
   const activeCode = activePath ? files[activePath] : "";
 
   return (
-    <div className="h-full grid grid-cols-[220px_1fr] bg-[#0d0d15]">
-      <div className="border-r border-quill-border overflow-auto">
+    <div className="h-full grid grid-cols-1 md:grid-cols-[220px_1fr] bg-[#0d0d15]">
+      <div className="border-b md:border-b-0 md:border-r border-quill-border overflow-auto max-h-45 md:max-h-none">
         <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
           {type === "react-app" ? "React app files" : "Next.js bundle files"}
         </div>
@@ -395,7 +395,7 @@ function FileBundlePreview({
           ))}
         </div>
       </div>
-      <div className="overflow-auto">
+      <div className="overflow-auto min-h-0">
         <pre className="p-5 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
           {activeCode}
         </pre>
@@ -577,9 +577,8 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full w-full md:w-[520px]"
       style={{
-        width: "520px",
         borderLeft: "1px solid #1e1e2e",
         background: dark ? "#0a0a0f" : "#fafafe",
       }}
