@@ -23,7 +23,7 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability";
-import { parseBuilderArtifact } from "@/lib/builder-artifacts";
+import { analyzeArtifactQuality, parseBuilderArtifact } from "@/lib/builder-artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
@@ -65,6 +65,7 @@ const THINKING_MODEL_ID = process.env.THINKING_MODEL_OVERRIDE ?? "gemini-2.5-fla
 const ADVANCED_MODEL_ID = process.env.ADVANCED_MODEL_OVERRIDE ?? "gemini-2.5-pro";
 const OPENROUTER_FAST_ENABLED = process.env.OPENROUTER_FAST_ENABLED === "true";
 const TWO_PASS_BUILDER_ENABLED = process.env.TWO_PASS_BUILDER_ENABLED !== "false";
+const BUILDER_QUALITY_RETRY_THRESHOLD = Number(process.env.BUILDER_QUALITY_RETRY_THRESHOLD ?? "72");
 
 function buildBuilderCriticPrompt(input: string | null, requestedTarget: BuilderTarget, draft: string): string {
   return [
@@ -298,6 +299,8 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
         "- Include clear visual hierarchy, meaningful typography scale, and strong spacing rhythm.",
         "- Use at least one intentional motion effect (subtle reveal, hover, or transition) without over-animating.",
         "- Include practical sections when relevant: hero, social proof, features, CTA.",
+        "- For sectioned pages, add stable section ids and data attributes for targeted edits: id='hero' data-quill-section='hero', id='features' data-quill-section='features', id='pricing' data-quill-section='pricing', id='testimonials' data-quill-section='testimonials', id='cta' data-quill-section='cta'.",
+        "- Preserve existing section ids/data-quill-section markers across refinements unless explicitly asked to restructure.",
         "- Ensure accessible contrast, semantic HTML landmarks, and visible focus styles.",
         "- Avoid placeholder copy like lorem ipsum unless explicitly requested.",
       ]
@@ -740,8 +743,46 @@ export async function POST(req: Request) {
         prompt: buildBuilderRewritePrompt(userInput, criticText, draftText),
       });
 
-      const finalText = (rewriteResult.text ?? "").trim() || draftText;
-      const artifact = parseBuilderArtifact(finalText);
+      let finalText = (rewriteResult.text ?? "").trim() || draftText;
+      let artifact = parseBuilderArtifact(finalText);
+
+      // Quality gate: run one extra rewrite pass when the artifact is valid but weak.
+      if (artifact) {
+        const quality = analyzeArtifactQuality(artifact);
+        if (quality.score < BUILDER_QUALITY_RETRY_THRESHOLD) {
+          const qualityRetryPrompt = [
+            "Improve this artifact to meet production quality.",
+            `Current score: ${quality.score}/100. Target: >= ${BUILDER_QUALITY_RETRY_THRESHOLD}.`,
+            quality.issues.length > 0 ? `Critical issues: ${quality.issues.join("; ")}` : "",
+            quality.recommendations.length > 0 ? `Recommendations: ${quality.recommendations.join("; ")}` : "",
+            "Return only one corrected artifact block in valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
+            "Do not include commentary.",
+            "",
+            "Current artifact:",
+            finalText,
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+          const retryResult = await generateText({
+            model: resolvedModel.model,
+            system: systemPrompt,
+            prompt: qualityRetryPrompt,
+          });
+
+          const retriedText = (retryResult.text ?? "").trim();
+          const retriedArtifact = retriedText ? parseBuilderArtifact(retriedText) : null;
+
+          if (retriedArtifact) {
+            const retriedQuality = analyzeArtifactQuality(retriedArtifact);
+            if (retriedQuality.score >= quality.score) {
+              finalText = retriedText;
+              artifact = retriedArtifact;
+            }
+          }
+        }
+      }
+
       recordBuilderMetric({
         parseSuccess: Boolean(artifact),
         artifactType: artifact?.type,

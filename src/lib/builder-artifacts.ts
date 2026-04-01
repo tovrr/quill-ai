@@ -444,6 +444,7 @@ export function analyzeArtifactQuality(artifact: BuilderArtifact): ArtifactQuali
     const hasViewport = /<meta[^>]*name=["']viewport["']/i.test(html);
     const hasMobileMediaQuery = /@media\s*\(max-width:\s*(768|767|640|600)px\)/i.test(html);
     const hasInlineStyles = /<style[\s\S]*?>[\s\S]*?<\/style>/i.test(html);
+    const hasSectionMarkers = /data-quill-section=["'](hero|features|pricing|testimonials|cta)["']/i.test(html);
 
     if (!hasHero) issues.push("Missing clear hero section or H1 heading.");
     if (!hasCta) issues.push("Primary call-to-action is weak or missing.");
@@ -453,6 +454,7 @@ export function analyzeArtifactQuality(artifact: BuilderArtifact): ArtifactQuali
     if (!hasPricing) recommendations.push("Add a pricing section for better conversion structure.");
     if (!hasTestimonials) recommendations.push("Add testimonials or social proof.");
     if (!hasMobileMediaQuery) recommendations.push("Add mobile media queries for small screens.");
+    if (!hasSectionMarkers) recommendations.push("Add data-quill-section markers for precise section-level regeneration.");
 
     const score = Math.max(0, Math.min(100, 100 - issues.length * 18 - recommendations.length * 6));
     return { score, issues, recommendations };

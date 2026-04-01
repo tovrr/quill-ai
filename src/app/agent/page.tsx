@@ -506,6 +506,8 @@ export default function AgentPage() {
         text: [
           "Refine the current page artifact.",
           `Regenerate only the ${section} section with a stronger variant.`,
+          `Target exactly section markers id='${section}' and data-quill-section='${section}'.`,
+          "If markers are missing, add them and regenerate only that section.",
           "Keep all other sections visually and structurally unchanged.",
           "Return only an updated artifact block.",
         ].join("\n"),
