@@ -30,6 +30,29 @@ type ImportableMessage = {
   content: string;
 };
 
+type PersistedMessage = {
+  id: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+type UiPersistedMessage = PersistedMessage & {
+  role: "user" | "assistant" | "system";
+};
+
+function toUiMessages(messages: PersistedMessage[]): UIMessage[] {
+  return messages
+    .filter(
+      (message): message is UiPersistedMessage =>
+        message.role === "user" || message.role === "assistant" || message.role === "system",
+    )
+    .map((message) => ({
+      id: message.id,
+      role: message.role,
+      parts: [{ type: "text", text: message.content }],
+    }));
+}
+
 function readGuestSession(): StoredGuestSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -103,7 +126,8 @@ export default function AgentPage() {
   const router = useRouter();
 
   // Initialise chatId from URL or generate new
-  const [chatId] = useState(() => getSearchParam("chat") ?? readGuestSession()?.chatId ?? crypto.randomUUID());
+  const [urlChatId] = useState(() => getSearchParam("chat"));
+  const [chatId] = useState(() => urlChatId ?? readGuestSession()?.chatId ?? crypto.randomUUID());
 
   // Active killer agent (from URL ?killer=id)
   const [killer] = useState<Killer | null>(() => {
@@ -261,6 +285,34 @@ export default function AgentPage() {
       setSelectedMode("fast");
     }
   }, [authResolved, isAuthenticated, messages.length, setMessages]);
+
+  // Load persisted user chat when opening /agent?chat=<id> from history.
+  useEffect(() => {
+    if (!authResolved || !isAuthenticated || !urlChatId) return;
+    if (messages.length > 0) return;
+
+    let cancelled = false;
+
+    const loadChat = async () => {
+      try {
+        const response = await fetch(`/api/chats/${chatId}`, { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as { messages?: PersistedMessage[] };
+        if (cancelled || !Array.isArray(payload.messages) || payload.messages.length === 0) return;
+
+        setMessages(toUiMessages(payload.messages));
+      } catch {
+        // Keep empty state on fetch failures.
+      }
+    };
+
+    void loadChat();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authResolved, isAuthenticated, urlChatId, chatId, messages.length, setMessages]);
 
   // Persist exactly one active guest conversation locally.
   useEffect(() => {

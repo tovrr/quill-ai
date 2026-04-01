@@ -316,7 +316,63 @@ function unwrapEnvelope(parsed: unknown): unknown {
 function extractTaggedArtifactJson(content: string): string | null {
   const tagged = content.match(/<quill-artifact>\s*([\s\S]*?)\s*<\/quill-artifact>/i);
   if (tagged?.[1]) return tagged[1].trim();
+
+  // Tolerate truncated outputs where the opening tag exists but closing tag is missing.
+  const openTagIndex = content.search(/<quill-artifact>/i);
+  if (openTagIndex >= 0) {
+    return content.slice(openTagIndex).replace(/<quill-artifact>/i, "").trim();
+  }
+
   return null;
+}
+
+function decodeLooseJsonString(input: string): string {
+  return input
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\\t/g, "\t")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
+}
+
+function salvagePageArtifactFromRawText(content: string): BuilderArtifact | null {
+  const hasArtifactHints =
+    /<quill-artifact>/i.test(content) ||
+    /"artifactVersion"\s*:/i.test(content) ||
+    /"type"\s*:\s*"page"/i.test(content);
+
+  if (!hasArtifactHints) return null;
+
+  // Preferred path: recover the html string literal and decode escaped sequences.
+  const htmlStringMatch = content.match(/"html"\s*:\s*"((?:\\.|[^"\\])*)"/i);
+  const decodedHtml = htmlStringMatch?.[1] ? decodeLooseJsonString(htmlStringMatch[1]).trim() : "";
+
+  let html = decodedHtml;
+  if (!html) {
+    // Fallback for partially malformed outputs: extract an inline document directly.
+    const lower = content.toLowerCase();
+    const doctypeStart = lower.indexOf("<!doctype html");
+    const htmlStart = doctypeStart >= 0 ? doctypeStart : lower.indexOf("<html");
+    if (htmlStart < 0) return null;
+
+    const htmlEnd = lower.indexOf("</html>", htmlStart);
+    if (htmlEnd < 0) return null;
+    html = content.slice(htmlStart, htmlEnd + "</html>".length).trim();
+  }
+
+  if (!html || !/<html[\s\S]*<\/html>/i.test(html)) return null;
+
+  const titleMatch = content.match(/"title"\s*:\s*"((?:\\.|[^"\\])*)"/i);
+  const title = titleMatch?.[1] ? decodeLooseJsonString(titleMatch[1]).trim() : "Generated Page";
+
+  return {
+    artifactVersion: 1,
+    type: "page",
+    title,
+    payload: {
+      html,
+    },
+  };
 }
 
 function extractJsonFence(content: string): string | null {
@@ -355,6 +411,9 @@ export function parseBuilderArtifact(content: string): BuilderArtifact | null {
 
   const coercedDirect = coerceLooseToArtifact(direct);
   if (coercedDirect) return coercedDirect;
+
+  const salvagedPage = salvagePageArtifactFromRawText(content);
+  if (salvagedPage) return salvagedPage;
 
   // Last-resort salvage for partial file-map outputs that are not valid standalone JSON.
   return salvageFileMapFromRawText(content);

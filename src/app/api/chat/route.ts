@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, stepCountIs, convertToModelMessages, type ModelMessage } from "ai";
+import { streamText, generateText, stepCountIs, convertToModelMessages, type ModelMessage } from "ai";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -64,6 +64,41 @@ const FAST_MODEL_ID = process.env.FAST_MODEL_OVERRIDE ?? "gemini-2.5-flash-lite"
 const THINKING_MODEL_ID = process.env.THINKING_MODEL_OVERRIDE ?? "gemini-2.5-flash";
 const ADVANCED_MODEL_ID = process.env.ADVANCED_MODEL_OVERRIDE ?? "gemini-2.5-pro";
 const OPENROUTER_FAST_ENABLED = process.env.OPENROUTER_FAST_ENABLED === "true";
+const TWO_PASS_BUILDER_ENABLED = process.env.TWO_PASS_BUILDER_ENABLED !== "false";
+
+function buildBuilderCriticPrompt(input: string | null, requestedTarget: BuilderTarget, draft: string): string {
+  return [
+    "You are a strict UI/code quality reviewer for Quill builder artifacts.",
+    `Requested target: ${requestedTarget}`,
+    "Review the draft artifact and return concise, actionable issues only.",
+    "Focus on: artifact validity, missing required sections, mobile responsiveness, accessibility basics, visual hierarchy, CTA clarity, and implementation completeness.",
+    "Return max 10 bullets, ordered by impact.",
+    "",
+    "User request:",
+    input ?? "(not provided)",
+    "",
+    "Draft artifact:",
+    draft,
+  ].join("\n");
+}
+
+function buildBuilderRewritePrompt(input: string | null, critic: string, draft: string): string {
+  return [
+    "Improve the draft using the critic feedback.",
+    "Return only one final artifact block in valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
+    "Do not include analysis text before the artifact.",
+    "Ensure the artifact is internally consistent and renderable.",
+    "",
+    "User request:",
+    input ?? "(not provided)",
+    "",
+    "Critic feedback:",
+    critic,
+    "",
+    "Draft artifact:",
+    draft,
+  ].join("\n");
+}
 
 async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
   const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -302,7 +337,8 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
     '{ "artifactVersion": 1, "artifact": { "type": "page|document|react-app|nextjs-bundle", "title": "...", "payload": { ... } } }',
     "For landing pages and visual previews, choose type=page and payload.html as a complete self-contained HTML document.",
     "Page HTML must run in iframe srcDoc with no local imports or build step.",
-    "Use Tailwind via https://cdn.tailwindcss.com when Tailwind styling is requested.",
+    "Do not rely on external CSS/JS CDNs for core styling (they may be blocked in some environments).",
+    "Prefer complete inline <style> CSS so the page looks correct even without external network access.",
     "For react-app or nextjs-bundle, put a files object in payload.files where keys are file paths and values are full file contents.",
     wantsFrameworkCode
       ? "If the user asks for Next.js or React, prefer type=react-app or type=nextjs-bundle with realistic file paths and runnable file contents."
@@ -679,6 +715,68 @@ export async function POST(req: Request) {
     }
 
     const resolvedModel = await getModel(selectedMode, preferVision);
+
+    if (canvasBuildIntent && TWO_PASS_BUILDER_ENABLED) {
+      const userInput = summarizedUserInput ?? textMsgs.at(-1)?.content ?? null;
+
+      const draftResult = await generateText({
+        model: resolvedModel.model,
+        system: systemPrompt,
+        messages: modelMessages,
+      });
+
+      const draftText = (draftResult.text ?? "").trim();
+
+      const criticResult = await generateText({
+        model: resolvedModel.model,
+        prompt: buildBuilderCriticPrompt(userInput, requestedBuilderTarget, draftText),
+      });
+
+      const criticText = (criticResult.text ?? "").trim();
+
+      const rewriteResult = await generateText({
+        model: resolvedModel.model,
+        system: systemPrompt,
+        prompt: buildBuilderRewritePrompt(userInput, criticText, draftText),
+      });
+
+      const finalText = (rewriteResult.text ?? "").trim() || draftText;
+      const artifact = parseBuilderArtifact(finalText);
+      recordBuilderMetric({
+        parseSuccess: Boolean(artifact),
+        artifactType: artifact?.type,
+        requestedTarget: requestedBuilderTarget,
+      });
+
+      if (finalText && shouldPersist) {
+        await saveMessage({ chatId: id, role: "assistant", content: finalText });
+      }
+
+      await recordModelUsage({
+        userId: shouldPersist ? userId : undefined,
+        chatId: shouldPersist ? id : undefined,
+        route: "/api/chat",
+        feature: "chat",
+        mode: selectedMode,
+        provider: resolvedModel.provider,
+        model: resolvedModel.modelId,
+        usage: (rewriteResult as any).usage,
+        providerMetadata: {
+          ...(rewriteResult as any).providerMetadata,
+          builderTwoPass: true,
+        },
+      });
+
+      logApiCompletion(requestContext, { status: 200 });
+      return withRequestHeaders(
+        new Response(finalText, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+          },
+        }),
+        requestContext.requestId,
+      );
+    }
 
     const result = streamText({
       model: resolvedModel.model,
