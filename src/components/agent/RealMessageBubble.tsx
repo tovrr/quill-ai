@@ -247,6 +247,97 @@ function ArtifactSummary({ text }: { text: string }) {
 
 export function RealMessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
+  const renderedParts = message.parts
+    .map((part, i) => {
+      // Text part
+      if (part.type === "text") {
+        const text = part.text?.trim();
+        if (!text) return null;
+
+        const artifactSummary = !isUser ? <ArtifactSummary text={text} /> : null;
+
+        return isUser ? (
+          <div
+            key={i}
+            className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed"
+          >
+            {text}
+          </div>
+        ) : (
+          <div
+            key={i}
+            className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
+          >
+            {artifactSummary ?? <MarkdownText text={text} />}
+          </div>
+        );
+      }
+
+      // File part (user attachments + generated images)
+      if (part.type === "file") {
+        const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
+        if (filePart.mediaType.startsWith("image/")) {
+          return (
+            <div key={i} className="rounded-xl overflow-hidden border border-quill-border max-w-70">
+              <Image
+                src={filePart.url}
+                alt={filePart.filename ?? "Attached image"}
+                width={280}
+                height={280}
+                className="object-contain w-full"
+                unoptimized
+              />
+            </div>
+          );
+        }
+
+        return (
+          <a
+            key={i}
+            href={filePart.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            download={filePart.filename ?? true}
+            title="Open attachment"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+            <span className="max-w-40 truncate">
+              {filePart.filename ?? "Attached file"}
+            </span>
+          </a>
+        );
+      }
+
+      if (
+        part.type === "dynamic-tool" ||
+        part.type.startsWith("tool-")
+      ) {
+        const toolPart = part as {
+          type: string;
+          toolName?: string;
+          state: string;
+        };
+        const name =
+          toolPart.toolName ?? part.type.replace(/^tool-/, "");
+        return (
+          <ToolCallBadge key={i} toolName={name} state={toolPart.state} />
+        );
+      }
+
+      if (part.type === "step-start") {
+        return null;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+
+  if (renderedParts.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -271,93 +362,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
           isUser ? "items-end" : "items-start"
         }`}
       >
-        {message.parts.map((part, i) => {
-          // Text part
-          if (part.type === "text" && part.text) {
-            const artifactSummary = !isUser ? <ArtifactSummary text={part.text} /> : null;
-
-            return isUser ? (
-              <div
-                key={i}
-                className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed"
-              >
-                {part.text}
-              </div>
-            ) : (
-              <div
-                key={i}
-                className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
-              >
-                {artifactSummary ?? <MarkdownText text={part.text} />}
-              </div>
-            );
-          }
-
-          // File part (user attachments + generated images)
-          if (part.type === "file") {
-            const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
-            if (filePart.mediaType.startsWith("image/")) {
-              return (
-                <div key={i} className="rounded-xl overflow-hidden border border-quill-border max-w-70">
-                  <Image
-                    src={filePart.url}
-                    alt={filePart.filename ?? "Attached image"}
-                    width={280}
-                    height={280}
-                    className="object-contain w-full"
-                    unoptimized
-                  />
-                </div>
-              );
-            }
-            // Non-image file
-            return (
-              <a
-                key={i}
-                href={filePart.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                download={filePart.filename ?? true}
-                title="Open attachment"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                </svg>
-                <span className="max-w-40 truncate">
-                  {filePart.filename ?? "Attached file"}
-                </span>
-              </a>
-            );
-          }
-
-          // Tool call parts
-          if (
-            part.type === "dynamic-tool" ||
-            part.type.startsWith("tool-")
-          ) {
-            const toolPart = part as {
-              type: string;
-              toolName?: string;
-              state: string;
-            };
-            const name =
-              toolPart.toolName ?? part.type.replace(/^tool-/, "");
-            return (
-              <ToolCallBadge key={i} toolName={name} state={toolPart.state} />
-            );
-          }
-
-          if (part.type === "step-start") {
-            return (
-              <div key={i} className="text-[10px] text-[#3a3a5e] px-1">
-                — step start —
-              </div>
-            );
-          }
-
-          return null;
-        })}
+        {renderedParts}
       </div>
     </div>
   );

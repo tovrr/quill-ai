@@ -5,18 +5,24 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+const isDev = process.env.NODE_ENV === "development";
+
 function buildCspReportOnlyPolicy(): string {
+  const connectSrc = isDev
+    ? "'self' ws: wss: http://localhost:* https://vitals.vercel-insights.com https://*.vercel-insights.com"
+    : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
+  
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline'",
+    isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com",
+    `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
     "upgrade-insecure-requests",
     "report-uri /api/csp-report",
@@ -24,17 +30,21 @@ function buildCspReportOnlyPolicy(): string {
 }
 
 function buildCspEnforcedPolicy(): string {
+  const connectSrc = isDev
+    ? "'self' ws: wss: http://localhost:* https://vitals.vercel-insights.com https://*.vercel-insights.com"
+    : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
+  
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline'",
+    isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com",
+    `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
     "upgrade-insecure-requests",
   ].join("; ");

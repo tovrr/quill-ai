@@ -1,0 +1,53 @@
+<svg width="1400" height="840" viewBox="0 0 1400 840" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09090E"/>
+      <stop offset="1" stop-color="#11111A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#EF4444"/>
+      <stop offset="1" stop-color="#F87171"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1400" height="840" fill="url(#bg)"/>
+  <circle cx="280" cy="120" r="200" fill="#EF4444" fill-opacity="0.12" filter="url(#glow)"/>
+
+  <rect x="80" y="70" width="1240" height="700" rx="20" fill="#0D0D15" stroke="#1E1E2E"/>
+  <rect x="80" y="70" width="1240" height="66" rx="20" fill="#0A0A10"/>
+
+  <circle cx="122" cy="103" r="7" fill="#F87171"/>
+  <circle cx="146" cy="103" r="7" fill="#FBBF24"/>
+  <circle cx="170" cy="103" r="7" fill="#34D399"/>
+
+  <text x="212" y="110" fill="#F5F5FA" font-size="24" font-family="Inter, Segoe UI, Arial" font-weight="700">Quill AI</text>
+
+  <rect x="120" y="180" width="360" height="540" rx="14" fill="#10101A" stroke="#1E1E2E"/>
+  <text x="150" y="225" fill="#A8A8C0" font-size="18" font-family="Inter, Segoe UI, Arial">KILLERS</text>
+
+  <rect x="150" y="252" width="300" height="58" rx="12" fill="#141422" stroke="#28283A"/>
+  <text x="178" y="288" fill="#E8E8F2" font-size="20" font-family="Inter, Segoe UI, Arial">Code Wizard</text>
+
+  <rect x="150" y="328" width="300" height="58" rx="12" fill="#12121E"/>
+  <text x="178" y="364" fill="#B7B7CB" font-size="20" font-family="Inter, Segoe UI, Arial">Deep Dive</text>
+
+  <rect x="520" y="180" width="760" height="500" rx="14" fill="#0B0B13" stroke="#1E1E2E"/>
+
+  <rect x="560" y="230" width="680" height="84" rx="16" fill="#EF4444" fill-opacity="0.16" stroke="#EF4444"/>
+  <text x="590" y="280" fill="#F8B4B4" font-size="24" font-family="Inter, Segoe UI, Arial">Build a React app for a task manager with live preview</text>
+
+  <rect x="560" y="338" width="620" height="72" rx="16" fill="#151523" stroke="#27273A"/>
+  <text x="590" y="382" fill="#DCDCEC" font-size="22" font-family="Inter, Segoe UI, Arial">Built React app artifact with 8 files. Open Canvas to inspect.</text>
+
+  <rect x="560" y="600" width="680" height="60" rx="14" fill="#11111A" stroke="#28283A"/>
+  <text x="590" y="638" fill="#7F7F96" font-size="22" font-family="Inter, Segoe UI, Arial">Give Quill a task to execute...</text>
+
+  <text x="80" y="810" fill="#6F6F86" font-size="18" font-family="Inter, Segoe UI, Arial">Demo preview placeholder. Replace with a real GIF at public/demo.gif for higher conversion.</text>
+</svg>

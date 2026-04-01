@@ -1,7 +1,25 @@
 {
   "name": "quill-ai",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Personal AI agent and builder for research, writing, coding, and app/page generation.",
   "private": true,
+  "license": "MIT",
+  "homepage": "https://github.com/tovrr/quill-ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tovrr/quill-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tovrr/quill-ai/issues"
+  },
+  "keywords": [
+    "ai-agent",
+    "nextjs",
+    "react",
+    "typescript",
+    "builder",
+    "llm"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

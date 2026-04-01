@@ -24,11 +24,20 @@ export const metadata: Metadata = {
       "Research, write, code, and execute complex tasks autonomously. Give Quill a goal — it figures out the rest.",
     type: "website",
     url: "https://quill.ai",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Quill AI social preview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Quill AI — Your Personal AI Agent",
     description: "Research, write, code, and execute complex tasks autonomously.",
+    images: ["/twitter-image"],
   },
   alternates: {
     canonical: "https://quill.ai",

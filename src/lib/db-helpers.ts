@@ -1,6 +1,82 @@
 import { db } from "@/db";
-import { chats, messages, modelUsageEvents, userEntitlements } from "@/db/schema";
+import { chats, messageFiles, messages, modelUsageEvents, userEntitlements } from "@/db/schema";
 import { eq, desc, and, gte, count } from "drizzle-orm";
+
+const MAX_DB_FILE_BYTES = Number(process.env.MAX_DB_FILE_BYTES ?? "5242880");
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseDataUrl(url: string): { mediaType: string; base64: string } | null {
+  const match = url.match(/^data:([^;,]+);base64,([A-Za-z0-9+/=\s]+)$/);
+  if (!match) return null;
+  return {
+    mediaType: match[1] || "application/octet-stream",
+    base64: match[2].replace(/\s+/g, ""),
+  };
+}
+
+function extractTextFromParts(parts: unknown[]): string {
+  return parts
+    .map((part) => {
+      if (!isRecord(part) || part.type !== "text") return "";
+      return typeof part.text === "string" ? part.text : "";
+    })
+    .join("\n")
+    .trim();
+}
+
+async function persistDurableFileParts(chatId: string, rawParts: unknown[] | undefined): Promise<unknown[] | null> {
+  if (!Array.isArray(rawParts) || rawParts.length === 0) return null;
+
+  const nextParts: unknown[] = [];
+
+  for (const rawPart of rawParts) {
+    if (!isRecord(rawPart) || rawPart.type !== "file") {
+      nextParts.push(rawPart);
+      continue;
+    }
+
+    const url = typeof rawPart.url === "string" ? rawPart.url : "";
+    if (!url || url.startsWith("/api/files/")) {
+      nextParts.push(rawPart);
+      continue;
+    }
+
+    const parsed = parseDataUrl(url);
+    if (!parsed) {
+      // Keep non-data URLs as-is (remote/provider-hosted URLs).
+      nextParts.push(rawPart);
+      continue;
+    }
+
+    const byteSize = Buffer.from(parsed.base64, "base64").length;
+    if (byteSize > MAX_DB_FILE_BYTES) {
+      // Too large for DB-backed storage; keep original URL to avoid dropping content.
+      nextParts.push(rawPart);
+      continue;
+    }
+
+    const [stored] = await db
+      .insert(messageFiles)
+      .values({
+        chatId,
+        mediaType: typeof rawPart.mediaType === "string" ? rawPart.mediaType : parsed.mediaType,
+        filename: typeof rawPart.filename === "string" ? rawPart.filename : null,
+        byteSize,
+        dataBase64: parsed.base64,
+      })
+      .returning({ id: messageFiles.id });
+
+    nextParts.push({
+      ...rawPart,
+      url: `/api/files/${stored.id}`,
+    });
+  }
+
+  return nextParts;
+}
 
 export async function getChatsByUserId(userId: string) {
   return db.query.chats.findMany({
@@ -38,14 +114,19 @@ export async function saveMessage({
   chatId,
   role,
   content,
+  parts,
 }: {
   chatId: string;
   role: "user" | "assistant" | "system" | "tool";
   content: string;
+  parts?: unknown[];
 }) {
+  const durableParts = await persistDurableFileParts(chatId, parts);
+  const normalizedContent = content.trim() || (durableParts ? extractTextFromParts(durableParts) : "") || "[non-text content]";
+
   const [msg] = await db
     .insert(messages)
-    .values({ chatId, role, content })
+    .values({ chatId, role, content: normalizedContent, partsJson: durableParts })
     .returning();
   return msg;
 }

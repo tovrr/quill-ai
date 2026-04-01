@@ -12,6 +12,7 @@ import {
 type GuestMessage = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
+  parts?: unknown[];
 };
 
 type ImportPayload = {
@@ -33,16 +34,17 @@ function normalizeMessages(input: unknown): GuestMessage[] {
       if (!item || typeof item !== "object") return null;
       const role = (item as { role?: unknown }).role;
       const content = (item as { content?: unknown }).content;
+      const parts = (item as { parts?: unknown }).parts;
 
       if (role !== "user" && role !== "assistant" && role !== "system" && role !== "tool") {
         return null;
       }
 
-      if (typeof content !== "string") return null;
-      const normalized = content.trim();
-      if (!normalized) return null;
+      const hasParts = Array.isArray(parts) && parts.length > 0;
+      const normalized = typeof content === "string" ? content.trim() : "";
+      if (!normalized && !hasParts) return null;
 
-      return { role, content: normalized } as GuestMessage;
+      return { role, content: normalized, parts: hasParts ? parts : undefined } as GuestMessage;
     })
     .filter((entry): entry is GuestMessage => Boolean(entry));
 }
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
         chatId,
         role: message.role,
         content: message.content,
+        parts: message.parts,
       });
     }
 

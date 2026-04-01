@@ -84,14 +84,24 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 
 function inferEntryFromFiles(files: Record<string, string>): string | undefined {
   const candidates = [
+    "src/main.ts",
+    "src/main.js",
     "src/main.tsx",
     "src/main.jsx",
+    "src/index.ts",
+    "src/index.js",
     "src/index.tsx",
     "src/index.jsx",
+    "main.ts",
+    "main.js",
     "main.tsx",
     "main.jsx",
+    "index.ts",
+    "index.js",
     "index.tsx",
     "index.jsx",
+    "App.ts",
+    "App.js",
     "App.tsx",
     "App.jsx",
   ];
@@ -100,7 +110,7 @@ function inferEntryFromFiles(files: Record<string, string>): string | undefined 
     if (files[path]) return path;
   }
 
-  return Object.keys(files).find((key) => key.endsWith(".tsx") || key.endsWith(".jsx"));
+  return Object.keys(files).find((key) => /\.(tsx|ts|jsx|js)$/i.test(key));
 }
 
 function hasNextAppRouterFiles(files: Record<string, string>): boolean {
@@ -315,7 +325,21 @@ function validateArtifact(candidate: unknown): BuilderArtifact | null {
 
 function unwrapEnvelope(parsed: unknown): unknown {
   if (!hasRecord(parsed)) return parsed;
-  if (hasRecord(parsed.artifact)) return parsed.artifact;
+  if (hasRecord(parsed.artifact)) {
+    // Accept envelope form:
+    // {
+    //   "artifactVersion": 1,
+    //   "artifact": { "type": "nextjs-bundle", "payload": { ... } }
+    // }
+    // by preserving version metadata for downstream validation.
+    if ((parsed.artifact as Record<string, unknown>).artifactVersion === undefined) {
+      return {
+        ...(parsed.artifact as Record<string, unknown>),
+        artifactVersion: parsed.artifactVersion,
+      };
+    }
+    return parsed.artifact;
+  }
   return parsed;
 }
 

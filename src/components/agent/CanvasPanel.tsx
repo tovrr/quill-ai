@@ -177,6 +177,7 @@ function MarkdownDocument({ text }: { text: string }) {
 interface CanvasPanelProps {
   content: string;
   onClose: () => void;
+  isWorking?: boolean;
 }
 
 type Tab = "preview" | "code";
@@ -185,14 +186,24 @@ function getBundleEntry(files: Record<string, string>, preferred?: string): stri
   if (preferred && files[preferred]) return preferred;
 
   const candidates = [
+    "src/main.ts",
+    "src/main.js",
     "src/main.tsx",
     "src/main.jsx",
+    "src/index.ts",
+    "src/index.js",
     "src/index.tsx",
     "src/index.jsx",
+    "main.ts",
+    "main.js",
     "main.tsx",
     "main.jsx",
+    "index.ts",
+    "index.js",
     "index.tsx",
     "index.jsx",
+    "App.ts",
+    "App.js",
     "App.tsx",
     "App.jsx",
   ];
@@ -201,8 +212,11 @@ function getBundleEntry(files: Record<string, string>, preferred?: string): stri
     if (files[path]) return path;
   }
 
-  const firstTsx = Object.keys(files).find((key) => key.endsWith(".tsx") || key.endsWith(".jsx"));
-  return firstTsx ?? Object.keys(files)[0] ?? null;
+  const firstSource = Object.keys(files).find((k) => /(^|\/)(main|index|app)\.(tsx|ts|jsx|js)$/i.test(k));
+  if (firstSource) return firstSource;
+
+  const fallbackSource = Object.keys(files).find((k) => /\.(tsx|ts|jsx|js)$/i.test(k));
+  return fallbackSource ?? null;
 }
 
 function toEmbeddedJson(value: unknown): string {
@@ -457,7 +471,7 @@ function applyMobilePreviewGuardrails(html: string): string {
   return `${guardrails}${html}`;
 }
 
-export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
+export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanelProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
   const [bundleValidation, setBundleValidation] = useState<{
@@ -520,7 +534,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   const artifact = parseBuilderArtifact(content);
   const hasArtifactEnvelope = /<quill-artifact>/i.test(content) || /```json\n[\s\S]*artifactVersion/i.test(content);
-  const artifactParseFailed = hasArtifactEnvelope && !artifact;
+  const artifactParseFailed = !isWorking && hasArtifactEnvelope && !artifact;
   const isArtifact = Boolean(artifact);
   const artifactType = artifact?.type ?? (isHTMLContent(content) ? "page" : "document");
 
@@ -554,6 +568,18 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const previewLoading = isReactApp && !previewUrl;
   const effectiveTab: Tab = fileBundle?.type === "react-app" && !canRunReactPreview ? "code" : tab;
 
+  useEffect(() => {
+    if (isWorking) {
+      setTab("code");
+      return;
+    }
+
+    const hasPreview = isHTML || (fileBundle?.type === "react-app" && canRunReactPreview);
+    if (hasPreview) {
+      setTab("preview");
+    }
+  }, [isWorking, isHTML, fileBundle?.type, canRunReactPreview, content]);
+
   const copyText = isArtifact
     ? JSON.stringify({ artifactVersion: 1, artifact }, null, 2)
     : isHTML
@@ -569,6 +595,13 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const downloadMime = isArtifact ? "application/json" : isHTML ? "text/html" : "text/markdown";
   const downloadExt = isArtifact ? "json" : isHTML ? "html" : "md";
   const artifactLabel = artifactType === "react-app" ? "react app" : artifactType === "nextjs-bundle" ? "next.js bundle" : artifactType;
+  const qualityTone = artifactQuality
+    ? artifactQuality.score >= 80
+      ? { label: "Ready", className: "text-[#9be7b5]" }
+      : artifactQuality.score >= 60
+        ? { label: "Needs review", className: "text-[#fcd48f]" }
+        : { label: "Needs work", className: "text-[#f7b0b0]" }
+    : null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(copyText).then(() => {
@@ -653,7 +686,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   return (
     <div
-      className="flex flex-col h-full w-full md:w-[520px]"
+      className="flex flex-col h-full w-full md:w-130"
       style={{
         borderLeft: "1px solid #1e1e2e",
         background: dark ? "#0a0a0f" : "#fafafe",
@@ -689,6 +722,14 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}>
               {artifactLabel}
             </span>
+            {isWorking && (
+              <span className="text-[11px] text-[#fcd48f]">Generating...</span>
+            )}
+            {qualityTone && (
+              <span className={`hidden md:inline text-[11px] ${qualityTone.className}`}>
+                {qualityTone.label}
+              </span>
+            )}
           </div>
 
           {/* Preview / Code tabs */}
@@ -816,23 +857,6 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {artifactQuality && (
-          <div className="px-4 py-2 border-b border-quill-border bg-[#0d0d15]">
-            <div className="flex items-center gap-2">
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${artifactQuality.score >= 80 ? "bg-[rgba(52,211,153,0.15)] text-[#9be7b5]" : artifactQuality.score >= 60 ? "bg-[rgba(245,158,11,0.15)] text-[#fcd48f]" : "bg-[rgba(239,68,68,0.15)] text-[#f7b0b0]"}`}>
-                Quality {artifactQuality.score}/100
-              </span>
-              {artifactQuality.issues.length > 0 ? (
-                <span className="text-[11px] text-[#f7b0b0] truncate">{artifactQuality.issues[0]}</span>
-              ) : artifactQuality.recommendations.length > 0 ? (
-                <span className="text-[11px] text-[#d2d2e6] truncate">{artifactQuality.recommendations[0]}</span>
-              ) : (
-                <span className="text-[11px] text-[#9be7b5]">Looks production-ready.</span>
-              )}
-            </div>
-          </div>
-        )}
-
         {!content ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
@@ -914,44 +938,44 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
         ) : fileBundle ? (
           <div className="h-full flex flex-col">
             {fileBundle.type === "nextjs-bundle" && bundleReadiness && (
-              <div className="mx-4 mt-4 rounded-xl border border-quill-border bg-[#11111a] p-3 space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#8f90aa]">
+              <details className="mx-4 mt-4 rounded-xl border border-quill-border bg-[#11111a]">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-[#8f90aa]">
                   Export readiness
-                </p>
-                <p className={`text-sm ${bundleReadiness.errors.length > 0 ? "text-[#f7b0b0]" : "text-[#9be7b5]"}`}>
-                  {bundleReadiness.errors.length > 0
-                    ? `${bundleReadiness.errors.length} blocking issue(s) found`
-                    : "Core structure looks runnable"}
-                </p>
-                {bundleReadiness.errors.length > 0 && (
-                  <ul className="text-xs text-[#f7b0b0] space-y-1">
-                    {bundleReadiness.errors.slice(0, 3).map((err) => (
-                      <li key={err}>• {err}</li>
-                    ))}
-                  </ul>
-                )}
-                {bundleReadiness.warnings.length > 0 && (
-                  <ul className="text-xs text-[#d2d2e6] space-y-1">
-                    {bundleReadiness.warnings.slice(0, 3).map((warn) => (
-                      <li key={warn}>• {warn}</li>
-                    ))}
-                  </ul>
-                )}
+                  <span className={bundleReadiness.errors.length > 0 ? "text-[#f7b0b0]" : "text-[#9be7b5]"}>
+                    {bundleReadiness.errors.length > 0 ? `${bundleReadiness.errors.length} issue(s)` : "Ready"}
+                  </span>
+                </summary>
+                <div className="border-t border-quill-border p-3 space-y-1.5">
+                  {bundleReadiness.errors.length > 0 && (
+                    <ul className="text-xs text-[#f7b0b0] space-y-1">
+                      {bundleReadiness.errors.slice(0, 3).map((err) => (
+                        <li key={err}>• {err}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {bundleReadiness.warnings.length > 0 && (
+                    <ul className="text-xs text-[#d2d2e6] space-y-1">
+                      {bundleReadiness.warnings.slice(0, 3).map((warn) => (
+                        <li key={warn}>• {warn}</li>
+                      ))}
+                    </ul>
+                  )}
 
-                {bundleValidation.ok !== null && (
-                  <div className="mt-2 pt-2 border-t border-quill-border space-y-1">
-                    <p className={`text-xs font-medium ${bundleValidation.ok ? "text-[#9be7b5]" : "text-[#f7b0b0]"}`}>
-                      Local validation {bundleValidation.ok ? "passed" : "failed"}
-                      {bundleValidation.phase ? ` (${bundleValidation.phase})` : ""}
-                    </p>
-                    {bundleValidation.output && (
-                      <pre className="max-h-32 overflow-auto text-[10px] text-[#bcbcd6] bg-[#0d0d15] border border-quill-border rounded p-2 whitespace-pre-wrap break-all">
-                        {bundleValidation.output}
-                      </pre>
-                    )}
-                  </div>
-                )}
-              </div>
+                  {bundleValidation.ok !== null && (
+                    <div className="mt-2 pt-2 border-t border-quill-border space-y-1">
+                      <p className={`text-xs font-medium ${bundleValidation.ok ? "text-[#9be7b5]" : "text-[#f7b0b0]"}`}>
+                        Local validation {bundleValidation.ok ? "passed" : "failed"}
+                        {bundleValidation.phase ? ` (${bundleValidation.phase})` : ""}
+                      </p>
+                      {bundleValidation.output && (
+                        <pre className="max-h-32 overflow-auto text-[10px] text-[#bcbcd6] bg-[#0d0d15] border border-quill-border rounded p-2 whitespace-pre-wrap break-all">
+                          {bundleValidation.output}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </details>
             )}
             <div className="min-h-0 flex-1 mt-3">
               <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />

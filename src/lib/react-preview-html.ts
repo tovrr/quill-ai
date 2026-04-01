@@ -12,14 +12,24 @@ function getBundleEntry(files: Record<string, string>, preferred?: string): stri
   if (preferred && files[preferred]) return preferred;
 
   const candidates = [
+    "src/main.ts",
+    "src/main.js",
     "src/main.tsx",
     "src/main.jsx",
+    "src/index.ts",
+    "src/index.js",
     "src/index.tsx",
     "src/index.jsx",
+    "main.ts",
+    "main.js",
     "main.tsx",
     "main.jsx",
+    "index.ts",
+    "index.js",
     "index.tsx",
     "index.jsx",
+    "App.ts",
+    "App.js",
     "App.tsx",
     "App.jsx",
   ];
@@ -28,8 +38,11 @@ function getBundleEntry(files: Record<string, string>, preferred?: string): stri
     if (files[path]) return path;
   }
 
-  const firstTsx = Object.keys(files).find((k) => k.endsWith(".tsx") || k.endsWith(".jsx"));
-  return firstTsx ?? Object.keys(files)[0] ?? null;
+  const firstSource = Object.keys(files).find((k) => /(^|\/)(main|index|app)\.(tsx|ts|jsx|js)$/i.test(k));
+  if (firstSource) return firstSource;
+
+  const fallbackSource = Object.keys(files).find((k) => /\.(tsx|ts|jsx|js)$/i.test(k));
+  return fallbackSource ?? null;
 }
 
 /**
@@ -146,6 +159,24 @@ export function generatePreviewHtml(
         if (moduleUrlCache.has(filePath)) return moduleUrlCache.get(filePath);
         const source = files[filePath];
         if (typeof source !== "string") throw new Error("Missing module: " + filePath);
+
+        if (/\.(css|scss)$/i.test(filePath)) {
+          const cssText = JSON.stringify(source);
+          const cssModule = [
+            "const css = " + cssText + ";",
+            "const style = document.createElement('style');",
+            "style.setAttribute('data-quill-preview-style', '1');",
+            "style.textContent = css;",
+            "document.head.appendChild(style);",
+            "export default css;",
+          ].join("\n");
+
+          const cssBlob = new Blob([cssModule], { type: "text/javascript" });
+          const cssUrl = URL.createObjectURL(cssBlob);
+          moduleUrlCache.set(filePath, cssUrl);
+          return cssUrl;
+        }
+
         const transformed = Babel.transform(source, {
           sourceType: "module",
           presets: ["typescript", "react"],

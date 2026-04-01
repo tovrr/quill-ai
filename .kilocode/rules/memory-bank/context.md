@@ -76,6 +76,11 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Enforced Killer autonomy policy in `/api/chat` for current execution-shaped actions: web search and builder activation
 - [x] Exposed Killer autonomy level and capability summary in sidebar selection UI and active agent UI
 - [x] Added sandbox provider registry and adapter boundary; chat route now resolves provider availability/runtime status for future container/VM handoff
+- [x] Simplified the agent UI for lower cognitive load: all 5 Killers stay visible in the sidebar, but cards are reduced to icon/name/tagline; builder target is separated from the model dropdown; page refine/lock controls are collapsed into quiet details panels; desktop canvas now opens as a softer overlay drawer instead of a permanent split pane
+- [x] Tightened generation UX: mobile composer safe-area padding increased, empty streamed assistant bubbles suppressed, fallback loading bubble now shows `Thinking...`, and TaskInput now swaps to a stop button with a working-status pill while requests are active
+- [x] Updated Canvas interaction to match modern builder apps: force Code view while artifact generation is active, suppress parse-failed banner during streaming partials, and auto-switch to Preview once generation completes and preview is available
+- [x] Added public-repo credibility scaffolding: README, MIT license, contributing/security/code-of-conduct docs, issue templates, PR template, and package metadata fields (homepage/repository/bugs/keywords/license)
+- [x] Set project release version to 1.0.0 for public launch positioning (instead of 0.1.0 beta signaling)
 
 ## Current Structure
 
@@ -105,6 +110,7 @@ Current priorities:
 4. Replace in-memory rate limiting with a distributed limiter
 5. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
 6. PWA offline support (service worker) — required before any app store submission
+7. Validate the simplified agent UX in-browser across desktop and mobile, especially stop-state behavior and streaming feedback
 
 ## Quick Start Guide
 
@@ -178,3 +184,8 @@ export async function GET() {
 - 2026-04-01: Enforced autonomy-policy checks in chat route for web search and builder-mode activation
 - 2026-04-01: Added autonomy transparency UI in sidebar and agent view
 - 2026-04-01: Added sandbox provider registry/adapters and runtime status resolution for future isolated execution
+- 2026-04-01: Reworked the agent interface toward a more minimal surface, added skeptic-review critical blockers to `TODOS.md`, and fixed follow-up UX regressions around composer spacing, empty streaming bubbles, working-state copy, and stop-button availability
+- 2026-04-01: Confirmed launch versioning strategy and bumped package manifests to 1.0.0
+- 2026-04-01: Added separate launch copy files under `launch/` for GitHub release notes, X posts, LinkedIn posts, and pinned comment text
+- 2026-04-01: Added a deferred 30-day community growth masterplan and linked it from TODOs for post-blocker execution
+- 2026-04-01: Implemented message persistence hardening with `partsJson` storage, durable DB-backed file URLs (`/api/files/[fileId]`), and guest import support for rich message parts

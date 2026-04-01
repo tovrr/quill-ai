@@ -7,6 +7,43 @@
 - When a task is completed, link the PR/commit next to it and add a one-line outcome note.
 - Re-prioritize weekly: move stale tasks down, pull blockers up.
 
+## 🔴 Critical Business Blockers (Product Viability - Found in 2026-04-01 Skeptic Review)
+
+These are the 6 foundational gaps blocking product viability. **Must be completed before scaling user acquisition.**
+
+- [ ] **Implement payment processor (Stripe / Paddle / Lemon Squeezy)**
+  - Scope: Add Stripe checkout session → webhook handler → plan activation flow. Update entitlements model to track `stripeCustomerId` + `stripeSubscriptionId`. Wire billing portal link in settings.
+  - Acceptance: User can purchase $12 or $29 plan from pricing page, entitlements update on webhook, portal link works in settings.
+  - Verification: Run end-to-end purchase flow in Stripe test mode on staging; verify DB reflects purchase; confirm paid features unlock immediately.
+
+- [ ] **Stream the two-pass builder to prevent UI blocking**
+  - Scope: Swap builder pipeline from blocking `generateText` calls to `streamText` with real-time artifact updates. Show "Draft" → "Critic review" → "Final" progression in UI.
+  - Acceptance: Complex page builds show streaming progress instead of blank canvas; draft appears in editor within 5 seconds.
+  - Verification: Build a SaaS landing page in agent UI; verify timestamps on each phase appear in console; no 30+ second blank periods.
+
+- [ ] **Fix message persistence: stop losing images and file attachments**
+  - Scope: Add `partsJson` column to `message` table to store full `UIMessagePart[]` structure (not flattened text). Migrate persisted messages. Update `saveMessage()` to serialize parts; `getMessagesByChatId()` to deserialize.
+  - Acceptance: Reload a chat that contains images → images reappear. File attachments show correct file type badge + size.
+  - Verification: Upload 3 images + PDF to a chat, save it, reload it, inspect message history in DevTools — all media present.
+
+- [ ] **Add OAuth / social login (Google minimum)**
+  - Scope: Wire Google OAuth provider into Better Auth. Add Google Sign In button on login/registration pages. Update auth server/client.
+  - Acceptance: User can sign up and log in via Google accounts. Email/password still works as fallback.
+  - Verification: Create test Google project, test sign-up flow, verify session created, test subsequent login.
+
+- [ ] **Remove sandbox false claims OR implement real code executor**
+  - Decision point: Either (A) remove `sandbox: required` + executor hints from Code Wizard, downgrade autonomy to `propose`, update system prompt to remove execution language; OR (B) implement a working code-execution backend (Docker container or VM executor stub).
+  - If A: Scope is UI/prompt updates only (~2 hours). Update Code Wizard killer definition + system prompt to drop container language.
+  - If B: Scope is building executor adapter, sandboxing, and error handling (~3-5 days). Start with local container validation, move to remote executor post-MVP.
+  - Acceptance (A): Code Wizard personality updated to propose/review code, not execute. System prompt never claims execution capability.
+  - Acceptance (B): `/api/sandbox/execute` endpoint works locally; Coder killer can request code runs and get real output (or structured error).
+  - Verification (A): Audit system prompt for false claims. (B): Coder killer generates a test function, requests execution, receives output.
+
+- [ ] **Distribute rate limiting from in-memory to Redis (Upstash recommended)**
+  - Scope: Already partially tracked in backlog; escalate here. Replace `Map`-based rate limiter in `src/lib/rate-limit.ts` with Upstash Redis client. Keep API response structure unchanged.
+  - Acceptance: Rate-limit counter survives across function cold starts. Multiple concurrent requests respect shared quota.
+  - Verification: Deploy to Vercel, trigger multiple concurrent requests across different function instances, confirm 429s are consistent.
+
 ## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
 
 ### Critical - Security
@@ -66,17 +103,20 @@
 
 ## High Priority (Production Safety)
 
-- [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash)
+**NOTE: Escalated to "Critical Business Blockers" section above. See "Distribute rate limiting from in-memory to Redis" for full specs. Keeping this line for cross-reference:**
+- [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash) — see blocker section for acceptance criteria
 - [ ] Keep current API rate-limit headers and 429 behavior unchanged after migration
 - [ ] Add env vars for distributed limiter and document fail-open/fail-closed behavior
 - [ ] Add monitoring for rate-limit hits by route and user/IP key
 
 ## High Priority (Storage and Performance)
 
-- [ ] Stop storing generated images as data URLs in chat text
-- [ ] Upload generated images to object storage (S3/R2 or equivalent)
-- [ ] Persist only image URLs and metadata in messages
-- [ ] Add migration strategy for existing data-URL messages if needed
+**NOTE: This is subsumed by the "Fix message persistence" blocker above. Unified implementation:**
+- [ ] Add `partsJson` column to store full `UIMessagePart[]` structures (not flattened text)
+- [ ] Stop storing generated images as data URLs; upload to S3/R2 or equivalent
+- [ ] Persist only image URLs and metadata; deserialize on chat reload
+- [ ] Add migration script for existing data-URL messages
+- [ ] Verify file attachments (PDF, CSV, etc.) also deserialize and show proper badges
 
 ## Medium Priority (Upload Reliability)
 
@@ -129,6 +169,14 @@
 - [ ] **Apple App Store**: wrap with Capacitor or Expo — Apple does not accept bare PWAs in the store
 - [ ] Add `assetlinks.json` validation in release pipeline for TWA verification
 - [ ] Add store-release checklist with signing, screenshots, privacy labels, and rollback steps
+
+## Community Growth (Later)
+
+- [ ] Execute post-blocker community plan in `launch/COMMUNITY_MASTERPLAN_30D.md` after critical business blockers are stabilized
+- [ ] Replace README demo placeholder with a real GIF before major social distribution
+- [ ] Enable and seed GitHub Discussions with pinned starter threads (show and tell, feature requests, bugs)
+- [ ] Open and maintain 5 `good first issue` / `help wanted` tickets with explicit acceptance criteria
+- [ ] Start weekly KPI review (stars delta, discussion participants, external PRs, response SLA)
 
 ## Release Readiness Checklist
 

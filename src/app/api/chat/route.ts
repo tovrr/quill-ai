@@ -73,6 +73,18 @@ const OPENROUTER_FAST_ENABLED = process.env.OPENROUTER_FAST_ENABLED === "true";
 const TWO_PASS_BUILDER_ENABLED = process.env.TWO_PASS_BUILDER_ENABLED !== "false";
 const BUILDER_QUALITY_RETRY_THRESHOLD = Number(process.env.BUILDER_QUALITY_RETRY_THRESHOLD ?? "72");
 
+function safeRecordBuilderMetric(input: {
+  parseSuccess: boolean;
+  artifactType?: "page" | "document" | "react-app" | "nextjs-bundle";
+  requestedTarget?: BuilderTarget;
+}): void {
+  try {
+    recordBuilderMetric(input);
+  } catch (error) {
+    console.warn("[chat] builder metric recording failed:", error instanceof Error ? error.message : error);
+  }
+}
+
 function buildBuilderCriticPrompt(input: string | null, requestedTarget: BuilderTarget, draft: string): string {
   return [
     "You are a strict UI/code quality reviewer for Quill builder artifacts.",
@@ -498,6 +510,23 @@ function summarizeLastUserInput(body: Record<string, unknown>): string | null {
   return null;
 }
 
+function getLastUserParts(body: Record<string, unknown>): unknown[] | undefined {
+  if (!Array.isArray(body.messages)) return undefined;
+
+  const lastUserMessage = [...body.messages].reverse().find((m: any) => m?.role === "user");
+  if (!lastUserMessage) return undefined;
+
+  if (Array.isArray(lastUserMessage.parts) && lastUserMessage.parts.length > 0) {
+    return lastUserMessage.parts;
+  }
+
+  if (typeof lastUserMessage.content === "string" && lastUserMessage.content.trim()) {
+    return [{ type: "text", text: lastUserMessage.content.trim() }];
+  }
+
+  return undefined;
+}
+
 function jsonResponse(payload: Record<string, string>, status: number, headers?: HeadersInit) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -559,6 +588,7 @@ export async function POST(req: Request) {
 
     const textMsgs = extractTextMessages(body);
     const summarizedUserInput = summarizeLastUserInput(body);
+    const lastUserParts = getLastUserParts(body);
 
     if (modelMessages.length === 0) {
       console.error("[chat] No messages found. Body:", JSON.stringify(body).slice(0, 500));
@@ -780,7 +810,7 @@ export async function POST(req: Request) {
       const persistedUserContent = lastUserMsg?.content ?? summarizedUserInput;
 
       if (persistedUserContent) {
-        await saveMessage({ chatId: id, role: "user", content: persistedUserContent });
+        await saveMessage({ chatId: id, role: "user", content: persistedUserContent, parts: lastUserParts });
 
         const userTurnCount = Array.isArray(body.messages)
           ? body.messages.filter((m: any) => m?.role === "user").length
@@ -858,14 +888,19 @@ export async function POST(req: Request) {
         }
       }
 
-      recordBuilderMetric({
+      safeRecordBuilderMetric({
         parseSuccess: Boolean(artifact),
         artifactType: artifact?.type,
         requestedTarget: requestedBuilderTarget,
       });
 
       if (finalText && shouldPersist) {
-        await saveMessage({ chatId: id, role: "assistant", content: finalText });
+        await saveMessage({
+          chatId: id,
+          role: "assistant",
+          content: finalText,
+          parts: [{ type: "text", text: finalText }],
+        });
       }
 
       await recordModelUsage({
@@ -902,7 +937,7 @@ export async function POST(req: Request) {
       onFinish: async ({ text, totalUsage, providerMetadata }) => {
         if (canvasBuildIntent) {
           const artifact = parseBuilderArtifact(text ?? "");
-          recordBuilderMetric({
+          safeRecordBuilderMetric({
             parseSuccess: Boolean(artifact),
             artifactType: artifact?.type,
             requestedTarget: requestedBuilderTarget,
@@ -910,7 +945,12 @@ export async function POST(req: Request) {
         }
 
         if (text && shouldPersist) {
-          await saveMessage({ chatId: id, role: "assistant", content: text });
+          await saveMessage({
+            chatId: id,
+            role: "assistant",
+            content: text,
+            parts: [{ type: "text", text }],
+          });
         }
 
         await recordModelUsage({
@@ -930,6 +970,17 @@ export async function POST(req: Request) {
     logApiCompletion(requestContext, { status: 200 });
     return withRequestHeaders(result.toTextStreamResponse(), requestContext.requestId);
   } catch (error) {
+    if (error instanceof Error && error.message.toLowerCase().includes("aborted")) {
+      logApiCompletion(requestContext, { status: 499, error: "client_aborted" });
+      return withRequestHeaders(
+        new Response("", {
+          status: 499,
+          statusText: "Client Closed Request",
+        }),
+        requestContext.requestId,
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : "Internal server error";
     console.error("[chat] error:", error instanceof Error ? error.stack : error);

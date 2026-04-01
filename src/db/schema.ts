@@ -100,12 +100,31 @@ export const messages = pgTable(
       .references(() => chats.id, { onDelete: "cascade" }),
     role: varchar("role", { enum: ["user", "assistant", "system", "tool"] }).notNull(),
     content: text("content").notNull(),
+    partsJson: jsonb("partsJson"),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("message_chat_id_idx").on(table.chatId),
     index("message_role_created_chat_idx").on(table.role, table.createdAt, table.chatId),
   ]
+);
+
+export const messageFiles = pgTable(
+  "message_file",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    chatId: text("chatId")
+      .notNull()
+      .references(() => chats.id, { onDelete: "cascade" }),
+    mediaType: text("mediaType").notNull(),
+    filename: text("filename"),
+    byteSize: integer("byteSize").notNull(),
+    dataBase64: text("dataBase64").notNull(),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("message_file_chat_id_idx").on(table.chatId)]
 );
 
 export const userEntitlements = pgTable(

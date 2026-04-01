@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
-import { getAutonomyLevelLabel, summarizePolicyCapabilities } from "@/lib/killer-autonomy";
 import { SettingsModal } from "@/components/ui/SettingsModal";
 
 type SessionData = {
@@ -35,6 +34,7 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps = {}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
   const [planLabel, setPlanLabel] = useState("Free");
@@ -77,7 +77,6 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
     }).catch(() => setSessionStatus("unauthenticated"));
   }, []);
   const [killersOpen, setKillersOpen] = useState(true);
-  const [killersExpanded, setKillersExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pinned, setPinned] = useState<string[]>(() => {
@@ -141,6 +140,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
     ...recentChats.filter((c) => pinned.includes(c.id)),
     ...recentChats.filter((c) => !pinned.includes(c.id)),
   ];
+  const activeKillerId = searchParams.get("killer");
 
   return (
     <aside className="flex flex-col w-64 h-full bg-[#0d0d15] border-r border-quill-border shrink-0 overflow-y-auto">
@@ -212,12 +212,19 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
           className="overflow-hidden transition-all duration-200"
           style={{ maxHeight: killersOpen ? "600px" : "0px", opacity: killersOpen ? 1 : 0 }}
         >
-          <div className="flex flex-col gap-0.5 pt-1 pb-2">
-            {(killersExpanded ? KILLERS : KILLERS.slice(0, 3)).map((killer) => (
+          <div className="flex flex-col gap-1 pt-1 pb-2">
+            {KILLERS.map((killer) => {
+              const isActive = killer.id === activeKillerId;
+
+              return (
               <button
                 key={killer.id}
                 onClick={() => window.location.assign(`/agent?killer=${killer.id}`)}
-                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl hover:bg-quill-surface-2 transition-all duration-150 text-left group"
+                className="flex items-center gap-2.5 w-full px-2.5 py-2.5 rounded-xl transition-all duration-150 text-left group hover:bg-quill-surface-2"
+                style={{
+                  background: isActive ? `${killer.accent}10` : undefined,
+                  border: isActive ? `1px solid ${killer.accent}28` : "1px solid transparent",
+                }}
               >
                 <KillerIcon accent={killer.accent} iconKey={killer.iconKey} />
                 <div className="flex-1 min-w-0">
@@ -225,34 +232,10 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                     {killer.name}
                   </p>
                   <p className="text-[11px] text-quill-muted truncate">{killer.tagline}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                    <span
-                      className="px-1.5 py-0.5 rounded-md border text-[10px] font-medium"
-                      style={{ borderColor: `${killer.accent}35`, background: `${killer.accent}14`, color: killer.accent }}
-                    >
-                      {getAutonomyLevelLabel(killer.executionPolicy.autonomyLevel)}
-                    </span>
-                    {summarizePolicyCapabilities(killer.executionPolicy, 2).map((capability) => (
-                      <span key={capability} className="text-[10px] text-[#7f7f96] truncate">
-                        {capability}
-                      </span>
-                    ))}
-                  </div>
                 </div>
+                {isActive && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: killer.accent }} />}
               </button>
-            ))}
-            {KILLERS.length > 3 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setKillersExpanded((v) => !v); }}
-                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-[11px] text-quill-muted hover:text-[#a8a8c0] hover:bg-quill-surface-2 transition-all duration-150 text-left"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ transform: killersExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-                {killersExpanded ? "Show less" : `See all ${KILLERS.length}`}
-              </button>
-            )}
+            );})}
           </div>
         </div>
       </div>
@@ -298,17 +281,6 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
               sessionStatus === "unauthenticated" ? (
                 <div className="px-2 py-2 flex flex-col gap-2">
                   <p className="text-xs text-quill-muted leading-relaxed">Sign in to save and access your conversation history.</p>
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.22)] text-xs font-medium text-[#F87171] hover:bg-[rgba(239,68,68,0.14)] transition-all"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                    Sign in
-                  </Link>
                 </div>
               ) : (
                 <p className="px-3 py-2 text-xs text-quill-muted italic">
@@ -482,20 +454,20 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
             </div>
 
             {/* Usage bar */}
-            <div className="px-2 pb-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-quill-muted">{messagesUsedToday} / {recommendedDailyLimit} messages today</span>
-                <span className="text-[11px] font-medium text-[#F87171]">{usagePercent}%</span>
+            <div className="px-2 pb-1 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-quill-muted">{messagesUsedToday}/{recommendedDailyLimit} today</span>
+                <span className="text-[11px] text-quill-muted">{planLabel}</span>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-quill-border overflow-hidden">
+              <div className="w-full h-1 rounded-full bg-quill-border overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${usagePercent}%`, background: "linear-gradient(to right, #EF4444, #F87171)" }}
                 />
               </div>
               {planLabel === "Free" && (
-                <button className="mt-1.5 text-[11px] text-[#EF4444] hover:text-[#F87171] transition-colors">
-                  Upgrade for unlimited
+                <button className="text-[11px] text-quill-muted hover:text-quill-text transition-colors">
+                  Upgrade
                 </button>
               )}
             </div>
@@ -504,14 +476,14 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
           /* Not signed in */
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-quill-border hover:border-[rgba(239,68,68,0.4)] hover:bg-quill-surface text-sm font-medium text-quill-muted hover:text-quill-text transition-all"
+            className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl border border-quill-border hover:border-[rgba(239,68,68,0.4)] hover:bg-quill-surface text-xs font-medium text-quill-muted hover:text-quill-text transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
               <polyline points="10 17 15 12 10 7" />
               <line x1="15" y1="12" x2="3" y2="12" />
             </svg>
-            Sign in
+            Sign in to sync
           </Link>
         )}
       </div>

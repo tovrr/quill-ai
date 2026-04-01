@@ -203,7 +203,7 @@ html.is-mobile .agent-composer-shell {
   bottom: 0;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
 }
 
 /* iOS profile: tighter glass + softer top edge */

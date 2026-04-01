@@ -8,6 +8,7 @@ export type Mode = "fast" | "thinking" | "advanced";
 
 interface TaskInputProps {
   onSend: (message: string, files?: FileList) => void;
+  onStop?: () => void;
   onGenerateImage?: (prompt: string) => Promise<void>;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
@@ -26,6 +27,7 @@ interface TaskInputProps {
   isGeneratingImage?: boolean;
   isWorking?: boolean;
   placeholder?: string;
+  workingLabel?: string;
 }
 
 const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }> = [
@@ -43,6 +45,7 @@ const MODES: { id: Mode; label: string; desc: string }[] = [
 
 export function TaskInput({
   onSend,
+  onStop,
   onGenerateImage,
   mode,
   onModeChange,
@@ -61,12 +64,14 @@ export function TaskInput({
   isGeneratingImage,
   isWorking,
   placeholder,
+  workingLabel,
 }: TaskInputProps) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileList | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
+  const [builderDropdownOpen, setBuilderDropdownOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -86,15 +91,16 @@ export function TaskInput({
 
   // Close dropdown on outside click
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!modeDropdownOpen && !builderDropdownOpen) return;
     const handle = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+        setModeDropdownOpen(false);
+        setBuilderDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
-  }, [dropdownOpen]);
+  }, [modeDropdownOpen, builderDropdownOpen]);
 
   const isDisabled = disabled || isGeneratingImage;
 
@@ -124,7 +130,8 @@ export function TaskInput({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setAttachedFiles(e.target.files);
-      setDropdownOpen(false);
+      setModeDropdownOpen(false);
+      setBuilderDropdownOpen(false);
     }
   };
 
@@ -141,7 +148,6 @@ export function TaskInput({
   const currentPlaceholder = imageMode
     ? "Describe the image to generate..."
     : placeholder ?? "Ask Quill to do anything...";
-
   const enabledModes = new Set(allowedModes ?? MODES.map((m) => m.id));
   const visibleModes = showLockedModes ? MODES : MODES.filter((m) => enabledModes.has(m.id));
   const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Fast";
@@ -150,6 +156,7 @@ export function TaskInput({
   const hasTypedContent = value.trim().length > 0;
   const isActiveComposer = isFocused || hasTypedContent || imageMode;
   const showWorkingGlow = Boolean(isWorking) || Boolean(isGeneratingImage);
+  const canStop = Boolean(isWorking && onStop);
 
   return (
     <div className="flex flex-col gap-2">
@@ -212,6 +219,15 @@ export function TaskInput({
           </div>
         )}
 
+        {isWorking && !imageMode && (
+          <div className="px-4 pt-3">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.22)] text-xs text-[#f2b1b1] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] animate-pulse" />
+              {workingLabel ?? "Quill is working..."}
+            </span>
+          </div>
+        )}
+
         {/* Textarea */}
         <textarea
           ref={textareaRef}
@@ -244,7 +260,8 @@ export function TaskInput({
             <button
               onClick={() => {
                 fileInputRef.current?.click();
-                setDropdownOpen(false);
+                setModeDropdownOpen(false);
+                setBuilderDropdownOpen(false);
               }}
               disabled={isDisabled}
               title="Attach file"
@@ -262,7 +279,6 @@ export function TaskInput({
               <svg className="hidden md:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
-              <span className="hidden md:inline">Attach</span>
               {attachedFiles && attachedFiles.length > 0 && (
                 <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
                   {attachedFiles.length}
@@ -280,7 +296,8 @@ export function TaskInput({
                 }
 
                 if (webSearchState !== "available") {
-                  setDropdownOpen(false);
+                  setModeDropdownOpen(false);
+                  setBuilderDropdownOpen(false);
                   return;
                 }
 
@@ -311,10 +328,9 @@ export function TaskInput({
                 <line x1="2" y1="12" x2="22" y2="12" />
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
-              <span className="hidden md:inline">Search</span>
-              {webSearchState !== "available" && (
+              {webSearchState === "coming-soon" && (
                 <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
-                  {webSearchState === "auth-required" ? "Login" : "Soon"}
+                  Soon
                 </span>
               )}
             </button>
@@ -349,12 +365,6 @@ export function TaskInput({
                 <path d="M3 5h4" />
                 <path d="M17 19h4" />
               </svg>
-              <span className="hidden md:inline">Image</span>
-              {!imageGenerationEnabled && (
-                <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
-                  Login
-                </span>
-              )}
             </button>
           )}
 
@@ -364,11 +374,104 @@ export function TaskInput({
           <div className="flex items-center gap-1" ref={dropdownRef}>
             <div className="relative">
               <button
-                onClick={() => setDropdownOpen((v) => !v)}
+                onClick={() => {
+                  setBuilderDropdownOpen((v) => !v);
+                  setModeDropdownOpen(false);
+                }}
                 disabled={isDisabled}
-                title="Mode & options"
+                title="Builder options"
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                  dropdownOpen
+                  builderDropdownOpen || builderTarget !== "auto" || canvasMode
+                    ? "bg-quill-border text-quill-text"
+                    : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                }`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+                {(builderTarget !== "auto" || canvasMode) && (
+                  <span className="hidden md:inline">{BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}</span>
+                )}
+                {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
+                )}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-transform duration-150"
+                  style={{ transform: builderDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {builderDropdownOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-64 bg-quill-surface border border-quill-border rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
+                  <div className="overflow-y-auto" style={{ maxHeight: "min(360px, calc(100vh - 140px))" }}>
+                    <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
+                      Builder target
+                    </div>
+
+                    {BUILDER_TARGETS.map((target) => (
+                      <button
+                        key={target.id}
+                        onClick={() => {
+                          onBuilderTargetChange(target.id);
+                          setBuilderDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
+                        style={{ color: builderTarget === target.id ? "#F87171" : "#a8a8c0" }}
+                      >
+                        <span className="flex-1">
+                          {target.label}
+                          <span className="ml-2 text-[11px] text-quill-muted">{target.desc}</span>
+                        </span>
+                        {builderTarget === target.id && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+
+                    <div className="border-t border-quill-border mx-2 my-1" />
+
+                    <button
+                      onClick={() => {
+                        onCanvasToggle();
+                        setBuilderDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="15" y1="3" x2="15" y2="21" />
+                      </svg>
+                      Canvas view
+                      {canvasMode && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setModeDropdownOpen((v) => !v);
+                  setBuilderDropdownOpen(false);
+                }}
+                disabled={isDisabled}
+                title="Model mode"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  modeDropdownOpen
                     ? "bg-quill-border text-quill-text"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 }`}
@@ -384,13 +487,13 @@ export function TaskInput({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="transition-transform duration-150"
-                  style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                  style={{ transform: modeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
 
-              {dropdownOpen && (
+              {modeDropdownOpen && (
                 <div className="absolute bottom-full right-0 mb-2 w-64 bg-quill-surface border border-quill-border rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
                   <div className="overflow-y-auto" style={{ maxHeight: "min(420px, calc(100vh - 140px))" }}>
                     <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
@@ -404,12 +507,12 @@ export function TaskInput({
                         key={m.id}
                         onClick={() => {
                           if (!isEnabled) {
-                            setDropdownOpen(false);
+                            setModeDropdownOpen(false);
                             router.push("/pricing");
                             return;
                           }
                           onModeChange(m.id);
-                          setDropdownOpen(false);
+                          setModeDropdownOpen(false);
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
                         style={{
@@ -438,7 +541,7 @@ export function TaskInput({
                         <p className="text-xs text-[#c7c7d8]">Think and Pro require a paid plan.</p>
                         <button
                           onClick={() => {
-                            setDropdownOpen(false);
+                            setModeDropdownOpen(false);
                             router.push("/pricing");
                           }}
                           className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white transition-all hover:bg-[#DC2626]"
@@ -451,82 +554,48 @@ export function TaskInput({
                         </button>
                       </div>
                     )}
-
-                    <div className="border-t border-quill-border mx-2 my-1" />
-
-                    <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
-                      Builder target
-                    </div>
-
-                    {BUILDER_TARGETS.map((target) => (
-                      <button
-                        key={target.id}
-                        onClick={() => {
-                          onBuilderTargetChange(target.id);
-                          setDropdownOpen(false);
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
-                        style={{ color: builderTarget === target.id ? "#F87171" : "#a8a8c0" }}
-                      >
-                        <span className="flex-1">
-                          {target.label}
-                          <span className="ml-2 text-[11px] text-quill-muted">{target.desc}</span>
-                        </span>
-                        {builderTarget === target.id && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-
-                    <div className="border-t border-quill-border mx-2 my-1" />
-
-                    <button
-                      onClick={() => {
-                        onCanvasToggle();
-                        setDropdownOpen(false);
-                      }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <line x1="15" y1="3" x2="15" y2="21" />
-                      </svg>
-                      Canvas view
-                      {canvasMode && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />
-                      )}
-                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={handleSend}
-              disabled={!value.trim() || isDisabled}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
-                imageMode
-                  ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
-                  : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
-              }`}
-            >
-              {isGeneratingImage ? (
-                <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+            {canStop ? (
+              <button
+                onClick={onStop}
+                type="button"
+                title="Stop generation"
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                  <rect x="6" y="6" width="12" height="12" rx="1.5" />
                 </svg>
-              ) : imageMode ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              )}
-            </button>
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!value.trim() || isDisabled}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
+                  imageMode
+                    ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
+                    : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
+                }`}
+              >
+                {isGeneratingImage ? (
+                  <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+                  </svg>
+                ) : imageMode ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -534,9 +603,9 @@ export function TaskInput({
       {/* Hint */}
       <p className="keyboard-hint text-center text-[11px] text-quill-muted">
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Enter</kbd>{" "}
-        to send &middot;{" "}
+        send &middot;{" "}
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
-        for new line
+        new line
         {imageMode && <span className="ml-2 text-[#EF4444]">· Image generation active</span>}
       </p>
     </div>

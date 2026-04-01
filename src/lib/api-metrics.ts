@@ -63,7 +63,58 @@ function createStore(): MetricsStore {
   };
 }
 
-const store = globalStore.__quillApiMetrics__ ?? createStore();
+function createBuilderMetric(): BuilderMetric {
+  return {
+    prompts: 0,
+    artifacts: 0,
+    parseFailures: 0,
+    mismatches: 0,
+    byType: {
+      page: 0,
+      document: 0,
+      "react-app": 0,
+      "nextjs-bundle": 0,
+    },
+    byRequestedTarget: {
+      auto: 0,
+      page: 0,
+      "react-app": 0,
+      "nextjs-bundle": 0,
+    },
+  };
+}
+
+function ensureMetricsStore(store: Partial<MetricsStore> | undefined): MetricsStore {
+  const base = createStore();
+  const builder = store?.builder;
+
+  return {
+    startedAt: typeof store?.startedAt === "string" ? store.startedAt : base.startedAt,
+    totals: {
+      requests: typeof store?.totals?.requests === "number" ? store.totals.requests : base.totals.requests,
+      status2xx: typeof store?.totals?.status2xx === "number" ? store.totals.status2xx : base.totals.status2xx,
+      status4xx: typeof store?.totals?.status4xx === "number" ? store.totals.status4xx : base.totals.status4xx,
+      status5xx: typeof store?.totals?.status5xx === "number" ? store.totals.status5xx : base.totals.status5xx,
+    },
+    routes: store?.routes ?? base.routes,
+    builder: {
+      prompts: typeof builder?.prompts === "number" ? builder.prompts : 0,
+      artifacts: typeof builder?.artifacts === "number" ? builder.artifacts : 0,
+      parseFailures: typeof builder?.parseFailures === "number" ? builder.parseFailures : 0,
+      mismatches: typeof builder?.mismatches === "number" ? builder.mismatches : 0,
+      byType: {
+        ...createBuilderMetric().byType,
+        ...(builder?.byType ?? {}),
+      },
+      byRequestedTarget: {
+        ...createBuilderMetric().byRequestedTarget,
+        ...(builder?.byRequestedTarget ?? {}),
+      },
+    },
+  };
+}
+
+const store = ensureMetricsStore(globalStore.__quillApiMetrics__);
 globalStore.__quillApiMetrics__ = store;
 
 function getRouteMetric(route: string): RouteMetric {
