@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import {
+  DEFAULT_USER_PROFILE,
+  USER_PRESET_TEMPLATES,
+  type UserInstructionProfile,
+} from "@/lib/user-customization";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,6 +17,7 @@ export interface AppSettings {
   analyticsEnabled: boolean;
   compactMessages: boolean;
   autoOpenCanvas: boolean;
+  instructionProfile: UserInstructionProfile;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   analyticsEnabled: true,
   compactMessages: false,
   autoOpenCanvas: true,
+  instructionProfile: DEFAULT_USER_PROFILE,
 };
 
 const SETTINGS_KEY = "quill-settings";
@@ -368,6 +375,40 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <Row label="Auto-open Canvas" hint="Automatically open canvas when a page is generated">
                   <Toggle on={settings.autoOpenCanvas} onChange={(v) => update("autoOpenCanvas", v)} />
                 </Row>
+
+                <div className="pt-4">
+                  <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pb-2">Quill customization</p>
+                  <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-3">
+                    <div>
+                      <p className="text-xs text-quill-muted mb-1.5">Preset profile</p>
+                      <Select
+                        value={settings.instructionProfile.preset}
+                        onChange={(v) =>
+                          update("instructionProfile", {
+                            ...settings.instructionProfile,
+                            preset: v as UserInstructionProfile["preset"],
+                          })
+                        }
+                        options={Object.entries(USER_PRESET_TEMPLATES).map(([value, meta]) => ({ value, label: meta.label }))}
+                      />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-quill-muted mb-1.5">Additional instructions</p>
+                      <textarea
+                        value={settings.instructionProfile.additionalInstructions}
+                        onChange={(e) =>
+                          update("instructionProfile", {
+                            ...settings.instructionProfile,
+                            additionalInstructions: e.target.value,
+                          })
+                        }
+                        placeholder="Example: Always keep responses concise, avoid placeholders, and prioritize practical execution steps."
+                        className="w-full h-22 resize-none rounded-lg bg-[#121220] border border-quill-border px-3 py-2 text-xs text-quill-text outline-none focus:border-[#EF4444]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

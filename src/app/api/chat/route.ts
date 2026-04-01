@@ -4,6 +4,10 @@ import { streamText, generateText, stepCountIs, convertToModelMessages, type Mod
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
+  buildUserCustomizationPrompt,
+  normalizeUserProfile,
+} from "@/lib/user-customization";
+import {
   createChat,
   saveMessage,
   updateChatTitle,
@@ -568,6 +572,7 @@ export async function POST(req: Request) {
     const requestedBuilderTarget = normalizeBuilderTarget(body.builderTarget);
     const requestedBuilderLocks = normalizeBuilderLocks(body.builderLocks ?? DEFAULT_BUILDER_LOCKS);
     const builderSession = normalizeBuilderSession(body.builderSession);
+    const userCustomization = normalizeUserProfile(body.userCustomization);
     const preferVision = requestHasImageInput(body);
     const webSearchRequested = body.webSearch === true;
     const entitlement = shouldPersist
@@ -650,6 +655,11 @@ export async function POST(req: Request) {
     const killer = killerId ? KILLERS.find((k) => k.id === killerId) ?? null : null;
     const baseSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
     const systemPromptParts = [baseSystemPrompt];
+
+    const userCustomizationPrompt = buildUserCustomizationPrompt(userCustomization);
+    if (userCustomizationPrompt) {
+      systemPromptParts.push(userCustomizationPrompt);
+    }
 
     if (webSearchRequested) {
       const searchQuery = summarizedUserInput ?? textMsgs.at(-1)?.content ?? "";

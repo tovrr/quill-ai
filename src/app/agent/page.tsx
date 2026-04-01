@@ -14,6 +14,12 @@ import { CanvasPanel, isCanvasRenderableContent, isHTMLContent } from "@/compone
 import { getKillerById, type Killer } from "@/lib/killers";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
+import {
+  DEFAULT_USER_PROFILE,
+  USER_PRESET_TEMPLATES,
+  normalizeUserProfile,
+  type UserInstructionProfile,
+} from "@/lib/user-customization";
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
@@ -146,6 +152,7 @@ export default function AgentPage() {
   const [planLabel, setPlanLabel] = useState("Free");
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [webSearchState, setWebSearchState] = useState<"available" | "auth-required" | "coming-soon">("coming-soon");
+  const [activeProfileLabel, setActiveProfileLabel] = useState("Custom");
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasContent, setCanvasContent] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -176,11 +183,27 @@ export default function AgentPage() {
   const builderLocksRef = useRef<BuilderLocks>(builderLocks);
   const builderSessionRef = useRef<BuilderSessionContext>({});
   const killerRef = useRef<string | null>(killer?.id ?? null);
+  const userProfileRef = useRef<UserInstructionProfile>(DEFAULT_USER_PROFILE);
   const webSearchRef = useRef(webSearchEnabled);
   useEffect(() => { modeRef.current = selectedMode; }, [selectedMode]);
   useEffect(() => { builderTargetRef.current = builderTarget; }, [builderTarget]);
   useEffect(() => { builderLocksRef.current = builderLocks; }, [builderLocks]);
   useEffect(() => { webSearchRef.current = webSearchEnabled; }, [webSearchEnabled]);
+
+  // Load persistent user customization profile from settings storage.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("quill-settings");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { instructionProfile?: unknown };
+      userProfileRef.current = normalizeUserProfile(parsed.instructionProfile);
+      setActiveProfileLabel(USER_PRESET_TEMPLATES[userProfileRef.current.preset].label);
+    } catch {
+      userProfileRef.current = DEFAULT_USER_PROFILE;
+      setActiveProfileLabel(USER_PRESET_TEMPLATES.custom.label);
+    }
+  }, []);
 
   useEffect(() => {
     builderSessionRef.current = {
@@ -203,6 +226,7 @@ export default function AgentPage() {
             builderTarget: builderTargetRef.current,
             builderLocks: builderLocksRef.current,
             builderSession: builderSessionRef.current,
+            userCustomization: userProfileRef.current,
             webSearch: webSearchRef.current,
             ...(killerRef.current ? { killerId: killerRef.current } : {}),
           },
@@ -644,6 +668,13 @@ export default function AgentPage() {
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
               <span className="text-[11px] font-medium text-[#a8a8c0]">{modeLabels[selectedMode]}</span>
+            </div>
+          )}
+
+          {!killer && (
+            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-quill-border text-[11px] text-quill-muted">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shrink-0" />
+              <span>Profile: {activeProfileLabel}</span>
             </div>
           )}
 
