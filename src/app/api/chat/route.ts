@@ -31,6 +31,8 @@ import { analyzeArtifactQuality, parseBuilderArtifact } from "@/lib/builder-arti
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
+import { buildExecutionPolicyGuidance, evaluatePermissionDecision } from "@/lib/killer-autonomy";
+import { buildSandboxProviderRuntimeNote, getSandboxProviderStatus } from "@/lib/sandbox-providers";
 
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
@@ -575,6 +577,55 @@ export async function POST(req: Request) {
     const userCustomization = normalizeUserProfile(body.userCustomization);
     const preferVision = requestHasImageInput(body);
     const webSearchRequested = body.webSearch === true;
+    const killerId = body.killerId as string | undefined;
+    const killer = killerId ? KILLERS.find((k) => k.id === killerId) ?? null : null;
+    const policyWarnings: string[] = [];
+    const inferredCanvasBuildIntent = isCanvasBuildIntent(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null);
+    const requestedCanvasBuildIntent = requestedBuilderTarget !== "auto";
+
+    const webSearchPermission = killer
+      ? evaluatePermissionDecision(killer.executionPolicy.permissions.webSearch, {
+          explicitUserCheckpoint: webSearchRequested,
+          label: "Web search",
+        })
+      : { allowed: true, requiresCheckpoint: false, reason: null };
+
+    const externalNetworkPermission = killer
+      ? evaluatePermissionDecision(killer.executionPolicy.permissions.externalNetwork, {
+          explicitUserCheckpoint: webSearchRequested,
+          label: "External network access",
+        })
+      : { allowed: true, requiresCheckpoint: false, reason: null };
+
+    const builderPermission = killer
+      ? evaluatePermissionDecision(killer.executionPolicy.permissions.builderActions, {
+          explicitUserCheckpoint: requestedCanvasBuildIntent,
+          label: "Builder actions",
+        })
+      : { allowed: true, requiresCheckpoint: false, reason: null };
+
+    const effectiveWebSearchRequested =
+      webSearchRequested && webSearchPermission.allowed && externalNetworkPermission.allowed;
+    const canvasBuildIntent = builderPermission.allowed && (requestedCanvasBuildIntent || inferredCanvasBuildIntent);
+
+    for (const permission of [webSearchPermission, externalNetworkPermission]) {
+      if (permission.reason && webSearchRequested) {
+        policyWarnings.push(permission.reason);
+      }
+    }
+
+    if (builderPermission.reason && (requestedCanvasBuildIntent || inferredCanvasBuildIntent)) {
+      policyWarnings.push(builderPermission.reason);
+    }
+
+    const sandboxStatus = killer
+      ? await getSandboxProviderStatus(killer.executionPolicy)
+      : null;
+
+    if (sandboxStatus?.reason) {
+      policyWarnings.push(sandboxStatus.reason);
+    }
+
     const entitlement = shouldPersist
       ? await resolveUserEntitlements({ userId, email: userEmail })
       : null;
@@ -588,21 +639,21 @@ export async function POST(req: Request) {
       });
     }
 
-    if (webSearchRequested && !shouldPersist) {
+    if (effectiveWebSearchRequested && !shouldPersist) {
       logApiCompletion(requestContext, { status: 401, error: "auth_required_web_search" });
       return jsonResponse({ error: "Sign in to use web search." }, 401, {
         "x-request-id": requestContext.requestId,
       });
     }
 
-    if (webSearchRequested && !isWebSearchConfigured()) {
+    if (effectiveWebSearchRequested && !isWebSearchConfigured()) {
       logApiCompletion(requestContext, { status: 503, error: "web_search_not_configured" });
       return jsonResponse({ error: "Web search is not configured yet." }, 503, {
         "x-request-id": requestContext.requestId,
       });
     }
 
-    if (webSearchRequested && shouldPersist) {
+    if (effectiveWebSearchRequested && shouldPersist) {
       const freeDailySearches = Number(process.env.WEB_SEARCH_DAILY_REQUESTS_FREE ?? "20");
       const paidDailySearches = Number(process.env.WEB_SEARCH_DAILY_REQUESTS_PAID ?? "100");
       const dailySearchLimit = hasPaidAccess ? paidDailySearches : freeDailySearches;
@@ -650,18 +701,34 @@ export async function POST(req: Request) {
       }
     }
 
-    // Resolve active killer — use its system prompt if provided
-    const killerId = body.killerId as string | undefined;
-    const killer = killerId ? KILLERS.find((k) => k.id === killerId) ?? null : null;
     const baseSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
     const systemPromptParts = [baseSystemPrompt];
+
+    if (killer) {
+      systemPromptParts.push(buildExecutionPolicyGuidance(killer.executionPolicy));
+
+      const sandboxRuntimeNote = sandboxStatus ? buildSandboxProviderRuntimeNote(sandboxStatus) : null;
+      if (sandboxRuntimeNote) {
+        systemPromptParts.push(["Sandbox runtime status:", sandboxRuntimeNote].join("\n"));
+      }
+    }
 
     const userCustomizationPrompt = buildUserCustomizationPrompt(userCustomization);
     if (userCustomizationPrompt) {
       systemPromptParts.push(userCustomizationPrompt);
     }
 
-    if (webSearchRequested) {
+    if (policyWarnings.length > 0) {
+      systemPromptParts.push(
+        [
+          "Execution policy notes:",
+          ...policyWarnings.map((warning) => `- ${warning}`),
+          "Do not claim that blocked actions were executed. Continue with the best answer possible within policy.",
+        ].join("\n")
+      );
+    }
+
+    if (effectiveWebSearchRequested) {
       const searchQuery = summarizedUserInput ?? textMsgs.at(-1)?.content ?? "";
       if (searchQuery.trim()) {
         try {
@@ -681,8 +748,6 @@ export async function POST(req: Request) {
       }
     }
 
-    const canvasBuildIntent =
-      requestedBuilderTarget !== "auto" || isCanvasBuildIntent(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null);
     if (canvasBuildIntent) {
       systemPromptParts.push(
         buildCanvasArtifactPrompt(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null, requestedBuilderTarget)

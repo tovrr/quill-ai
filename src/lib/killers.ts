@@ -1,3 +1,6 @@
+import type { KillerExecutionPolicy } from "@/lib/killer-autonomy";
+import { createKillerExecutionPolicy } from "@/lib/killer-autonomy";
+
 export type KillerIconKey = "code" | "flow" | "idea" | "research" | "pen";
 
 export interface Killer {
@@ -9,6 +12,7 @@ export interface Killer {
   accent: string;
   iconKey: KillerIconKey;
   systemPrompt: string;
+  executionPolicy: KillerExecutionPolicy;
 }
 
 export const KILLERS: Killer[] = [
@@ -20,6 +24,25 @@ export const KILLERS: Killer[] = [
     description: "Expert programmer for any language or stack — writes, reviews, debugs, and architects code.",
     accent: "#EF4444",
     iconKey: "code",
+    executionPolicy: createKillerExecutionPolicy(
+      "checkpointed-auto",
+      {
+        webSearch: "allow",
+        fileRead: "checkpoint",
+        fileWrite: "checkpoint",
+        codeGeneration: "allow",
+        builderActions: "allow",
+        localValidation: "checkpoint",
+        externalNetwork: "checkpoint",
+        deployScaffolding: "checkpoint",
+        sandboxExecution: "checkpoint",
+      },
+      {
+        required: true,
+        providerHint: "container",
+        providerHookId: "future-code-executor",
+      }
+    ),
     systemPrompt: `You are Code Wizard, an elite software engineer with mastery across every language, framework, and architectural pattern.
 
 Your approach:
@@ -45,6 +68,12 @@ Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, 
     description: "Optimizes your workflows, habits, and systems — turns chaos into structured execution.",
     accent: "#10b981",
     iconKey: "flow",
+    executionPolicy: createKillerExecutionPolicy(
+      "propose",
+      {
+        webSearch: "checkpoint",
+      }
+    ),
     systemPrompt: `You are Flow Master, a world-class productivity coach and systems thinker who helps people work at their peak potential.
 
 Your philosophy:
@@ -69,6 +98,12 @@ Areas of expertise: task management, focus systems, habit formation, meeting des
     description: "Unlocks unconventional thinking — pushes beyond the obvious to generate breakthrough ideas.",
     accent: "#f59e0b",
     iconKey: "idea",
+    executionPolicy: createKillerExecutionPolicy(
+      "assist",
+      {
+        webSearch: "checkpoint",
+      }
+    ),
     systemPrompt: `You are Idea Factory, a master of creative thinking, lateral reasoning, and innovation who helps people generate ideas they could never reach alone.
 
 Your methods:
@@ -94,6 +129,14 @@ Areas: product ideation, business models, marketing campaigns, creative projects
     description: "Rigorous researcher who synthesizes complex information into clear, actionable insights.",
     accent: "#06b6d4",
     iconKey: "research",
+    executionPolicy: createKillerExecutionPolicy(
+      "propose",
+      {
+        webSearch: "allow",
+        fileRead: "checkpoint",
+        externalNetwork: "checkpoint",
+      }
+    ),
     systemPrompt: `You are Deep Dive, a rigorous researcher and analyst who goes beyond surface-level answers to deliver comprehensive, well-structured insights.
 
 Your standards:
@@ -119,6 +162,12 @@ Areas: market research, competitive analysis, academic topics, technology landsc
     description: "Craft compelling narratives, sharp copy, and polished content for any audience or format.",
     accent: "#f472b6",
     iconKey: "pen",
+    executionPolicy: createKillerExecutionPolicy(
+      "assist",
+      {
+        webSearch: "checkpoint",
+      }
+    ),
     systemPrompt: `You are Pen Master, a professional writer and storyteller who creates content that captivates, persuades, and endures.
 
 Your craft:

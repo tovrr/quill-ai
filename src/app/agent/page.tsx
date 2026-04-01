@@ -12,6 +12,7 @@ import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
 import { CanvasPanel, isCanvasRenderableContent, isHTMLContent } from "@/components/agent/CanvasPanel";
 import { getKillerById, type Killer } from "@/lib/killers";
+import { getAutonomyLevelLabel, summarizePolicyCapabilities } from "@/lib/killer-autonomy";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
 import {
@@ -164,6 +165,10 @@ export default function AgentPage() {
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
+  const killerCapabilities = useMemo(
+    () => (killer ? summarizePolicyCapabilities(killer.executionPolicy, 3) : []),
+    [killer]
+  );
   const canUsePageRefineActions =
     builderTarget === "page" ||
     artifact?.type === "page" ||
@@ -663,6 +668,23 @@ export default function AgentPage() {
             </div>
           )}
 
+          {killer && (
+            <div
+              className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px]"
+              style={{ borderColor: `${killer.accent}30`, background: `${killer.accent}10`, color: killer.accent }}
+              title={killer.executionPolicy.sandbox.required ? "Requires sandboxed execution for execution-shaped steps" : "No sandbox requirement yet"}
+            >
+              <span>{getAutonomyLevelLabel(killer.executionPolicy.autonomyLevel)}</span>
+            </div>
+          )}
+
+          {killer && killerCapabilities.length > 0 && (
+            <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-quill-border text-[11px] text-quill-muted">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: killer.accent }} />
+              <span>{killerCapabilities.join(" • ")}</span>
+            </div>
+          )}
+
           {/* Active mode badge */}
           {!killer && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
@@ -768,6 +790,21 @@ export default function AgentPage() {
                     <p className="text-sm text-quill-muted mt-1 max-w-sm">
                       {killer ? killer.description : "Your personal AI agent. Ask anything, attach files, generate images, or build a page."}
                     </p>
+                    {killer && (
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-md">
+                        <span
+                          className="px-2 py-1 rounded-lg border text-[11px] font-medium"
+                          style={{ borderColor: `${killer.accent}30`, background: `${killer.accent}12`, color: killer.accent }}
+                        >
+                          {getAutonomyLevelLabel(killer.executionPolicy.autonomyLevel)}
+                        </span>
+                        {killerCapabilities.map((capability) => (
+                          <span key={capability} className="px-2 py-1 rounded-lg border border-quill-border text-[11px] text-quill-muted">
+                            {capability}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

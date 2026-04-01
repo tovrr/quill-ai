@@ -7,6 +7,7 @@ import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { KillerSvgIcon } from "@/components/ui/KillerIcon";
 import { KILLERS } from "@/lib/killers";
+import { getAutonomyLevelLabel, summarizePolicyCapabilities } from "@/lib/killer-autonomy";
 import { SettingsModal } from "@/components/ui/SettingsModal";
 
 type SessionData = {
@@ -224,6 +225,19 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                     {killer.name}
                   </p>
                   <p className="text-[11px] text-quill-muted truncate">{killer.tagline}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    <span
+                      className="px-1.5 py-0.5 rounded-md border text-[10px] font-medium"
+                      style={{ borderColor: `${killer.accent}35`, background: `${killer.accent}14`, color: killer.accent }}
+                    >
+                      {getAutonomyLevelLabel(killer.executionPolicy.autonomyLevel)}
+                    </span>
+                    {summarizePolicyCapabilities(killer.executionPolicy, 2).map((capability) => (
+                      <span key={capability} className="text-[10px] text-[#7f7f96] truncate">
+                        {capability}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </button>
             ))}

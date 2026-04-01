@@ -72,6 +72,10 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Added section-level partial regeneration for page artifacts using stable section IDs
 - [x] Added optional local Next.js bundle validator endpoint (`/api/validate-bundle`) gated by `BUILDER_LOCAL_VALIDATE_ENABLED`
 - [x] Added user customization profiles (preset + additional instructions) in settings and prompt injection path
+- [x] Added Killer autonomy scaffolding: autonomy levels, per-Killer permission maps, and execution policy interface with future sandbox provider hook support
+- [x] Enforced Killer autonomy policy in `/api/chat` for current execution-shaped actions: web search and builder activation
+- [x] Exposed Killer autonomy level and capability summary in sidebar selection UI and active agent UI
+- [x] Added sandbox provider registry and adapter boundary; chat route now resolves provider availability/runtime status for future container/VM handoff
 
 ## Current Structure
 
@@ -95,11 +99,12 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 Current priorities:
 
-1. Push local builder batch (section regenerate, local validation, customization profiles) after approval
-2. Replace env-based paid entitlements with a DB billing/subscription model
-3. Replace in-memory rate limiting with a distributed limiter
-4. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
-5. PWA offline support (service worker) — required before any app store submission
+1. Add a real execution handoff path that uses the sandbox registry for validated tasks
+2. Push local builder/autonomy batch after approval
+3. Replace env-based paid entitlements with a DB billing/subscription model
+4. Replace in-memory rate limiting with a distributed limiter
+5. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
+6. PWA offline support (service worker) — required before any app store submission
 
 ## Quick Start Guide
 
@@ -169,3 +174,7 @@ export async function GET() {
 - 2026-03-31: Added model usage telemetry, `/admin/model-usage`, Flash Lite / Flash / Pro tiering, and provider-aware readiness checks
 - 2026-04-01: Builder marathon completed through Step 6 (typed artifacts, locks, refine actions, parser fallbacks, CSP-safe React preview sandbox, export readiness)
 - 2026-04-01: Added section-level partial regenerate actions, optional local bundle validation endpoint, and settings-driven user customization profiles
+- 2026-04-01: Added autonomy-policy scaffolding for Killers with future container/VM sandbox hook support
+- 2026-04-01: Enforced autonomy-policy checks in chat route for web search and builder-mode activation
+- 2026-04-01: Added autonomy transparency UI in sidebar and agent view
+- 2026-04-01: Added sandbox provider registry/adapters and runtime status resolution for future isolated execution
