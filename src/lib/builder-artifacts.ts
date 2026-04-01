@@ -59,6 +59,12 @@ export type BundleReadiness = {
   warnings: string[];
 };
 
+export type ArtifactQuality = {
+  score: number;
+  issues: string[];
+  recommendations: string[];
+};
+
 function safeJsonParse(input: string): unknown {
   try {
     return JSON.parse(input);
@@ -423,4 +429,57 @@ export function shouldAutoOpenCanvas(content: string): boolean {
   const artifact = parseBuilderArtifact(content);
   if (!artifact) return false;
   return artifact.type === "page";
+}
+
+export function analyzeArtifactQuality(artifact: BuilderArtifact): ArtifactQuality {
+  if (artifact.type === "page") {
+    const html = artifact.payload.html.toLowerCase();
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+
+    const hasHero = /<section[^>]*id=["'][^"']*hero|<h1/i.test(html);
+    const hasPricing = /pricing/i.test(html);
+    const hasTestimonials = /testimonial/i.test(html);
+    const hasCta = /get started|start|book|contact|trial|signup|sign up/i.test(html);
+    const hasViewport = /<meta[^>]*name=["']viewport["']/i.test(html);
+    const hasMobileMediaQuery = /@media\s*\(max-width:\s*(768|767|640|600)px\)/i.test(html);
+    const hasInlineStyles = /<style[\s\S]*?>[\s\S]*?<\/style>/i.test(html);
+
+    if (!hasHero) issues.push("Missing clear hero section or H1 heading.");
+    if (!hasCta) issues.push("Primary call-to-action is weak or missing.");
+    if (!hasViewport) issues.push("Missing mobile viewport meta tag.");
+    if (!hasInlineStyles) issues.push("No inline CSS detected; style reliability may be poor.");
+
+    if (!hasPricing) recommendations.push("Add a pricing section for better conversion structure.");
+    if (!hasTestimonials) recommendations.push("Add testimonials or social proof.");
+    if (!hasMobileMediaQuery) recommendations.push("Add mobile media queries for small screens.");
+
+    const score = Math.max(0, Math.min(100, 100 - issues.length * 18 - recommendations.length * 6));
+    return { score, issues, recommendations };
+  }
+
+  if (artifact.type === "react-app" || artifact.type === "nextjs-bundle") {
+    const readiness = analyzeBundleReadiness(artifact.type, artifact.payload.files, artifact.payload.entry);
+    const issues = [...readiness.errors];
+    const recommendations = [...readiness.warnings];
+    const score = Math.max(0, Math.min(100, 100 - issues.length * 20 - recommendations.length * 8));
+    return { score, issues, recommendations };
+  }
+
+  if (artifact.type !== "document") {
+    return { score: 0, issues: ["Unsupported artifact type for quality analysis."], recommendations: [] };
+  }
+
+  const markdown = artifact.payload.markdown.trim();
+  const hasHeadings = /^#{1,3}\s+/m.test(markdown);
+  const hasList = /^(-|\*|\d+\.)\s+/m.test(markdown);
+  const issues: string[] = [];
+  const recommendations: string[] = [];
+
+  if (markdown.length < 180) issues.push("Document content is very short.");
+  if (!hasHeadings) recommendations.push("Add headings to improve scanability.");
+  if (!hasList) recommendations.push("Add bullet or numbered lists for structure.");
+
+  const score = Math.max(0, Math.min(100, 100 - issues.length * 20 - recommendations.length * 8));
+  return { score, issues, recommendations };
 }

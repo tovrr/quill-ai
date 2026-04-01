@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  analyzeArtifactQuality,
   analyzeBundleReadiness,
   parseBuilderArtifact,
   type FileBundleArtifact,
@@ -433,6 +434,29 @@ function createNextJsSetupScript(files: Record<string, string>): string {
   ].join("\n");
 }
 
+function applyMobilePreviewGuardrails(html: string): string {
+  if (!html.trim()) return html;
+
+  const guardrails = `<style id="quill-mobile-guardrails">
+@media (max-width: 768px) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html, body { overflow-x: hidden !important; }
+  img, svg, canvas, video { max-width: 100% !important; height: auto !important; }
+}
+</style>`;
+
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, `${guardrails}</head>`);
+  }
+
+  return `${guardrails}${html}`;
+}
+
 export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
@@ -502,6 +526,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
     : isHTML
     ? extractHTML(content)
     : "";
+  const htmlPreviewSrc = isHTML ? applyMobilePreviewGuardrails(htmlSrc) : "";
 
   const markdownSrc = isArtifact
     ? artifact?.type === "document"
@@ -513,6 +538,7 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
   const fileBundle: FileBundleArtifact | null =
     artifact && (artifact.type === "react-app" || artifact.type === "nextjs-bundle") ? artifact : null;
+  const artifactQuality = artifact ? analyzeArtifactQuality(artifact) : null;
   const bundleReadiness = fileBundle
     ? analyzeBundleReadiness(fileBundle.type, fileBundle.payload.files, fileBundle.payload.entry)
     : null;
@@ -729,6 +755,23 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
+        {artifactQuality && (
+          <div className="px-4 py-2 border-b border-quill-border bg-[#0d0d15]">
+            <div className="flex items-center gap-2">
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${artifactQuality.score >= 80 ? "bg-[rgba(52,211,153,0.15)] text-[#9be7b5]" : artifactQuality.score >= 60 ? "bg-[rgba(245,158,11,0.15)] text-[#fcd48f]" : "bg-[rgba(239,68,68,0.15)] text-[#f7b0b0]"}`}>
+                Quality {artifactQuality.score}/100
+              </span>
+              {artifactQuality.issues.length > 0 ? (
+                <span className="text-[11px] text-[#f7b0b0] truncate">{artifactQuality.issues[0]}</span>
+              ) : artifactQuality.recommendations.length > 0 ? (
+                <span className="text-[11px] text-[#d2d2e6] truncate">{artifactQuality.recommendations[0]}</span>
+              ) : (
+                <span className="text-[11px] text-[#9be7b5]">Looks production-ready.</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {!content ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
@@ -771,8 +814,8 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
           effectiveTab === "preview" ? (
             /* Live iframe */
             <iframe
-              key={htmlSrc}
-              srcDoc={htmlSrc}
+              key={htmlPreviewSrc}
+              srcDoc={htmlPreviewSrc}
               sandbox="allow-scripts allow-forms allow-popups"
               className="w-full h-full border-0"
               title="Page preview"
@@ -848,6 +891,30 @@ export function CanvasPanel({ content, onClose }: CanvasPanelProps) {
           </div>
         )}
       </div>
+
+      {content && (
+        <div className="md:hidden shrink-0 border-t border-quill-border bg-[#0d0d15] px-3 py-2 pb-safe">
+          <div className="grid grid-cols-5 gap-1.5 text-[11px]">
+            {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
+              <button
+                onClick={() => setTab("preview")}
+                className={`h-9 rounded-lg border ${effectiveTab === "preview" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+              >
+                Preview
+              </button>
+            )}
+            <button
+              onClick={() => setTab("code")}
+              className={`h-9 rounded-lg border ${effectiveTab === "code" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+            >
+              Code
+            </button>
+            <button onClick={handleCopy} className="h-9 rounded-lg border border-quill-border text-quill-muted">Copy</button>
+            <button onClick={handleDownload} className="h-9 rounded-lg border border-quill-border text-quill-muted">Save</button>
+            <button onClick={onClose} className="h-9 rounded-lg border border-quill-border text-quill-muted">Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

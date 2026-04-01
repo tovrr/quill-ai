@@ -488,6 +488,32 @@ export default function AgentPage() {
     { id: "motion", label: "Softer motion", instruction: "Reduce motion intensity and keep only subtle, meaningful transitions." },
   ] as const;
 
+  const sectionRefineActions = [
+    { id: "hero", label: "Regenerate hero", section: "hero" },
+    { id: "pricing", label: "Regenerate pricing", section: "pricing" },
+    { id: "testimonials", label: "Regenerate testimonials", section: "testimonials" },
+  ] as const;
+
+  const handleSectionRegenerate = useCallback(
+    (section: "hero" | "pricing" | "testimonials") => {
+      setRecentRefinements((prev) => {
+        const label = `Regenerated ${section}`;
+        const next = [label, ...prev.filter((item) => item !== label)];
+        return next.slice(0, 5);
+      });
+      setAgentStatus("thinking");
+      sendMessage({
+        text: [
+          "Refine the current page artifact.",
+          `Regenerate only the ${section} section with a stronger variant.`,
+          "Keep all other sections visually and structurally unchanged.",
+          "Return only an updated artifact block.",
+        ].join("\n"),
+      });
+    },
+    [sendMessage],
+  );
+
   const handleGenerateImage = useCallback(
     async (prompt: string) => {
       setIsGeneratingImage(true);
@@ -780,6 +806,21 @@ export default function AgentPage() {
                         onClick={() => handleQuickPageRefine(action.label, action.instruction)}
                         disabled={isLoading || isGeneratingImage}
                         className="px-2.5 py-1.5 rounded-lg border border-quill-border text-[11px] text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {canUsePageRefineActions && messages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {sectionRefineActions.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleSectionRegenerate(action.section)}
+                        disabled={isLoading || isGeneratingImage}
+                        className="px-2.5 py-1.5 rounded-lg border border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {action.label}
                       </button>
