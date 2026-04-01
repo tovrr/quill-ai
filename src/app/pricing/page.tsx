@@ -26,6 +26,9 @@ const THINK_FEATURES = [
   "React app artifact generation",
   "Live React preview sandbox in Canvas",
   "Builder iteration locks + quick refine actions",
+  "Section-level regenerate actions for page artifacts",
+  "Builder quality score banner with guided retries",
+  "Customization presets + personal style instructions",
   "Saved history (account required)",
   "Web search included",
   "Image generation",
@@ -39,6 +42,7 @@ const PRO_FEATURES = [
   "Highest daily usage limits",
   "Next.js bundle generation (export-first)",
   "Bundle export-readiness diagnostics",
+  "Optional local bundle validation runner (workspace-enabled)",
   "One-click setup script export for local run/build",
   "Saved history + sharing",
   "Web search included",
@@ -174,6 +178,7 @@ export default function PricingPage() {
               { q: "Do you store my conversations?", a: "If you are signed in, conversations are stored in your account history and can be deleted from the sidebar. Guest sessions are not persisted." },
               { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.5 Flash Lite by default (or optional OpenRouter free-model routing when configured). Think uses Gemini 2.5 Flash. Pro uses Gemini 2.5 Pro." },
               { q: "Does every plan include app builder?", a: "Yes. Free includes page artifacts. Think unlocks stronger React app iteration workflows. Pro is best for high-quality Next.js bundle output and export diagnostics." },
+              { q: "Can I customize Quill's output style?", a: "Yes. In Settings, you can choose a preset profile (for example SaaS Marketer or Full-stack Engineer) and add your own instructions. Quill applies these preferences in builder and chat responses." },
             ].map(({ q, a }) => (
               <div key={q} className="border-b border-quill-border pb-5">
                 <p className="text-sm font-semibold text-quill-text mb-2">{q}</p>

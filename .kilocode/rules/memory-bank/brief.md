@@ -37,6 +37,9 @@ Users interact with Quill by:
 - Typed artifact envelope output for builder flows (`page`, `react-app`, `nextjs-bundle`, `document`).
 - CSP-safe React preview runtime via blob-based sandbox flow.
 - Next.js export-readiness diagnostics and setup script export path.
+- Section-level page regeneration with stable section IDs.
+- Builder quality scoring and retry logic for low-quality drafts.
+- User customization presets + additional instruction injection for builder/chat behavior.
 
 ### Nice to Have
 

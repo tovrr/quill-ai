@@ -8,7 +8,7 @@ import { HeroInput } from "@/components/HeroInput";
 export const metadata: Metadata = {
   title: "Quill AI — Your Personal AI Agent That Gets Things Done",
   description:
-    "Quill is your personal AI agent and no-code/low-code app builder. Research, write, code, generate pages, preview React apps, and export Next.js bundles. Free to start — no credit card required.",
+    "Quill is your personal AI agent and no-code/low-code app builder. Research, write, code, generate pages, preview React apps, export Next.js bundles, and iterate with quality scoring and section-level regenerate controls.",
   keywords: [
     "AI agent",
     "personal AI assistant",
@@ -53,7 +53,7 @@ const capabilities = [
       </svg>
     ),
     title: "App Builder",
-    description: "Generate landing pages, React apps, and export-ready Next.js bundles with artifact-based output.",
+    description: "Generate page/React/Next.js artifacts with quality scoring, section-level regenerate actions, and export-readiness checks.",
     color: "#F87171",
   },
   {

@@ -68,7 +68,10 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Shipped builder artifacts V1-V5: typed parser (`builder-artifacts.ts`), target modes (auto/page/react-app/nextjs-bundle), iteration locks, refinement memory, and artifact metrics
 - [x] Fixed builder reliability regressions: OpenRouter fast mode is opt-in (`OPENROUTER_FAST_ENABLED`), parser now salvages loose file maps, and chat bubbles summarize artifacts instead of dumping raw code
 - [x] Added CSP-safe React preview sandbox: `/api/preview` generates runtime HTML and Canvas loads it via blob URL iframe
-- [x] Step 6 started: Next.js bundle export hardening with stricter generation rules, inferred bundle typing from file maps, export-readiness diagnostics in Canvas, and downloadable PowerShell setup script
+- [x] Completed Step 6 export-first hardening for `nextjs-bundle`: stricter generation rules, inferred bundle typing from file maps, export-readiness diagnostics in Canvas, and downloadable PowerShell setup script
+- [x] Added section-level partial regeneration for page artifacts using stable section IDs
+- [x] Added optional local Next.js bundle validator endpoint (`/api/validate-bundle`) gated by `BUILDER_LOCAL_VALIDATE_ENABLED`
+- [x] Added user customization profiles (preset + additional instructions) in settings and prompt injection path
 
 ## Current Structure
 
@@ -92,10 +95,11 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 Current priorities:
 
-1. Replace env-based paid entitlements with a DB billing/subscription model
-2. Replace in-memory rate limiting with a distributed limiter
-3. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
-4. PWA offline support (service worker) — required before any app store submission
+1. Push local builder batch (section regenerate, local validation, customization profiles) after approval
+2. Replace env-based paid entitlements with a DB billing/subscription model
+3. Replace in-memory rate limiting with a distributed limiter
+4. Add external uptime monitoring + alerting for `/`, `/agent`, `/api/health`, and `/api/chat`
+5. PWA offline support (service worker) — required before any app store submission
 
 ## Quick Start Guide
 
@@ -163,5 +167,5 @@ export async function GET() {
 - 2026-03-29: Implemented live web search with Tavily retrieval, auth gating, and entitlement-driven search button states
 - 2026-03-31: Added guest session persistence, guest-to-login import, and fixed hero `?q=` reload replay
 - 2026-03-31: Added model usage telemetry, `/admin/model-usage`, Flash Lite / Flash / Pro tiering, and provider-aware readiness checks
-- 2026-04-01: Builder marathon completed through Step 5 (typed artifacts, locks, refine actions, parser fallbacks, CSP-safe React preview sandbox)
-- 2026-04-01: Began Step 6 export-first hardening for `nextjs-bundle` (prompt constraints, readiness checks, setup-script export)
+- 2026-04-01: Builder marathon completed through Step 6 (typed artifacts, locks, refine actions, parser fallbacks, CSP-safe React preview sandbox, export readiness)
+- 2026-04-01: Added section-level partial regenerate actions, optional local bundle validation endpoint, and settings-driven user customization profiles

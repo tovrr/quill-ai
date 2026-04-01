@@ -57,10 +57,12 @@
 - [x] Step 4: Iteration memory + lock constraints (layout, colors, section order, copy).
 - [x] Step 5: React preview sandbox (CSP-safe blob URL runtime).
 - [x] Step 6: Next.js bundle export-first hardening (prompt constraints, type inference, readiness diagnostics, setup script export).
-- [ ] Phase 7: Isolated validation runner (materialize bundle, install, typecheck, lint, build).
+- [x] Phase 7: Isolated local validation runner (materialize bundle, install, build) behind an env flag (`BUILDER_LOCAL_VALIDATE_ENABLED`).
+- [x] Phase 7.5: User customization profiles (preset + additional instructions) wired into builder and chat prompts.
 - [ ] Phase 8: One-click apply/export into target project with execution summary.
 - [ ] Phase 9: Dependency conflict guardrails + peer dependency diagnostics.
 - [ ] Phase 10: Publish/deploy pipeline scaffolding.
+- [ ] Phase 11: Autonomy policy layer (assist/propose/checkpointed-auto) with per-killer permission maps.
 
 ## High Priority (Production Safety)
 

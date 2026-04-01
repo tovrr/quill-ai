@@ -23,7 +23,10 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 6. User can manage conversations in sidebar: revisit, pin, share, or delete.
 7. For complex output, user uses Canvas mode to inspect generated docs/pages.
 8. For app-building tasks, user selects a builder target (Auto/Page/React/Next.js) and iterates with lock controls.
-9. For Next.js bundles, user checks export-readiness diagnostics and can download a setup script for local install/build.
+9. For page artifacts, user can run section-level regenerate actions without rebuilding the entire page.
+10. For Next.js bundles, user checks export-readiness diagnostics and can download a setup script for local install/build.
+11. Optional local validation can run install/build checks in an isolated temp workspace when enabled.
+12. Users can apply customization presets and additional instructions from Settings to influence output style.
 
 ## Key User Experience Goals
 
@@ -44,7 +47,10 @@ Quill AI is a personal AI agent app that combines chat, specialist agents, file 
 7. **Quota Controls**: Daily mode limits via environment settings.
 8. **PWA**: `manifest.webmanifest`, apple-touch-icon, and correct quill-feather icons across all sizes — installable but not yet offline-capable.
 9. **No-code/Low-code Builder**: Artifact-based outputs for `page`, `react-app`, and `nextjs-bundle` with CSP-safe React preview.
-10. **Export Guidance**: Next.js bundle readiness panel and downloadable PowerShell setup script for local validation.
+10. **Section-aware Iteration**: Page artifact regenerate actions can target a single section via stable section IDs.
+11. **Export Guidance**: Next.js bundle readiness panel and downloadable PowerShell setup script for local validation.
+12. **Optional Bundle Validation**: `/api/validate-bundle` can materialize bundles in temp storage and run install/build checks behind env gating.
+13. **User Customization Profiles**: Settings-level preset + additional instructions are injected into builder/chat prompt context.
 
 ## Integration Points
 

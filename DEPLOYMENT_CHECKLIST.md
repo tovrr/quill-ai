@@ -22,6 +22,7 @@ Optional (feature flags/cost control):
 - `API_CHAT_REQUESTS_PER_MINUTE` (default: `20`)
 - `API_IMAGE_REQUESTS_PER_MINUTE` (default: `6`)
 - `API_METRICS_TOKEN` (required to access `/api/metrics`)
+- `BUILDER_LOCAL_VALIDATE_ENABLED` (default: disabled; enables `/api/validate-bundle` temp-workspace install/build validation)
 
 ## 2) Pre-Deploy Validation
 
