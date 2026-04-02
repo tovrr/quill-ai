@@ -84,7 +84,7 @@ Copy `.env.example` to `.env.local` and fill required values.
 Required keys:
 
 - `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_SECRET` (use a long high-entropy value, for example `openssl rand -base64 48`)
 - `BETTER_AUTH_URL`
 - `GOOGLE_GENERATIVE_AI_API_KEY`
 

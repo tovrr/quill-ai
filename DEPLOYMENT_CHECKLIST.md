@@ -5,7 +5,7 @@
 Required:
 
 - `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_SECRET` (high-entropy secret; avoid short hex-only values)
 - `BETTER_AUTH_URL`
 - `GOOGLE_GENERATIVE_AI_API_KEY`
 
