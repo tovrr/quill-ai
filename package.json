@@ -50,6 +50,14 @@
     "lightningcss-linux-x64-gnu": "1.32.0",
     "lightningcss-linux-x64-musl": "1.32.0"
   },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.27.5"
+    },
+    "@esbuild-kit/esm-loader": {
+      "esbuild": "0.27.5"
+    }
+  },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.1.3",
     "@tailwindcss/postcss": "^4.1.17",
