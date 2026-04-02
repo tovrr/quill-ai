@@ -78,7 +78,39 @@ function readGuestSession(): StoredGuestSession | null {
       localStorage.removeItem(GUEST_SESSION_KEY);
       return null;
     }
-    return parsed;
+    const normalizedMessages = parsed.messages
+      .map((message) => {
+        if (!message || typeof message !== "object") return null;
+
+        const candidate = message as {
+          id?: unknown;
+          role?: unknown;
+          parts?: unknown;
+          content?: unknown;
+        };
+
+        if (candidate.role !== "user" && candidate.role !== "assistant" && candidate.role !== "system") {
+          return null;
+        }
+
+        const parts = Array.isArray(candidate.parts)
+          ? (candidate.parts as UIMessage["parts"])
+          : typeof candidate.content === "string" && candidate.content.trim().length > 0
+          ? ([{ type: "text", text: candidate.content }] as UIMessage["parts"])
+          : [];
+
+        return {
+          id: typeof candidate.id === "string" && candidate.id.trim().length > 0 ? candidate.id : crypto.randomUUID(),
+          role: candidate.role,
+          parts,
+        } satisfies UIMessage;
+      })
+      .filter((message): message is UIMessage => message !== null);
+
+    return {
+      ...parsed,
+      messages: normalizedMessages,
+    };
   } catch {
     return null;
   }
@@ -184,7 +216,11 @@ function hasRenderableAssistantContent(message: UIMessage | undefined): boolean 
     }
 
     if (typed.type === "dynamic-tool" || (typeof typed.type === "string" && typed.type.startsWith("tool-"))) {
-      return typed.state === "result";
+      return true;
+    }
+
+    if (typed.type === "reasoning") {
+      return typeof typed.text === "string" && typed.text.trim().length > 0;
     }
 
     return false;

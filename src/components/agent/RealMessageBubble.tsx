@@ -12,8 +12,9 @@ function ToolCallBadge({
   toolName: string;
   state: string;
 }) {
-  const isRunning = state === "input-streaming" || state === "call";
-  const isDone = state === "result";
+  const isRunning = state === "input-streaming" || state === "input-available" || state === "call";
+  const isDone = state === "result" || state === "output-available";
+  const isError = state === "output-error";
 
   return (
     <div
@@ -23,6 +24,8 @@ function ToolCallBadge({
           ? "rgba(239,68,68,0.08)"
           : isDone
           ? "rgba(52,211,153,0.06)"
+          : isError
+          ? "rgba(248,113,113,0.1)"
           : "rgba(17,17,24,0.8)",
       }}
     >
@@ -59,12 +62,12 @@ function ToolCallBadge({
 
       <span
         className="font-semibold"
-        style={{ color: isRunning ? "#F87171" : isDone ? "#34d399" : "#6b6b8a" }}
+        style={{ color: isRunning ? "#F87171" : isDone ? "#34d399" : isError ? "#fca5a5" : "#6b6b8a" }}
       >
         {toolName}
       </span>
       <span className="text-quill-muted">
-        {isRunning ? "Running..." : isDone ? "Done" : "Pending"}
+        {isRunning ? "Running..." : isDone ? "Done" : isError ? "Failed" : "Pending"}
       </span>
     </div>
   );
@@ -247,7 +250,14 @@ function ArtifactSummary({ text }: { text: string }) {
 
 export function RealMessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
-  const renderedParts = message.parts
+  const legacyContent = (message as unknown as { content?: unknown }).content;
+  const parts = Array.isArray((message as { parts?: unknown }).parts)
+    ? message.parts
+    : typeof legacyContent === "string"
+    ? ([{ type: "text", text: legacyContent }] as UIMessage["parts"])
+    : [];
+
+  const renderedParts = parts
     .map((part, i) => {
       // Text part
       if (part.type === "text") {
@@ -269,6 +279,21 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
           >
             {artifactSummary ?? <MarkdownText text={text} />}
+          </div>
+        );
+      }
+
+      if (part.type === "reasoning") {
+        const text = part.text?.trim();
+        if (!text) return null;
+
+        return (
+          <div
+            key={i}
+            className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6] w-full"
+          >
+            <p className="text-[11px] uppercase tracking-wide text-quill-muted mb-1">Reasoning</p>
+            <MarkdownText text={text} />
           </div>
         );
       }
