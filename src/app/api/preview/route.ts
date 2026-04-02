@@ -1,11 +1,40 @@
 import { NextRequest } from "next/server";
 import { generatePreviewHtml } from "@/lib/react-preview-html";
+import { headers as nextHeaders } from "next/headers";
+import { auth } from "@/lib/auth/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const MAX_FILES = 50;
 const MAX_FILE_BYTES = 200_000; // 200 KB per file
 const MAX_TOTAL_BYTES = 2_000_000; // 2 MB total
 
 export async function POST(req: NextRequest) {
+  const sessionData = await auth.api.getSession({ headers: await nextHeaders() }).catch(() => null);
+  if (!sessionData?.user?.id) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const perMinute = Number(process.env.API_PREVIEW_REQUESTS_PER_MINUTE ?? "20");
+  const rateLimit = checkRateLimit({
+    key: `preview:user:${sessionData.user.id}`,
+    max: perMinute,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: "Too many preview requests. Please retry shortly." },
+      {
+        status: 429,
+        headers: {
+          "x-ratelimit-limit": String(rateLimit.limit),
+          "x-ratelimit-remaining": String(rateLimit.remaining),
+          "retry-after": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

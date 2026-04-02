@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useState, useMemo } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
@@ -166,6 +168,29 @@ function extractMessageText(message: UIMessage): string {
     .trim();
 }
 
+function hasRenderableAssistantContent(message: UIMessage | undefined): boolean {
+  if (!message || message.role !== "assistant") return false;
+
+  return message.parts.some((part: unknown) => {
+    if (typeof part !== "object" || part === null) return false;
+    const typed = part as { type?: string; text?: string; state?: string };
+
+    if (typed.type === "text") {
+      return typeof typed.text === "string" && typed.text.trim().length > 0;
+    }
+
+    if (typed.type === "file") {
+      return true;
+    }
+
+    if (typed.type === "dynamic-tool" || (typeof typed.type === "string" && typed.type.startsWith("tool-"))) {
+      return typed.state === "result";
+    }
+
+    return false;
+  });
+}
+
 export default function AgentPage() {
   const router = useRouter();
 
@@ -321,6 +346,25 @@ export default function AgentPage() {
         return;
       }
 
+      const userFacingError =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message.trim()
+          : "The assistant ran into an error before completing the response.";
+
+      setMessages((prev: UIMessage[]) => {
+        const last = prev[prev.length - 1];
+        const shouldAppend = !hasRenderableAssistantContent(last);
+        if (!shouldAppend) return prev;
+
+        return [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            parts: [{ type: "text", text: `I hit an error while responding: ${userFacingError}` }],
+          },
+        ];
+      });
       setAgentStatus("error");
     },
   });
@@ -523,13 +567,37 @@ export default function AgentPage() {
       if (status === "streaming" || status === "submitted") {
         setAgentStatus("running");
       } else if (status === "ready" && messages.length > 0) {
+        const last = messages[messages.length - 1];
+        if (last?.role === "assistant" && !hasRenderableAssistantContent(last)) {
+          setMessages((prev: UIMessage[]) => {
+            const tail = prev[prev.length - 1];
+            if (!tail || tail.role !== "assistant" || hasRenderableAssistantContent(tail)) {
+              return prev;
+            }
+
+            return [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                parts: [
+                  {
+                    type: "text",
+                    text: "I could not complete that response. Please retry, or switch to a different mode.",
+                  },
+                ],
+              },
+            ];
+          });
+        }
+
         setAgentStatus("done");
         const resetTimer = setTimeout(() => setAgentStatus("idle"), 3000);
         return () => clearTimeout(resetTimer);
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [status, messages.length]);
+  }, [status, messages, setMessages]);
 
   // Update canvas content; auto-open for renderable artifacts/pages
   useEffect(() => {
@@ -708,13 +776,16 @@ export default function AgentPage() {
   }, [isAuthenticated]);
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
+  const sidebarFallback = <div className="h-full w-full bg-quill-bg" aria-hidden="true" />;
 
   return (
     <div className="agent-screen relative flex h-screen bg-quill-bg overflow-hidden">
 
       {/* Desktop: always-visible sidebar */}
       <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
-        <Sidebar />
+        <Suspense fallback={sidebarFallback}>
+          <Sidebar />
+        </Suspense>
       </aside>
 
       {/* Mobile backdrop */}
@@ -730,7 +801,9 @@ export default function AgentPage() {
         className="md:hidden fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-out"
         style={{ transform: mobileSidebarOpen ? "translateX(0)" : "translateX(-100%)" }}
       >
-        <Sidebar onClose={() => setMobileSidebarOpen(false)} />
+        <Suspense fallback={sidebarFallback}>
+          <Sidebar onClose={() => setMobileSidebarOpen(false)} />
+        </Suspense>
       </div>
 
       {/* ── Main content ─────────────────────────────────────────────── */}

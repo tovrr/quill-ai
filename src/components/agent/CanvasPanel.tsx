@@ -472,7 +472,7 @@ function applyMobilePreviewGuardrails(html: string): string {
 }
 
 export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanelProps) {
-  const [tab, setTab] = useState<Tab>("preview");
+  const [preferredTab, setPreferredTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
   const [bundleValidation, setBundleValidation] = useState<{
     running: boolean;
@@ -566,19 +566,8 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
   // Loading is implicit: react-app but no blob URL yet = fetch in progress.
   const canRunReactPreview = isReactApp && Boolean(previewUrl);
   const previewLoading = isReactApp && !previewUrl;
-  const effectiveTab: Tab = fileBundle?.type === "react-app" && !canRunReactPreview ? "code" : tab;
-
-  useEffect(() => {
-    if (isWorking) {
-      setTab("code");
-      return;
-    }
-
-    const hasPreview = isHTML || (fileBundle?.type === "react-app" && canRunReactPreview);
-    if (hasPreview) {
-      setTab("preview");
-    }
-  }, [isWorking, isHTML, fileBundle?.type, canRunReactPreview, content]);
+  const hasPreview = isHTML || (fileBundle?.type === "react-app" && canRunReactPreview);
+  const effectiveTab: Tab = isWorking || !hasPreview ? "code" : preferredTab;
 
   const copyText = isArtifact
     ? JSON.stringify({ artifactVersion: 1, artifact }, null, 2)
@@ -737,7 +726,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-quill-surface border border-quill-border">
               {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
                 <button
-                  onClick={() => setTab("preview")}
+                  onClick={() => setPreferredTab("preview")}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
                     effectiveTab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
                   }`}
@@ -746,7 +735,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 </button>
               )}
               <button
-                onClick={() => setTab("code")}
+                onClick={() => setPreferredTab("code")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
                     effectiveTab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
                 }`}
@@ -996,14 +985,14 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           <div className="grid grid-cols-5 gap-1.5 text-[11px]">
             {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
               <button
-                onClick={() => setTab("preview")}
+                onClick={() => setPreferredTab("preview")}
                 className={`h-9 rounded-lg border ${effectiveTab === "preview" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
               >
                 Preview
               </button>
             )}
             <button
-              onClick={() => setTab("code")}
+              onClick={() => setPreferredTab("code")}
               className={`h-9 rounded-lg border ${effectiveTab === "code" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
             >
               Code

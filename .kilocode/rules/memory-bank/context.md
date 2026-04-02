@@ -189,3 +189,6 @@ export async function GET() {
 - 2026-04-01: Added separate launch copy files under `launch/` for GitHub release notes, X posts, LinkedIn posts, and pinned comment text
 - 2026-04-01: Added a deferred 30-day community growth masterplan and linked it from TODOs for post-blocker execution
 - 2026-04-01: Implemented message persistence hardening with `partsJson` storage, durable DB-backed file URLs (`/api/files/[fileId]`), and guest import support for rich message parts
+- 2026-04-02: Completed codebase audit; flagged critical exposure on unauthenticated `/api/validate-bundle` (shell npm execution) and unauthenticated `/api/preview`, plus CSP hardening gaps and a CanvasPanel lint regression (`setState` in effect)
+- 2026-04-02: Applied immediate hardening fixes: `/api/validate-bundle` now requires auth, rate-limits per user, blocks unsafe file paths, and runs npm with `shell: false`; `/api/preview` now requires auth and per-user throttling; metrics/admin token checks now use timing-safe comparison; CanvasPanel tab logic refactored to remove setState-in-effect lint violation
+- 2026-04-02: Reviewed `src/app/agent/page.tsx` follow-up change; added Suspense boundaries around Sidebar renders to resolve Next.js prerender error for `/agent` (`useSearchParams` CSR bailout), then re-validated with passing lint, typecheck, and production build
