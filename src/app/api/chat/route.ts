@@ -1,6 +1,15 @@
 import { google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, generateText, stepCountIs, convertToModelMessages, type ModelMessage } from "ai";
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  generateText,
+  stepCountIs,
+  convertToModelMessages,
+  type ModelMessage,
+  type UIMessage,
+} from "ai";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -539,6 +548,7 @@ function jsonResponse(payload: Record<string, string>, status: number, headers?:
 
 export async function POST(req: Request) {
   const requestContext = createApiRequestContext(req, "/api/chat");
+  let originalMessages: UIMessage[] | undefined;
   try {
     // Get session from Better Auth
     let userId = "guest";
@@ -577,6 +587,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    originalMessages = Array.isArray(body.messages) ? (body.messages as UIMessage[]) : undefined;
     if (DEBUG_CHAT_LOGS) {
       console.log("[chat] body keys:", JSON.stringify(Object.keys(body)));
     }
@@ -918,13 +929,22 @@ export async function POST(req: Request) {
         },
       });
 
+      const stream = createUIMessageStream({
+        originalMessages,
+        execute: ({ writer }) => {
+          writer.write({ type: "start" });
+          writer.write({ type: "start-step" });
+          writer.write({ type: "text-start", id: "text-1" });
+          writer.write({ type: "text-delta", id: "text-1", delta: finalText });
+          writer.write({ type: "text-end", id: "text-1" });
+          writer.write({ type: "finish-step" });
+          writer.write({ type: "finish" });
+        },
+      });
+
       logApiCompletion(requestContext, { status: 200 });
       return withRequestHeaders(
-        new Response(finalText, {
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-          },
-        }),
+        createUIMessageStreamResponse({ stream }),
         requestContext.requestId,
       );
     }
@@ -968,7 +988,13 @@ export async function POST(req: Request) {
     });
 
     logApiCompletion(requestContext, { status: 200 });
-    return withRequestHeaders(result.toTextStreamResponse(), requestContext.requestId);
+    return withRequestHeaders(
+      result.toUIMessageStreamResponse({
+        originalMessages,
+        onError: error => (error instanceof Error ? error.message : "Chat stream failed"),
+      }),
+      requestContext.requestId,
+    );
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("aborted")) {
       logApiCompletion(requestContext, { status: 499, error: "client_aborted" });

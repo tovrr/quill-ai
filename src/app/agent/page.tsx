@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { Suspense, useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { TextStreamChatTransport } from "ai";
+import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatusBar";
@@ -284,7 +284,7 @@ export default function AgentPage() {
 
   const transport = useMemo(
     () =>
-      new TextStreamChatTransport({
+      new DefaultChatTransport({
         api: "/api/chat",
         prepareSendMessagesRequest: ({ body, id, messages }) => ({
           body: {
