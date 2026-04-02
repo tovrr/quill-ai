@@ -6,6 +6,8 @@ Quill AI is a personal AI agent and builder experience for research, writing, co
 
 Research, write, code, and build in one flow. Ask Quill for a result, inspect it in Canvas, and iterate fast.
 
+Live app: https://quill-ai-xi.vercel.app
+
 ## Who Quill Is For
 
 - Founders and indie builders shipping landing pages and MVP UI quickly
@@ -16,10 +18,10 @@ Research, write, code, and build in one flow. Ask Quill for a result, inspect it
 
 ![Quill AI Demo Preview](./public/demo-preview.svg)
 
-For best conversion on GitHub visitors, replace this placeholder with a real short demo GIF at `public/demo.gif`.
-Use the helper script in `scripts/prepare-demo-gif.ps1` after exporting your GIF.
+Demo note: the repository currently includes a static preview image.
+When ready, add a short `public/demo.gif` and use `scripts/prepare-demo-gif.ps1` to optimize capture/output.
 
-## Try It Locally in 3 Commands
+## Modern Local Setup (Step-by-Step)
 
 ```bash
 npm install
@@ -28,6 +30,14 @@ npm run dev
 ```
 
 Open http://localhost:3000
+
+Recommended validation before opening PRs:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
 ## Use Cases
 
