@@ -24,6 +24,7 @@ import {
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
+const ASSISTANT_STREAM_WATCHDOG_MS = 15000;
 
 type StoredGuestSession = {
   chatId: string;
@@ -273,6 +274,8 @@ export default function AgentPage() {
   const guestSessionRestoredRef = useRef(false);
   const guestSessionImportTriedRef = useRef(false);
   const manualStopRef = useRef(false);
+  const awaitingAssistantRef = useRef(false);
+  const pendingAssistantSinceRef = useRef<number | null>(null);
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
@@ -344,6 +347,8 @@ export default function AgentPage() {
     transport,
     id: chatId,
     onError: (error: unknown) => {
+      awaitingAssistantRef.current = false;
+      pendingAssistantSinceRef.current = null;
       if (manualStopRef.current) {
         manualStopRef.current = false;
         setAgentStatus("idle");
@@ -407,6 +412,55 @@ export default function AgentPage() {
   const hasActiveAssistantMessage = Boolean(messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant");
   const isLoading = status === "streaming" || status === "submitted";
 
+  const sendMessageTracked = useCallback(
+    (payload: { text: string; files?: FileList }) => {
+      awaitingAssistantRef.current = true;
+      pendingAssistantSinceRef.current = Date.now();
+      sendMessage(payload);
+    },
+    [sendMessage]
+  );
+
+  useEffect(() => {
+    if (!awaitingAssistantRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      if (!awaitingAssistantRef.current) return;
+      const startedAt = pendingAssistantSinceRef.current;
+      if (!startedAt) return;
+
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < ASSISTANT_STREAM_WATCHDOG_MS) return;
+
+      awaitingAssistantRef.current = false;
+      pendingAssistantSinceRef.current = null;
+      manualStopRef.current = true;
+      stop();
+
+      setMessages((prev: UIMessage[]) => {
+        const tail = prev[prev.length - 1];
+        if (!tail || tail.role === "assistant") return prev;
+
+        return [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            parts: [
+              {
+                type: "text",
+                text: "The response stream timed out before rendering in the browser. Please retry. If it repeats, refresh the page and disable extensions for localhost.",
+              },
+            ],
+          },
+        ];
+      });
+      setAgentStatus("error");
+    }, ASSISTANT_STREAM_WATCHDOG_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [messages, setMessages, status, stop]);
+
   // Auto-send task from ?q= query param (e.g. from homepage hero input)
   const heroTaskFiredRef = useRef(false);
   useEffect(() => {
@@ -417,7 +471,7 @@ export default function AgentPage() {
     // Small delay so useChat transport is initialised
     setTimeout(() => {
       setAgentStatus("thinking");
-      sendMessage({ text: q });
+      sendMessageTracked({ text: q });
     }, 120);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -604,7 +658,33 @@ export default function AgentPage() {
         setAgentStatus("running");
       } else if (status === "ready" && messages.length > 0) {
         const last = messages[messages.length - 1];
+
+        if (awaitingAssistantRef.current && last?.role !== "assistant") {
+          awaitingAssistantRef.current = false;
+          pendingAssistantSinceRef.current = null;
+          setMessages((prev: UIMessage[]) => {
+            const tail = prev[prev.length - 1];
+            if (!tail || tail.role === "assistant") return prev;
+
+            return [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                parts: [
+                  {
+                    type: "text",
+                    text: "I received your request but the browser dropped the response stream before rendering it. Please retry. If this keeps happening, disable browser extensions for localhost and hard-refresh.",
+                  },
+                ],
+              },
+            ];
+          });
+        }
+
         if (last?.role === "assistant" && !hasRenderableAssistantContent(last)) {
+          awaitingAssistantRef.current = false;
+          pendingAssistantSinceRef.current = null;
           setMessages((prev: UIMessage[]) => {
             const tail = prev[prev.length - 1];
             if (!tail || tail.role !== "assistant" || hasRenderableAssistantContent(tail)) {
@@ -625,6 +705,9 @@ export default function AgentPage() {
               },
             ];
           });
+        } else if (last?.role === "assistant") {
+          awaitingAssistantRef.current = false;
+          pendingAssistantSinceRef.current = null;
         }
 
         setAgentStatus("done");
@@ -681,12 +764,12 @@ export default function AgentPage() {
 
       setAgentStatus("thinking");
       if (files && files.length > 0) {
-        sendMessage({ text, files });
+        sendMessageTracked({ text, files });
       } else {
-        sendMessage({ text });
+        sendMessageTracked({ text });
       }
     },
-    [sendMessage, builderTarget]
+    [sendMessageTracked, builderTarget]
   );
 
   const handleQuickPageRefine = useCallback(
@@ -696,7 +779,7 @@ export default function AgentPage() {
         return next.slice(0, 5);
       });
       setAgentStatus("thinking");
-      sendMessage({
+      sendMessageTracked({
         text: [
           "Refine the current page artifact.",
           `Instruction: ${instruction}`,
@@ -705,7 +788,7 @@ export default function AgentPage() {
         ].join("\n"),
       });
     },
-    [sendMessage]
+    [sendMessageTracked]
   );
 
   const toggleBuilderLock = useCallback((lock: keyof BuilderLocks) => {
@@ -736,7 +819,7 @@ export default function AgentPage() {
         return next.slice(0, 5);
       });
       setAgentStatus("thinking");
-      sendMessage({
+      sendMessageTracked({
         text: [
           "Refine the current page artifact.",
           `Regenerate only the ${section} section with a stronger variant.`,
@@ -747,7 +830,7 @@ export default function AgentPage() {
         ].join("\n"),
       });
     },
-    [sendMessage],
+    [sendMessageTracked],
   );
 
   const handleGenerateImage = useCallback(
