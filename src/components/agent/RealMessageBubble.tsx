@@ -279,7 +279,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         const text = normalizeVisibleText(part.text);
         if (!hasRenderableTextValue(text)) return { kind: "text" as const, node: null };
 
-        const artifactSummary = !isUser ? <ArtifactSummary text={text} /> : null;
+        const hasArtifact = !isUser && Boolean(parseBuilderArtifact(text));
 
         const node = isUser ? (
           <div
@@ -293,12 +293,13 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             key={i}
             className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
           >
-            {artifactSummary ??
-              (hasMarkdownSyntax(text) ? (
-                <MarkdownText text={text} />
-              ) : (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
-              ))}
+            {hasArtifact ? (
+              <ArtifactSummary text={text} />
+            ) : hasMarkdownSyntax(text) ? (
+              <MarkdownText text={text} />
+            ) : (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+            )}
           </div>
         );
 
