@@ -172,11 +172,26 @@ body {
               inset 0 0 16px rgba(239, 68, 68, 0.05);
 }
 
+/* Homepage hero effects */
+.hero-glow {
+  filter: blur(60px);
+}
+
 /* ── Mobile: minimum tap target 44×44px ──────────────────────────────────────── */
 @media (max-width: 768px) {
   button, a, [role="button"], [role="switch"] {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .hero-glow {
+    filter: blur(34px);
+    opacity: 0.14;
+  }
+
+  .hero-nav-glass {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   /* But inline icon buttons should use padding, not min-size */
@@ -223,4 +238,17 @@ html.os-android.is-mobile .agent-composer-shell {
 /* Safari-specific optimization to avoid UI jump with dynamic bars */
 html.browser-safari.is-mobile .agent-screen {
   min-height: -webkit-fill-available;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow {
+    filter: blur(18px);
+    opacity: 0.1;
+  }
+
+  .hero-nav-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(17, 17, 24, 0.95);
+  }
 }

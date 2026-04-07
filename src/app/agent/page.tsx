@@ -13,6 +13,13 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
 import { CanvasPanel, isCanvasRenderableContent, isHTMLContent } from "@/components/agent/CanvasPanel";
+import {
+  buildAssistantFallbackMessage,
+  extractTextFromMessageParts,
+  getMessageParts,
+  hasRenderableAssistantContent,
+  normalizeAssistantMessage,
+} from "@/lib/assistant-message-utils";
 import { getKillerById, type Killer } from "@/lib/killers";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
@@ -25,6 +32,7 @@ import {
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 const ASSISTANT_STREAM_WATCHDOG_MS = 15000;
+const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
 
 type StoredGuestSession = {
   chatId: string;
@@ -50,20 +58,48 @@ type UiPersistedMessage = PersistedMessage & {
   role: "user" | "assistant" | "system";
 };
 
+type HomepageFileHandoffPayload = {
+  name: string;
+  type: string;
+  lastModified: number;
+  dataUrl: string;
+};
+
+function dataUrlToFile(payload: HomepageFileHandoffPayload): File | null {
+  const match = payload.dataUrl.match(/^data:(.*?);base64,(.*)$/);
+  if (!match) return null;
+
+  const [, mediaType, base64] = match;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new File([bytes], payload.name, {
+    type: payload.type || mediaType || "application/octet-stream",
+    lastModified: payload.lastModified || Date.now(),
+  });
+}
+
 function toUiMessages(messages: PersistedMessage[]): UIMessage[] {
   return messages
     .filter(
       (message): message is UiPersistedMessage =>
         message.role === "user" || message.role === "assistant" || message.role === "system",
     )
-    .map((message) => ({
-      id: message.id,
-      role: message.role,
-      parts:
-        Array.isArray(message.partsJson) && message.partsJson.length > 0
-          ? (message.partsJson as UIMessage["parts"])
-          : ([{ type: "text", text: message.content }] as UIMessage["parts"]),
-    }));
+    .map((message) => {
+      const uiMessage = {
+        id: message.id,
+        role: message.role,
+        parts:
+          Array.isArray(message.partsJson) && message.partsJson.length > 0
+            ? (message.partsJson as UIMessage["parts"])
+            : ([{ type: "text", text: message.content }] as UIMessage["parts"]),
+      } satisfies UIMessage;
+
+      return uiMessage.role === "assistant" ? normalizeAssistantMessage(uiMessage) : uiMessage;
+    });
 }
 
 function readGuestSession(): StoredGuestSession | null {
@@ -94,17 +130,15 @@ function readGuestSession(): StoredGuestSession | null {
           return null;
         }
 
-        const parts = Array.isArray(candidate.parts)
-          ? (candidate.parts as UIMessage["parts"])
-          : typeof candidate.content === "string" && candidate.content.trim().length > 0
-          ? ([{ type: "text", text: candidate.content }] as UIMessage["parts"])
-          : [];
-
-        return {
+        const normalizedMessage = {
           id: typeof candidate.id === "string" && candidate.id.trim().length > 0 ? candidate.id : crypto.randomUUID(),
           role: candidate.role,
-          parts,
+          parts: getMessageParts({ parts: candidate.parts, content: candidate.content }),
         } satisfies UIMessage;
+
+        return normalizedMessage.role === "assistant"
+          ? normalizeAssistantMessage(normalizedMessage)
+          : normalizedMessage;
       })
       .filter((message): message is UIMessage => message !== null);
 
@@ -143,20 +177,15 @@ function toImportableMessages(messages: UIMessage[]): ImportableMessage[] {
         return null;
       }
 
-      const content = message.parts
-        .map((part) => {
-          if (typeof part !== "object" || part === null) return "";
-          if ((part as { type?: string }).type === "text") {
-            const text = (part as { text?: unknown }).text;
-            return typeof text === "string" ? text : "";
-          }
-          return "";
-        })
-        .join("\n")
-        .trim();
+      const normalizedMessage =
+        role === "assistant"
+          ? normalizeAssistantMessage(message)
+          : { ...message, parts: getMessageParts(message) };
 
-      if (!content && message.parts.length === 0) return null;
-      return { role, content, parts: message.parts } as ImportableMessage;
+      const content = extractTextFromMessageParts(normalizedMessage.parts as unknown[]);
+
+      if (!content && normalizedMessage.parts.length === 0) return null;
+      return { role, content, parts: normalizedMessage.parts } as ImportableMessage;
     })
     .filter((item): item is ImportableMessage => Boolean(item));
 }
@@ -192,40 +221,20 @@ function isLikelyCanvasBuildIntent(input: string | null): boolean {
 }
 
 function extractMessageText(message: UIMessage): string {
-  return message.parts
-    .filter((p: unknown): p is { type: "text"; text: string } => {
-      return typeof p === "object" && p !== null && (p as { type?: string }).type === "text";
-    })
-    .map((p: { type: "text"; text: string }) => p.text)
-    .join("\n")
-    .trim();
+  return extractTextFromMessageParts(getMessageParts(message) as unknown[]);
 }
 
-function hasRenderableAssistantContent(message: UIMessage | undefined): boolean {
-  if (!message || message.role !== "assistant") return false;
-
-  return message.parts.some((part: unknown) => {
-    if (typeof part !== "object" || part === null) return false;
-    const typed = part as { type?: string; text?: string; state?: string };
-
-    if (typed.type === "text") {
-      return typeof typed.text === "string" && typed.text.trim().length > 0;
+function replaceOrAppendAssistantFallback(prev: UIMessage[], text: string): UIMessage[] {
+  const last = prev[prev.length - 1];
+  if (last?.role === "assistant") {
+    if (hasRenderableAssistantContent(last)) {
+      return prev;
     }
 
-    if (typed.type === "file") {
-      return true;
-    }
+    return [...prev.slice(0, -1), buildAssistantFallbackMessage(text, last)];
+  }
 
-    if (typed.type === "dynamic-tool" || (typeof typed.type === "string" && typed.type.startsWith("tool-"))) {
-      return true;
-    }
-
-    if (typed.type === "reasoning") {
-      return typeof typed.text === "string" && typed.text.trim().length > 0;
-    }
-
-    return false;
-  });
+  return [...prev, buildAssistantFallbackMessage(text)];
 }
 
 export default function AgentPage() {
@@ -253,6 +262,8 @@ export default function AgentPage() {
   const [canvasContent, setCanvasContent] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [initialComposerDraft, setInitialComposerDraft] = useState("");
+  const [initialHomepageFile, setInitialHomepageFile] = useState<File | null>(null);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
@@ -294,6 +305,33 @@ export default function AgentPage() {
   useEffect(() => {
     const id = getSearchParam("killer");
     setKiller(id ? (getKillerById(id) ?? null) : null);
+  }, []);
+
+  useEffect(() => {
+    const handoffId = getSearchParam("hf");
+    if (!handoffId) return;
+
+    const q = getSearchParam("q");
+    if (q) {
+      setInitialComposerDraft(q);
+    }
+
+    try {
+      const raw = sessionStorage.getItem(`${HOMEPAGE_FILE_HANDOFF_PREFIX}${handoffId}`);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as HomepageFileHandoffPayload;
+      if (!parsed?.name || !parsed?.dataUrl) return;
+
+      const file = dataUrlToFile(parsed);
+      if (file) {
+        setInitialHomepageFile(file);
+      }
+    } catch {
+      // Ignore malformed handoff payloads.
+    } finally {
+      sessionStorage.removeItem(`${HOMEPAGE_FILE_HANDOFF_PREFIX}${handoffId}`);
+    }
   }, []);
 
   // Load persistent user customization profile from settings storage.
@@ -361,27 +399,12 @@ export default function AgentPage() {
       if (isAbort) {
         setMessages((prev: UIMessage[]) => {
           const last = prev[prev.length - 1];
-          const assistantHasMeaningfulContent =
-            last?.role === "assistant" &&
-            Array.isArray(last.parts) &&
-            last.parts.some((part) => {
-              if (typeof part !== "object" || part === null) return false;
-              const p = part as { type?: string; text?: string };
-              if (p.type === "text") return typeof p.text === "string" && p.text.trim().length > 0;
-              if (typeof p.type === "string" && (p.type === "file" || p.type === "dynamic-tool" || p.type.startsWith("tool-"))) return true;
-              return false;
-            });
+          if (hasRenderableAssistantContent(last)) return prev;
 
-          if (assistantHasMeaningfulContent) return prev;
-
-          return [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              parts: [{ type: "text", text: "Request interrupted before completion. Please retry." }],
-            },
-          ];
+          return replaceOrAppendAssistantFallback(
+            prev,
+            "Request interrupted before completion. Please retry.",
+          );
         });
         setAgentStatus("idle");
         return;
@@ -397,18 +420,25 @@ export default function AgentPage() {
         const shouldAppend = !hasRenderableAssistantContent(last);
         if (!shouldAppend) return prev;
 
-        return [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            parts: [{ type: "text", text: `I hit an error while responding: ${userFacingError}` }],
-          },
-        ];
+        return replaceOrAppendAssistantFallback(
+          prev,
+          `I hit an error while responding: ${userFacingError}`,
+        );
       });
       setAgentStatus("error");
     },
   });
+  const displayMessages = useMemo(
+    () =>
+      messages
+        .filter((message) => (message as { role?: string }).role !== "tool")
+        .map((message) =>
+          message.role === "assistant"
+            ? normalizeAssistantMessage(message)
+            : { ...message, parts: getMessageParts(message) },
+        ),
+    [messages],
+  );
   const hasActiveAssistantMessage = Boolean(messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant");
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -439,21 +469,12 @@ export default function AgentPage() {
 
       setMessages((prev: UIMessage[]) => {
         const tail = prev[prev.length - 1];
-        if (!tail || tail.role === "assistant") return prev;
+        if (tail?.role === "assistant" && hasRenderableAssistantContent(tail)) return prev;
 
-        return [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            parts: [
-              {
-                type: "text",
-                text: "The response stream timed out before rendering in the browser. Please retry. If it repeats, refresh the page and disable extensions for localhost.",
-              },
-            ],
-          },
-        ];
+        return replaceOrAppendAssistantFallback(
+          prev,
+          "The response stream timed out before rendering in the browser. Please retry. If it repeats, refresh the page and disable extensions for localhost.",
+        );
       });
       setAgentStatus("error");
     }, ASSISTANT_STREAM_WATCHDOG_MS);
@@ -465,6 +486,7 @@ export default function AgentPage() {
   const heroTaskFiredRef = useRef(false);
   useEffect(() => {
     if (heroTaskFiredRef.current) return;
+    if (getSearchParam("hf")) return;
     const q = getSearchParam("q");
     if (!q) return;
     heroTaskFiredRef.current = true;
@@ -566,11 +588,11 @@ export default function AgentPage() {
 
     writeGuestSession({
       chatId,
-      messages,
+      messages: displayMessages,
       selectedMode,
       updatedAt: Date.now(),
     });
-  }, [authResolved, isAuthenticated, chatId, messages, selectedMode]);
+  }, [authResolved, isAuthenticated, chatId, displayMessages, selectedMode]);
 
   // One-time migration: import guest conversation into user history after login.
   useEffect(() => {
@@ -645,6 +667,10 @@ export default function AgentPage() {
         url.searchParams.delete("q");
         shouldReplace = true;
       }
+      if (url.searchParams.has("hf")) {
+        url.searchParams.delete("hf");
+        shouldReplace = true;
+      }
       if (shouldReplace) {
         window.history.replaceState({}, "", url.toString());
       }
@@ -664,21 +690,12 @@ export default function AgentPage() {
           pendingAssistantSinceRef.current = null;
           setMessages((prev: UIMessage[]) => {
             const tail = prev[prev.length - 1];
-            if (!tail || tail.role === "assistant") return prev;
+            if (tail?.role === "assistant" && hasRenderableAssistantContent(tail)) return prev;
 
-            return [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                parts: [
-                  {
-                    type: "text",
-                    text: "I received your request but the browser dropped the response stream before rendering it. Please retry. If this keeps happening, disable browser extensions for localhost and hard-refresh.",
-                  },
-                ],
-              },
-            ];
+            return replaceOrAppendAssistantFallback(
+              prev,
+              "I received your request but the browser dropped the response stream before rendering it. Please retry. If this keeps happening, disable browser extensions for localhost and hard-refresh.",
+            );
           });
         }
 
@@ -691,19 +708,10 @@ export default function AgentPage() {
               return prev;
             }
 
-            return [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                parts: [
-                  {
-                    type: "text",
-                    text: "I could not complete that response. Please retry, or switch to a different mode.",
-                  },
-                ],
-              },
-            ];
+            return replaceOrAppendAssistantFallback(
+              prev,
+              "I could not complete that response. Please retry, or switch to a different mode.",
+            );
           });
         } else if (last?.role === "assistant") {
           awaitingAssistantRef.current = false;
@@ -1028,7 +1036,7 @@ export default function AgentPage() {
           <div className="flex flex-col flex-1 min-w-0">
             {/* Messages */}
             <div className="agent-messages flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-5">
-              {messages.length === 0 && (
+              {displayMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center"
@@ -1052,7 +1060,7 @@ export default function AgentPage() {
                 </div>
               )}
 
-              {messages.map((msg: UIMessage) => (
+              {displayMessages.map((msg: UIMessage) => (
                 <RealMessageBubble key={msg.id} message={msg} />
               ))}
 
@@ -1116,6 +1124,8 @@ export default function AgentPage() {
                   isWorking={isLoading || isGeneratingImage}
                   placeholder={activeKiller ? `Ask ${activeKiller.name}...` : "Give Quill a task to execute..."}
                   workingLabel={isGeneratingImage ? "Generating image..." : activeKiller ? `${activeKiller.name} is working...` : "Quill is working..."}
+                  initialDraft={initialComposerDraft}
+                  initialAttachedFile={initialHomepageFile}
                 />
 
                 {canUsePageRefineActions && messages.length > 0 && (

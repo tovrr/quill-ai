@@ -37,10 +37,10 @@ export function MessageBubble({
   if (isTyping) {
     return (
       <div className="flex items-start gap-3 animate-fade-in">
-        <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
           <QuillLogo size={16} />
         </div>
-        <div className="rounded-2xl rounded-tl-sm bg-[#111118] border border-[#1e1e2e]">
+        <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border">
           <TypingIndicator />
         </div>
       </div>
@@ -59,11 +59,11 @@ export function MessageBubble({
     >
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
-        <div className="w-7 h-7 rounded-full bg-[#111118] border border-[#1e1e2e] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
           <QuillLogo size={16} />
         </div>
       )}
@@ -85,7 +85,7 @@ export function MessageBubble({
             className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
               isUser
                 ? "bg-[#EF4444] text-white rounded-tr-sm"
-                : "bg-[#111118] border border-[#1e1e2e] text-[#e8e8f0] rounded-tl-sm"
+                : "bg-quill-surface border border-quill-border text-quill-text rounded-tl-sm"
             }`}
           >
             {message.content}
@@ -93,7 +93,7 @@ export function MessageBubble({
         )}
 
         {/* Timestamp */}
-        <span className="text-[10px] text-[#6b6b8a] px-1">
+        <span className="text-[10px] text-quill-muted px-1">
           {message.timestamp.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",

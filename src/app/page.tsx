@@ -134,7 +134,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-quill-bg text-quill-text overflow-x-hidden">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-quill-border">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass hero-nav-glass border-b border-quill-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <QuillLogo size={24} />
@@ -165,15 +165,15 @@ export default function HomePage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 flex flex-col items-center text-center overflow-hidden">
+      <section className="relative pt-20 sm:pt-32 pb-10 sm:pb-24 px-4 sm:px-6 flex flex-col items-center text-center overflow-hidden">
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-150 sm:w-200 h-100 sm:h-125 rounded-full opacity-20 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at center, rgba(239,68,68,0.6) 0%, transparent 70%)", filter: "blur(60px)" }}
+          className="hero-glow absolute top-0 left-1/2 -translate-x-1/2 w-150 sm:w-200 h-100 sm:h-125 rounded-full opacity-20 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at center, rgba(239,68,68,0.6) 0%, transparent 70%)" }}
         />
 
         {/* Badge */}
-        <div className="relative flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] text-[#F87171] text-xs font-medium mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] animate-pulse" />
+        <div className="relative flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] text-[#F87171] text-xs font-medium mb-4 sm:mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] motion-safe:animate-pulse" />
           Now available · No credit card required
         </div>
 
@@ -183,12 +183,12 @@ export default function HomePage() {
           That Gets Things Done
         </h1>
 
-        <p className="relative mt-5 sm:mt-6 text-base sm:text-xl text-quill-muted max-w-2xl leading-relaxed px-2">
+        <p className="relative mt-4 sm:mt-6 text-base sm:text-xl text-quill-muted max-w-2xl leading-relaxed px-2">
           Quill researches, writes, codes, and now builds no-code/low-code app artifacts.
           Give it a goal and choose a target: page, react app, or next.js bundle.
         </p>
 
-        <div className="relative flex flex-col items-center gap-4 mt-8 sm:mt-10 w-full px-4 sm:px-0">
+        <div className="relative flex flex-col items-center gap-3 sm:gap-4 mt-5 sm:mt-10 w-full px-4 sm:px-0">
           <HeroInput />
           <p className="text-xs text-[#4a4a6a]">
             Already have an account?{" "}
@@ -199,7 +199,7 @@ export default function HomePage() {
         </div>
 
         {/* Stats */}
-        <div className="relative flex items-center gap-8 sm:gap-12 mt-12 sm:mt-16">
+        <div className="relative flex items-center gap-8 sm:gap-12 mt-8 sm:mt-16">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-2xl sm:text-3xl font-bold gradient-text">{stat.value}</div>

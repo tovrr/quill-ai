@@ -3,6 +3,15 @@
 import type { UIMessage } from "ai";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import Image from "next/image";
+import {
+  extractTextFromMessageParts,
+  hasRenderableTextValue,
+  isRenderableMessagePart,
+  getMessageParts,
+  hasRenderableAssistantContent,
+  NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
+  normalizeVisibleText,
+} from "@/lib/assistant-message-utils";
 import { parseBuilderArtifact } from "@/lib/builder-artifacts";
 
 function ToolCallBadge({
@@ -250,23 +259,21 @@ function ArtifactSummary({ text }: { text: string }) {
 
 export function RealMessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
-  const legacyContent = (message as unknown as { content?: unknown }).content;
-  const parts = Array.isArray((message as { parts?: unknown }).parts)
-    ? message.parts
-    : typeof legacyContent === "string"
-    ? ([{ type: "text", text: legacyContent }] as UIMessage["parts"])
-    : [];
+  const parts = getMessageParts(message);
+  const isAssistant = !isUser && message.role === "assistant";
+  const shouldRenderAssistantFallback = isAssistant && !hasRenderableAssistantContent(message);
+  const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
 
-  const renderedParts = parts
+  const renderedPartEntries = parts
     .map((part, i) => {
       // Text part
       if (part.type === "text") {
-        const text = part.text?.trim();
-        if (!text) return null;
+        const text = normalizeVisibleText(part.text);
+        if (!hasRenderableTextValue(text)) return { kind: "text" as const, node: null };
 
         const artifactSummary = !isUser ? <ArtifactSummary text={text} /> : null;
 
-        return isUser ? (
+        const node = isUser ? (
           <div
             key={i}
             className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed"
@@ -281,13 +288,17 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             {artifactSummary ?? <MarkdownText text={text} />}
           </div>
         );
+
+        return { kind: "text" as const, node };
       }
 
       if (part.type === "reasoning") {
-        const text = part.text?.trim();
-        if (!text) return null;
+        const text = normalizeVisibleText(part.text);
+        if (!hasRenderableTextValue(text)) return { kind: "reasoning" as const, node: null };
 
-        return (
+        return {
+          kind: "reasoning" as const,
+          node: (
           <div
             key={i}
             className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6] w-full"
@@ -295,14 +306,17 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             <p className="text-[11px] uppercase tracking-wide text-quill-muted mb-1">Reasoning</p>
             <MarkdownText text={text} />
           </div>
-        );
+          ),
+        };
       }
 
       // File part (user attachments + generated images)
       if (part.type === "file") {
         const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
         if (filePart.mediaType.startsWith("image/")) {
-          return (
+          return {
+            kind: "file" as const,
+            node: (
             <div key={i} className="rounded-xl overflow-hidden border border-quill-border max-w-70">
               <Image
                 src={filePart.url}
@@ -313,10 +327,13 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
                 unoptimized
               />
             </div>
-          );
+            ),
+          };
         }
 
-        return (
+        return {
+          kind: "file" as const,
+          node: (
           <a
             key={i}
             href={filePart.url}
@@ -333,35 +350,90 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
               {filePart.filename ?? "Attached file"}
             </span>
           </a>
-        );
+          ),
+        };
       }
 
       if (
         part.type === "dynamic-tool" ||
-        part.type.startsWith("tool-")
+        (typeof part.type === "string" && part.type.startsWith("tool-"))
       ) {
+        if (!isRenderableMessagePart(part)) {
+          return { kind: "tool" as const, node: null };
+        }
+
         const toolPart = part as {
           type: string;
           toolName?: string;
           state: string;
         };
         const name =
-          toolPart.toolName ?? part.type.replace(/^tool-/, "");
-        return (
-          <ToolCallBadge key={i} toolName={name} state={toolPart.state} />
-        );
+          normalizeVisibleText(toolPart.toolName) || normalizeVisibleText(part.type.replace(/^tool-/, "")) || "Tool";
+        const state = normalizeVisibleText(toolPart.state) || "output-available";
+
+        return {
+          kind: "tool" as const,
+          node: <ToolCallBadge key={i} toolName={name} state={state} />,
+        };
       }
 
       if (part.type === "step-start") {
-        return null;
+        return { kind: "other" as const, node: null };
       }
 
-      return null;
-    })
-    .filter(Boolean);
+      return { kind: "other" as const, node: null };
+    });
+
+  const renderedParts = renderedPartEntries
+    .map((entry) => entry.node)
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+  const hasPrimaryAssistantContent = renderedPartEntries.some(
+    (entry) =>
+      Boolean(entry.node) &&
+      (entry.kind === "text" || entry.kind === "reasoning" || entry.kind === "file"),
+  );
 
   if (renderedParts.length === 0) {
+    if (isAssistant) {
+      const fallbackText = hasRenderableTextValue(assistantPlainText)
+        ? assistantPlainText
+        : NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+
+      return (
+        <div className="flex items-start gap-3 animate-fade-in">
+          <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
+            <QuillLogo size={16} />
+          </div>
+          <div className="flex flex-col gap-2 max-w-[80%] items-start">
+            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
+              <MarkdownText text={fallbackText} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return null;
+  }
+
+  if (isAssistant && !hasPrimaryAssistantContent) {
+    const fallbackText = hasRenderableTextValue(assistantPlainText)
+      ? assistantPlainText
+      : NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+
+    return (
+      <div className="flex items-start gap-3 animate-fade-in">
+        <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
+          <QuillLogo size={16} />
+        </div>
+        <div className="flex flex-col gap-2 max-w-[80%] items-start">
+          <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
+            <MarkdownText text={fallbackText} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

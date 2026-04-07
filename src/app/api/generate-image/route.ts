@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   logApiStart(requestContext);
 
   const perMinute = Number(process.env.API_IMAGE_REQUESTS_PER_MINUTE ?? "6");
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `image:user:${sessionData.user.id}`,
     max: perMinute,
     windowMs: 60_000,

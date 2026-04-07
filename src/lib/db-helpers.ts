@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { chats, messageFiles, messages, modelUsageEvents, userEntitlements } from "@/db/schema";
+import { sanitizeStoredMessage } from "@/lib/assistant-message-utils";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 
 const MAX_DB_FILE_BYTES = Number(process.env.MAX_DB_FILE_BYTES ?? "5242880");
@@ -122,11 +123,22 @@ export async function saveMessage({
   parts?: unknown[];
 }) {
   const durableParts = await persistDurableFileParts(chatId, parts);
-  const normalizedContent = content.trim() || (durableParts ? extractTextFromParts(durableParts) : "") || "[non-text content]";
+  const normalized = sanitizeStoredMessage({
+    role,
+    content,
+    parts: durableParts,
+  });
+
+  if (normalized.usedFallback) {
+    console.warn("[db-helpers] normalized non-renderable assistant message before persistence", {
+      chatId,
+      originalPartTypes: normalized.originalPartTypes,
+    });
+  }
 
   const [msg] = await db
     .insert(messages)
-    .values({ chatId, role, content: normalizedContent, partsJson: durableParts })
+    .values({ chatId, role, content: normalized.content, partsJson: normalized.parts })
     .returning();
   return msg;
 }

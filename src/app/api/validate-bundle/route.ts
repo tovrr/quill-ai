@@ -98,7 +98,7 @@ export async function POST(req: Request) {
   }
 
   const perMinute = Number(process.env.API_VALIDATE_BUNDLE_REQUESTS_PER_MINUTE ?? "2");
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `validate-bundle:user:${sessionData.user.id}`,
     max: perMinute,
     windowMs: 60_000,

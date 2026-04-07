@@ -28,6 +28,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:chatbot": "node scripts/test-chatbot-responses.mjs",
+    "audit:chat-render": "node scripts/audit-chat-render.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -51,6 +53,7 @@
     "lightningcss-linux-x64-musl": "1.32.0"
   },
   "overrides": {
+    "defu": "^6.1.5",
     "@esbuild-kit/core-utils": {
       "esbuild": "0.27.5"
     },

@@ -28,6 +28,8 @@ interface TaskInputProps {
   isWorking?: boolean;
   placeholder?: string;
   workingLabel?: string;
+  initialDraft?: string;
+  initialAttachedFile?: File | null;
 }
 
 const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }> = [
@@ -65,6 +67,8 @@ export function TaskInput({
   isWorking,
   placeholder,
   workingLabel,
+  initialDraft,
+  initialAttachedFile,
 }: TaskInputProps) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -77,6 +81,16 @@ export function TaskInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const initialDraftHydratedRef = useRef(false);
+  const initialFileHydratedRef = useRef(false);
+
+  const toFileList = (files: File[]): FileList => {
+    const dt = new DataTransfer();
+    for (const file of files) {
+      dt.items.add(file);
+    }
+    return dt.files;
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -88,6 +102,24 @@ export function TaskInput({
       )}px`;
     }
   }, [value]);
+
+  useEffect(() => {
+    if (initialDraftHydratedRef.current) return;
+    if (!initialDraft || initialDraft.trim().length === 0) return;
+    initialDraftHydratedRef.current = true;
+    // One-time hydration from parent handoff props after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setValue(initialDraft.trim());
+  }, [initialDraft]);
+
+  useEffect(() => {
+    if (initialFileHydratedRef.current) return;
+    if (!initialAttachedFile) return;
+    initialFileHydratedRef.current = true;
+    // One-time hydration from parent handoff props after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAttachedFiles(toFileList([initialAttachedFile]));
+  }, [initialAttachedFile]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -239,12 +271,12 @@ export function TaskInput({
           disabled={isDisabled}
           placeholder={currentPlaceholder}
           rows={1}
-          className="w-full bg-transparent resize-none px-5 py-4 text-sm text-quill-text placeholder-quill-muted outline-none leading-relaxed"
-          style={{ minHeight: "52px" }}
+          className="w-full bg-transparent resize-none px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-quill-text placeholder-quill-muted outline-none leading-relaxed min-h-16 sm:min-h-13"
+          style={{ maxHeight: "160px" }}
         />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-3 pb-3 pt-0">
+        <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
@@ -256,7 +288,7 @@ export function TaskInput({
           />
 
           {/* Left: attach + search + image */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto pr-1">
             <button
               onClick={() => {
                 fileInputRef.current?.click();
@@ -265,7 +297,7 @@ export function TaskInput({
               }}
               disabled={isDisabled}
               title="Attach file"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 attachedFiles && attachedFiles.length > 0
                   ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
                   : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -313,7 +345,7 @@ export function TaskInput({
                     ? "Sign in to use web search"
                     : "Web search coming soon"
               }
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:cursor-not-allowed ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:cursor-not-allowed ${
                 webSearchState === "available"
                   ? webSearchEnabled
                     ? "text-quill-green bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
@@ -349,7 +381,7 @@ export function TaskInput({
               }}
               disabled={isDisabled}
               title={imageGenerationEnabled ? (imageMode ? "Image generation on - click to disable" : "Enable image generation") : "Sign in to generate images"}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 !imageGenerationEnabled
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                   : imageMode
@@ -371,7 +403,7 @@ export function TaskInput({
           </div>{/* end left group */}
 
           {/* Right: mode selector + send */}
-          <div className="flex items-center gap-1" ref={dropdownRef}>
+          <div className="flex items-center gap-1.5 shrink-0" ref={dropdownRef}>
             <div className="relative">
               <button
                 onClick={() => {
@@ -380,7 +412,7 @@ export function TaskInput({
                 }}
                 disabled={isDisabled}
                 title="Builder options"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                className={`flex min-w-17 items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                   builderDropdownOpen || builderTarget !== "auto" || canvasMode
                     ? "bg-quill-border text-quill-text"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -470,7 +502,7 @@ export function TaskInput({
                 }}
                 disabled={isDisabled}
                 title="Model mode"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                className={`flex min-w-15 items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                   modeDropdownOpen
                     ? "bg-quill-border text-quill-text"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -564,7 +596,7 @@ export function TaskInput({
                 onClick={onStop}
                 type="button"
                 title="Stop generation"
-                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
                   <rect x="6" y="6" width="12" height="12" rx="1.5" />
@@ -574,7 +606,7 @@ export function TaskInput({
               <button
                 onClick={handleSend}
                 disabled={!value.trim() || isDisabled}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
+                className={`w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
                   imageMode
                     ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
                     : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   }
 
   const perMinute = Number(process.env.API_PREVIEW_REQUESTS_PER_MINUTE ?? "20");
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `preview:user:${sessionData.user.id}`,
     max: perMinute,
     windowMs: 60_000,

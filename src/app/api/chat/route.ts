@@ -40,6 +40,7 @@ import { analyzeArtifactQuality, parseBuilderArtifact } from "@/lib/builder-arti
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
+import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/assistant-message-utils";
 import { buildExecutionPolicyGuidance, evaluatePermissionDecision } from "@/lib/killer-autonomy";
 import { buildSandboxProviderRuntimeNote, getSandboxProviderStatus } from "@/lib/sandbox-providers";
 
@@ -569,7 +570,7 @@ export async function POST(req: Request) {
 
     const perMinute = Number(process.env.API_CHAT_REQUESTS_PER_MINUTE ?? "20");
     const rateLimitKey = userId !== "guest" ? `chat:user:${userId}` : `chat:ip:${requestContext.ip}`;
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: rateLimitKey,
       max: perMinute,
       windowMs: 60_000,
@@ -699,7 +700,7 @@ export async function POST(req: Request) {
       const paidDailySearches = Number(process.env.WEB_SEARCH_DAILY_REQUESTS_PAID ?? "100");
       const dailySearchLimit = hasPaidAccess ? paidDailySearches : freeDailySearches;
 
-      const searchQuota = checkRateLimit({
+      const searchQuota = await checkRateLimit({
         key: `websearch:daily:user:${userId}`,
         max: dailySearchLimit,
         windowMs: 86_400_000,
@@ -905,7 +906,11 @@ export async function POST(req: Request) {
         requestedTarget: requestedBuilderTarget,
       });
 
-      if (finalText && shouldPersist) {
+      if (!finalText.trim()) {
+        finalText = NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+      }
+
+      if (finalText.trim() && shouldPersist) {
         await saveMessage({
           chatId: id,
           role: "assistant",
@@ -964,12 +969,14 @@ export async function POST(req: Request) {
           });
         }
 
-        if (text && shouldPersist) {
+        const persistedText = (text ?? "").trim();
+
+        if (persistedText && shouldPersist) {
           await saveMessage({
             chatId: id,
             role: "assistant",
-            content: text,
-            parts: [{ type: "text", text }],
+            content: persistedText,
+            parts: [{ type: "text", text: persistedText }],
           });
         }
 
