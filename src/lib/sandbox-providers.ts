@@ -8,7 +8,6 @@ export type SandboxProviderStatus = {
   reason: string | null;
 };
 
-async function unavailableExecutionResult(request: SandboxExecutionRequest): Promise<SandboxExecutionResult> {
 const SANDBOX_PROVIDER_REGISTRY: Record<string, SandboxProviderHook> = {
   "docker-executor": {
     id: "docker-executor",

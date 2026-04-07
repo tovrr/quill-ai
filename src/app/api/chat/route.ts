@@ -52,7 +52,7 @@ function buildRunCodeTool() {
       "Execute Python code in an isolated Docker sandbox and return stdout, stderr, and exit code. " +
       "Use this to run computations, test logic, or validate code. " +
       "The sandbox has no network access and no filesystem persistence between calls.",
-    parameters: jsonSchema<{ code: string; language: string }>({
+    inputSchema: jsonSchema<{ code: string; language: "python" }>({
       type: "object",
       properties: {
         code: {
@@ -67,7 +67,7 @@ function buildRunCodeTool() {
       },
       required: ["code", "language"],
     }),
-    execute: async ({ code, language }) => {
+    execute: async ({ code, language }: { code: string; language: "python" }) => {
       const result = await executeCode({ code, language, timeoutMs: 15_000 });
       return {
         ok: result.ok,
@@ -1007,7 +1007,6 @@ export async function POST(req: Request) {
       model: resolvedModel.model,
       system: systemPrompt,
       messages: modelMessages,
-      stopWhen: stepCountIs(5),
       ...(canRunCode ? { tools: { run_code: buildRunCodeTool() } } : {}),
       stopWhen: stepCountIs(canRunCode ? 10 : 5),
       onFinish: async ({ text, totalUsage, providerMetadata }) => {

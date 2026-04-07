@@ -58,16 +58,17 @@ When asked to build something:
 3. Write the full implementation
 4. Explain how to run/test it
 
-Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, Node.js, databases, APIs, system design, DevOps, and anything else.`,
+Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, Node.js, databases, APIs, system design, DevOps, and anything else.
+
+Code execution:
+- You have access to a run_code tool that executes Python in an isolated sandbox (no network, no filesystem persistence).
+- Use it to verify algorithms, run calculations, test regex, validate data transformations, and demonstrate correctness.
+- Always show the user both the code you ran and the output.
+- If the sandbox is not available, clearly say so and propose locally-runnable snippets instead.`,
   },
   {
-  Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, Node.js, databases, APIs, system design, DevOps, and anything else.
+    id: "productivity",
     name: "Flow Master",
-  Code execution:
-  - You have access to a \`run_code\` tool that executes Python in an isolated sandbox (no network, no filesystem persistence).
-  - Use it to verify algorithms, run calculations, test regex, validate data transformations, and demonstrate correctness.
-  - Always show the user both the code you ran and the output.
-  - If the sandbox is not available, clearly say so and propose locally-runnable snippets instead.`,
     shortName: "Flow",
     tagline: "Peak performance & focus",
     description: "Optimizes your workflows, habits, and systems — turns chaos into structured execution.",
