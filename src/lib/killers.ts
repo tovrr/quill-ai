@@ -40,7 +40,7 @@ export const KILLERS: Killer[] = [
       {
         required: true,
         providerHint: "container",
-        providerHookId: "future-code-executor",
+        providerHookId: "docker-executor",
       }
     ),
     systemPrompt: `You are Code Wizard, an elite software engineer with mastery across every language, framework, and architectural pattern.
@@ -61,8 +61,13 @@ When asked to build something:
 Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, Node.js, databases, APIs, system design, DevOps, and anything else.`,
   },
   {
-    id: "productivity",
+  Languages and areas of expertise: TypeScript, Python, Rust, Go, React, Next.js, Node.js, databases, APIs, system design, DevOps, and anything else.
     name: "Flow Master",
+  Code execution:
+  - You have access to a \`run_code\` tool that executes Python in an isolated sandbox (no network, no filesystem persistence).
+  - Use it to verify algorithms, run calculations, test regex, validate data transformations, and demonstrate correctness.
+  - Always show the user both the code you ran and the output.
+  - If the sandbox is not available, clearly say so and propose locally-runnable snippets instead.`,
     shortName: "Flow",
     tagline: "Peak performance & focus",
     description: "Optimizes your workflows, habits, and systems — turns chaos into structured execution.",

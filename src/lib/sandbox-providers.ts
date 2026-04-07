@@ -1,4 +1,5 @@
 import type { KillerExecutionPolicy, SandboxExecutionRequest, SandboxExecutionResult, SandboxProviderHook } from "@/lib/killer-autonomy";
+import { executeCode } from "@/lib/docker-executor";
 
 export type SandboxProviderStatus = {
   provider: SandboxProviderHook | null;
@@ -8,24 +9,23 @@ export type SandboxProviderStatus = {
 };
 
 async function unavailableExecutionResult(request: SandboxExecutionRequest): Promise<SandboxExecutionResult> {
-  return {
-    ok: false,
-    summary: `Sandbox adapter for ${request.providerHint} is registered but execution is not implemented yet.`,
-  };
-}
-
 const SANDBOX_PROVIDER_REGISTRY: Record<string, SandboxProviderHook> = {
-  "future-code-executor": {
-    id: "future-code-executor",
+  "docker-executor": {
+    id: "docker-executor",
     kind: "container",
     isAvailable: () => process.env.QUILL_SANDBOX_CONTAINER_ENABLED === "true",
-    execute: unavailableExecutionResult,
-  },
-  "future-vm-executor": {
-    id: "future-vm-executor",
-    kind: "vm",
-    isAvailable: () => process.env.QUILL_SANDBOX_VM_ENABLED === "true",
-    execute: unavailableExecutionResult,
+    execute: async (request: SandboxExecutionRequest): Promise<SandboxExecutionResult> => {
+      const language = request.commands?.[0] ?? "python";
+      const code = request.files?.[0] ?? "";
+      const result = await executeCode({ code, language, timeoutMs: request.timeoutMs });
+      return {
+        ok: result.ok,
+        summary: result.ok
+          ? `Exited 0 in ${result.durationMs}ms.`
+          : `Exited ${result.exitCode} in ${result.durationMs}ms${result.error ? `: ${result.error}` : ""}.`,
+        logs: [result.stdout, result.stderr].filter(Boolean).join("\n"),
+      };
+    },
   },
 };
 

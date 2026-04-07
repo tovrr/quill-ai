@@ -10,6 +10,8 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
+import { tool, jsonSchema } from "ai";
+import { executeCode, isSandboxEnabled } from "@/lib/docker-executor";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -43,6 +45,41 @@ import { recordBuilderMetric } from "@/lib/api-metrics";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/assistant-message-utils";
 import { buildExecutionPolicyGuidance, evaluatePermissionDecision } from "@/lib/killer-autonomy";
 import { buildSandboxProviderRuntimeNote, getSandboxProviderStatus } from "@/lib/sandbox-providers";
+
+function buildRunCodeTool() {
+  return tool({
+    description:
+      "Execute Python code in an isolated Docker sandbox and return stdout, stderr, and exit code. " +
+      "Use this to run computations, test logic, or validate code. " +
+      "The sandbox has no network access and no filesystem persistence between calls.",
+    parameters: jsonSchema<{ code: string; language: string }>({
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "The source code to execute.",
+        },
+        language: {
+          type: "string",
+          enum: ["python"],
+          description: "The programming language. Currently only 'python' is supported.",
+        },
+      },
+      required: ["code", "language"],
+    }),
+    execute: async ({ code, language }) => {
+      const result = await executeCode({ code, language, timeoutMs: 15_000 });
+      return {
+        ok: result.ok,
+        stdout: result.stdout || "(no output)",
+        stderr: result.stderr || undefined,
+        exitCode: result.exitCode,
+        durationMs: result.durationMs,
+        ...(result.error ? { error: result.error } : {}),
+      };
+    },
+  });
+}
 
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
@@ -664,6 +701,18 @@ export async function POST(req: Request) {
       ? await getSandboxProviderStatus(killer.executionPolicy)
       : null;
 
+    const sandboxExecutionPermission = killer
+      ? evaluatePermissionDecision(killer.executionPolicy.permissions.sandboxExecution, {
+          explicitUserCheckpoint: false,
+          label: "Code execution",
+        })
+      : { allowed: false, requiresCheckpoint: false, reason: null };
+
+    const canRunCode =
+      sandboxExecutionPermission.allowed &&
+      isSandboxEnabled() &&
+      !canvasBuildIntent;
+
     if (sandboxStatus?.reason) {
       policyWarnings.push(sandboxStatus.reason);
     }
@@ -959,6 +1008,8 @@ export async function POST(req: Request) {
       system: systemPrompt,
       messages: modelMessages,
       stopWhen: stepCountIs(5),
+      ...(canRunCode ? { tools: { run_code: buildRunCodeTool() } } : {}),
+      stopWhen: stepCountIs(canRunCode ? 10 : 5),
       onFinish: async ({ text, totalUsage, providerMetadata }) => {
         if (canvasBuildIntent) {
           const artifact = parseBuilderArtifact(text ?? "");
