@@ -5,6 +5,7 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 import Image from "next/image";
 import {
   extractTextFromMessageParts,
+  getMessagePartTypes,
   hasRenderableTextValue,
   isRenderableMessagePart,
   getMessageParts,
@@ -13,6 +14,8 @@ import {
   normalizeVisibleText,
 } from "@/lib/assistant-message-utils";
 import { parseBuilderArtifact } from "@/lib/builder-artifacts";
+
+const CHAT_RENDER_DEBUG = process.env.NEXT_PUBLIC_CHAT_RENDER_DEBUG === "true";
 
 function ToolCallBadge({
   toolName,
@@ -263,6 +266,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
   const isAssistant = !isUser && message.role === "assistant";
   const shouldRenderAssistantFallback = isAssistant && !hasRenderableAssistantContent(message);
   const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
+  const partTypes = getMessagePartTypes(parts as unknown[]);
 
   const renderedPartEntries = parts
     .map((part, i) => {
@@ -394,6 +398,14 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
       (entry.kind === "text" || entry.kind === "reasoning" || entry.kind === "file"),
   );
 
+  const debugBadge = CHAT_RENDER_DEBUG && isAssistant ? (
+    <div className="mb-1 inline-flex items-center gap-1 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] text-[#f2b1b1]">
+      <span>{`id:${message.id.slice(0, 6)}`}</span>
+      <span>{`parts:${partTypes.join("|") || "none"}`}</span>
+      <span>{`branch:${shouldRenderAssistantFallback ? "fallback" : hasPrimaryAssistantContent ? "primary" : "non-primary"}`}</span>
+    </div>
+  ) : null;
+
   if (renderedParts.length === 0) {
     if (isAssistant) {
       const fallbackText = hasRenderableTextValue(assistantPlainText)
@@ -406,6 +418,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             <QuillLogo size={16} />
           </div>
           <div className="flex flex-col gap-2 max-w-[80%] items-start">
+            {debugBadge}
             <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
               <MarkdownText text={fallbackText} />
             </div>
@@ -428,6 +441,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
           <QuillLogo size={16} />
         </div>
         <div className="flex flex-col gap-2 max-w-[80%] items-start">
+          {debugBadge}
           <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
             <MarkdownText text={fallbackText} />
           </div>
@@ -459,6 +473,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
           isUser ? "items-end" : "items-start"
         }`}
       >
+        {debugBadge}
         {renderedParts}
       </div>
     </div>
