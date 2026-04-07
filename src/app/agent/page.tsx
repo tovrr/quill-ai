@@ -755,12 +755,7 @@ export default function AgentPage() {
     if (!lastAssistantWithText) return;
 
     const text = extractMessageText(lastAssistantWithText);
-    const parsedArtifact = parseBuilderArtifact(text);
-    const renderableArtifactType =
-      parsedArtifact?.type === "page" ||
-      parsedArtifact?.type === "react-app" ||
-      parsedArtifact?.type === "nextjs-bundle";
-    const renderableNow = isCanvasRenderableContent(text) && (renderableArtifactType || isHTMLContent(text));
+    const renderableNow = isCanvasRenderableContent(text);
     const looksLikeArtifactStream =
       /<quill-artifact>|artifactVersion|"type"\s*:\s*"(page|document|react-app|nextjs-bundle)"|```(?:json|html)/i.test(text);
 
