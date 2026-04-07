@@ -228,6 +228,10 @@ function MarkdownText({ text }: { text: string }) {
   );
 }
 
+function hasMarkdownSyntax(text: string): boolean {
+  return /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)|```|`[^`]|!\[[^\]]*\]\([^)]*\)|\*\*|__/.test(text);
+}
+
 function ArtifactSummary({ text }: { text: string }) {
   const artifact = parseBuilderArtifact(text);
   if (!artifact) return null;
@@ -289,7 +293,12 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             key={i}
             className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
           >
-            {artifactSummary ?? <MarkdownText text={text} />}
+            {artifactSummary ??
+              (hasMarkdownSyntax(text) ? (
+                <MarkdownText text={text} />
+              ) : (
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+              ))}
           </div>
         );
 
@@ -397,12 +406,17 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
       Boolean(entry.node) &&
       (entry.kind === "text" || entry.kind === "reasoning" || entry.kind === "file"),
   );
+  const debugBranch = shouldRenderAssistantFallback ? "fallback" : hasPrimaryAssistantContent ? "primary" : "non-primary";
+  const debugPreview = assistantPlainText.slice(0, 28);
+  const debugTextLength = assistantPlainText.length;
 
   const debugBadge = CHAT_RENDER_DEBUG && isAssistant ? (
     <div className="mb-1 inline-flex items-center gap-1 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] text-[#f2b1b1]">
       <span>{`id:${message.id.slice(0, 6)}`}</span>
       <span>{`parts:${partTypes.join("|") || "none"}`}</span>
-      <span>{`branch:${shouldRenderAssistantFallback ? "fallback" : hasPrimaryAssistantContent ? "primary" : "non-primary"}`}</span>
+      <span>{`branch:${debugBranch}`}</span>
+      <span>{`txt:${debugTextLength}`}</span>
+      <span title={assistantPlainText}>{`preview:${debugPreview || "<empty>"}`}</span>
     </div>
   ) : null;
 
@@ -413,7 +427,13 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         : NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
 
       return (
-        <div className="flex items-start gap-3 animate-fade-in">
+        <div
+          className="flex items-start gap-3 animate-fade-in"
+          data-msg-id={CHAT_RENDER_DEBUG ? message.id : undefined}
+          data-msg-branch={CHAT_RENDER_DEBUG ? debugBranch : undefined}
+          data-msg-parts={CHAT_RENDER_DEBUG ? partTypes.join("|") : undefined}
+          data-msg-txtlen={CHAT_RENDER_DEBUG ? String(debugTextLength) : undefined}
+        >
           <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
             <QuillLogo size={16} />
           </div>
@@ -436,7 +456,13 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
       : NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
 
     return (
-      <div className="flex items-start gap-3 animate-fade-in">
+      <div
+        className="flex items-start gap-3 animate-fade-in"
+        data-msg-id={CHAT_RENDER_DEBUG ? message.id : undefined}
+        data-msg-branch={CHAT_RENDER_DEBUG ? debugBranch : undefined}
+        data-msg-parts={CHAT_RENDER_DEBUG ? partTypes.join("|") : undefined}
+        data-msg-txtlen={CHAT_RENDER_DEBUG ? String(debugTextLength) : undefined}
+      >
         <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
           <QuillLogo size={16} />
         </div>
@@ -455,6 +481,10 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
       className={`flex items-start gap-3 animate-fade-in ${
         isUser ? "flex-row-reverse" : ""
       }`}
+      data-msg-id={CHAT_RENDER_DEBUG && isAssistant ? message.id : undefined}
+      data-msg-branch={CHAT_RENDER_DEBUG && isAssistant ? debugBranch : undefined}
+      data-msg-parts={CHAT_RENDER_DEBUG && isAssistant ? partTypes.join("|") : undefined}
+      data-msg-txtlen={CHAT_RENDER_DEBUG && isAssistant ? String(debugTextLength) : undefined}
     >
       {/* Avatar */}
       {isUser ? (
