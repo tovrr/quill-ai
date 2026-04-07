@@ -39,10 +39,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
   - Acceptance (B): `/api/sandbox/execute` endpoint works locally; Coder killer can request code runs and get real output (or structured error).
   - Verification (A): Audit system prompt for false claims. (B): Coder killer generates a test function, requests execution, receives output.
 
-- [ ] **Distribute rate limiting from in-memory to Redis (Upstash recommended)**
-  - Scope: Already partially tracked in backlog; escalate here. Replace `Map`-based rate limiter in `src/lib/rate-limit.ts` with Upstash Redis client. Keep API response structure unchanged.
-  - Acceptance: Rate-limit counter survives across function cold starts. Multiple concurrent requests respect shared quota.
-  - Verification: Deploy to Vercel, trigger multiple concurrent requests across different function instances, confirm 429s are consistent.
+- [x] **Distribute rate limiting from in-memory to Redis (Upstash recommended)** — `src/lib/rate-limit.ts` now uses Upstash Redis pipeline (INCR/EXPIRE/PTTL) with 1500ms timeout and in-memory fallback on Redis errors. All callers (`/api/chat`, `/api/generate-image`, `/api/preview`, `/api/validate-bundle`) updated to `await checkRateLimit()`.
 
 ## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
 
