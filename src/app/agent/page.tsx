@@ -224,6 +224,21 @@ function extractMessageText(message: UIMessage): string {
   return extractTextFromMessageParts(getMessageParts(message) as unknown[]);
 }
 
+function canonicalizeAssistantForDisplay(message: UIMessage): UIMessage {
+  const parts = getMessageParts(message);
+  const text = extractTextFromMessageParts(parts as unknown[]);
+
+  if (text.length > 0) {
+    return {
+      ...message,
+      role: "assistant",
+      parts: [{ type: "text", text }] as UIMessage["parts"],
+    };
+  }
+
+  return normalizeAssistantMessage({ ...message, parts });
+}
+
 function replaceOrAppendAssistantFallback(prev: UIMessage[], text: string): UIMessage[] {
   const last = prev[prev.length - 1];
   if (last?.role === "assistant") {
@@ -434,7 +449,7 @@ export default function AgentPage() {
         .filter((message) => (message as { role?: string }).role !== "tool")
         .map((message) =>
           message.role === "assistant"
-            ? normalizeAssistantMessage(message)
+            ? canonicalizeAssistantForDisplay(message)
             : { ...message, parts: getMessageParts(message) },
         ),
     [messages],
