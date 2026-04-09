@@ -6,12 +6,14 @@ Local dev (`npm run dev`) can fail intermittently on Windows. This runbook cover
 
 ## Root Cause A — Stale / Corrupted Turbopack Cache
 
-**Symptoms**
+### Symptoms (Root Cause A)
+
 - `npm run dev` exits immediately with exit code 1
 - Error contains `Persisting failed: Unable to write SST file` or `EPERM / EBUSY` on `.next/`
 - Most routes return 404 except `/`
 
-**Fix (30 seconds)**
+### Fix (30 seconds)
+
 ```powershell
 # Stop any existing dev server first
 Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -25,15 +27,16 @@ npm run dev
 
 ## Root Cause B — Missing or Wrong Environment Variables
 
-**Symptoms**
+### Symptoms (Root Cause B)
+
 - Dev server starts but crashes on first API call
 - Auth routes return 401 for authenticated users
 - Rate-limit calls fail with connection errors
 
-**Required `.env.local` keys**
+### Required `.env.local` keys
 
 | Variable | Purpose |
-|---|---|
+| --- | --- |
 | `BETTER_AUTH_SECRET` | Session signing — must match production exactly |
 | `DATABASE_URL` | Neon Postgres connection string |
 | `GEMINI_API_KEY` | Primary AI model |
@@ -41,7 +44,8 @@ npm run dev
 | `UPSTASH_REDIS_REST_TOKEN` | Rate limiting token |
 | `OPENROUTER_API_KEY` | Free fast-model fallback (optional) |
 
-**Check**
+### Check
+
 ```powershell
 # Verify .env.local exists and has the critical keys
 Select-String -Path .env.local -Pattern "BETTER_AUTH_SECRET|DATABASE_URL|GEMINI_API_KEY"
@@ -51,11 +55,13 @@ Select-String -Path .env.local -Pattern "BETTER_AUTH_SECRET|DATABASE_URL|GEMINI_
 
 ## Root Cause C — Port Already in Use
 
-**Symptoms**
+### Symptoms (Root Cause C)
+
 - `Error: listen EADDRINUSE :::3000`
 - Previous dev server process left running
 
-**Fix**
+### Fix
+
 ```powershell
 # Find and kill whatever is on port 3000
 $pid = (netstat -aon | Select-String ":3000" | Select-Object -First 1) -replace '.*\s+(\d+)$','$1'

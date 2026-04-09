@@ -103,14 +103,14 @@ export default function PricingPage() {
               <span className="text-4xl font-black text-quill-text">$0</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#4a4a6a] mb-6">No credit card required</p>
-            <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-quill-border text-sm font-medium text-[#a8a8c0] hover:border-quill-border-2 hover:text-quill-text transition-all mb-6">
+            <p className="text-xs text-[#6F737A] mb-6">No credit card required</p>
+            <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-quill-border text-sm font-medium text-[#A1A7B0] hover:border-quill-border-2 hover:text-quill-text transition-all mb-6">
               Get started
             </Link>
             <ul className="space-y-3">
               {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-quill-muted">
-                  <Check color="#2a2a3e" />
+                  <Check color="#343944" />
                   {f}
                 </li>
               ))}
@@ -127,13 +127,13 @@ export default function PricingPage() {
               <span className="text-4xl font-black text-quill-text">$12</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
+            <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all mb-6">
               Start Think
             </Link>
             <ul className="space-y-3">
               {THINK_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
+                <li key={f} className="flex items-start gap-2.5 text-sm text-[#C1C7D0]">
                   <Check color="#EF4444" />
                   {f}
                 </li>
@@ -148,13 +148,13 @@ export default function PricingPage() {
               <span className="text-4xl font-black text-quill-text">$29</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#4a4a6a] mb-6">Billed monthly · Cancel anytime</p>
+            <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[rgba(245,158,11,0.4)] text-[#f59e0b] text-sm font-semibold hover:bg-[rgba(245,158,11,0.08)] transition-all mb-6">
               Start Pro
             </Link>
             <ul className="space-y-3">
               {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8c8e0]">
+                <li key={f} className="flex items-start gap-2.5 text-sm text-[#C1C7D0]">
                   <Check color="#f59e0b" />
                   {f}
                 </li>
@@ -190,7 +190,7 @@ export default function PricingPage() {
             <QuillLogo size={16} />
             <span className="text-xs font-semibold gradient-text">Quill AI</span>
           </div>
-          <p className="text-xs text-[#4a4a6a]">© 2026 Quill AI</p>
+          <p className="text-xs text-[#6F737A]">© 2026 Quill AI</p>
           <div className="flex gap-5 text-xs text-quill-muted">
             <Link href="/pricing" className="hover:text-quill-text transition-colors">Pricing</Link>
             <Link href="/docs" className="hover:text-quill-text transition-colors">Docs</Link>

@@ -1009,7 +1009,7 @@ export default function AgentPage() {
             className="icon-btn md:hidden p-1.5 rounded-lg transition-all text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
             aria-label="Toggle sidebar"
           >
-            <Bars3Icon className="h-[17px] w-[17px]" aria-hidden="true" />
+            <Bars3Icon className="h-4.25 w-4.25" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -1033,7 +1033,7 @@ export default function AgentPage() {
           {!activeKiller && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
-              <span className="text-[11px] font-medium text-[#a8a8c0]">{modeLabels[selectedMode]}</span>
+              <span className="text-[11px] font-medium text-[#A1A7B0]">{modeLabels[selectedMode]}</span>
             </div>
           )}
 
@@ -1091,7 +1091,7 @@ export default function AgentPage() {
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={activeKiller ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` } : { background: "#111118", border: "1px solid #1e1e2e" }}
+                    style={activeKiller ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` } : { background: "#171A20", border: "1px solid #272B33" }}
                   >
                     {activeKiller ? (
                       <span className="w-5 h-5 rounded-full" style={{ background: activeKiller.accent }} />
@@ -1135,7 +1135,7 @@ export default function AgentPage() {
                     <QuillLogo size={16} />
                   </div>
                   <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
-                    <ArrowPathIcon className="h-[13px] w-[13px] animate-spin text-[#F87171]" aria-hidden="true" />
+                    <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-[#F87171]" aria-hidden="true" />
                     <span className="text-xs text-[#F87171]">Generating image...</span>
                   </div>
                 </div>
@@ -1154,7 +1154,7 @@ export default function AgentPage() {
                     <p className="text-[12px] text-[#f7b0b0] leading-relaxed">
                       <span className="font-medium text-[#F87171]">Review before running.</span>{" "}
                       Read the task below, edit it if needed, then press{" "}
-                      <kbd className="px-1 py-0.5 rounded bg-[rgba(239,68,68,0.15)] text-[#F87171] text-[10px] font-mono">Enter</kbd>{" "}
+                      <kbd className="px-1 py-0.5 rounded bg-quill-accent-glow text-[#F87171] text-[10px] font-mono">Enter</kbd>{" "}
                       to start. Quill will show you a plan before making any changes.
                     </p>
                   </div>

@@ -72,7 +72,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
         width: "40px",
         height: "22px",
         borderRadius: "11px",
-        background: on ? "#EF4444" : "#2a2a3e",
+        background: on ? "#EF4444" : "#343944",
         transition: "background 0.2s",
         flexShrink: 0,
         cursor: "pointer",
@@ -340,7 +340,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           settings.defaultMode === m.value
                             ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#a8a8c0]"
+                            : "text-quill-muted hover:text-[#A1A7B0]"
                         }`}
                       >
                         {m.label}
@@ -399,7 +399,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Live usage</p>
 
                 {usageLoading && (
-                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#a8a8c0]">
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#A1A7B0]">
                     Loading usage data...
                   </div>
                 )}
@@ -423,14 +423,14 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     </div>
 
                     <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Per-mode limits</p>
-                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#a8a8c0]">
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#A1A7B0]">
                       <div className="flex items-center justify-between"><span>Fast</span><span>{usageData.limits.fast}/day</span></div>
                       <div className="flex items-center justify-between"><span>Think</span><span>{usageData.limits.thinking}/day</span></div>
                       <div className="flex items-center justify-between"><span>Pro</span><span>{usageData.limits.advanced}/day</span></div>
                     </div>
 
                     <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Feature status</p>
-                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#a8a8c0]">
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#A1A7B0]">
                       <div className="flex items-center justify-between">
                         <span>Web search</span>
                         <span className={usageData.webSearchState === "available" ? "text-quill-green" : "text-[#f59e0b]"}>
@@ -446,7 +446,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 )}
 
                 {!usageLoading && !usageData && (
-                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#a8a8c0]">
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#A1A7B0]">
                     Unable to load usage data right now.
                   </div>
                 )}
@@ -469,7 +469,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           t.value === "dark"
                             ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#a8a8c0]"
+                            : "text-quill-muted hover:text-[#A1A7B0]"
                         }`}
                       >
                         {t.label}
@@ -508,7 +508,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Row>
 
                 <div className="mt-4 p-3 rounded-xl bg-quill-surface border border-quill-border space-y-1.5">
-                  <p className="text-xs font-medium text-[#a8a8c0]">Data & Privacy</p>
+                  <p className="text-xs font-medium text-[#A1A7B0]">Data & Privacy</p>
                   <p className="text-xs text-quill-muted">
                     Your conversations are encrypted and stored securely. We never sell your data.
                   </p>
@@ -535,7 +535,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </div>
 
                 <Row label="Current plan" hint="Your active subscription tier">
-                  <span className="px-2.5 py-1 rounded-full bg-quill-border text-xs font-medium text-[#a8a8c0]">
+                  <span className="px-2.5 py-1 rounded-full bg-quill-border text-xs font-medium text-[#A1A7B0]">
                     {planLabel}
                   </span>
                 </Row>
@@ -556,7 +556,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 )}
 
                 <div className="pt-4 flex flex-col gap-1">
-                  <button className="text-xs text-quill-muted hover:text-[#a8a8c0] transition-colors text-left py-1">
+                  <button className="text-xs text-quill-muted hover:text-[#A1A7B0] transition-colors text-left py-1">
                     Sign out
                   </button>
                   <button className="text-xs text-[#f87171] hover:text-[#fca5a5] transition-colors text-left py-1">
@@ -581,7 +581,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           >
             {saved ? (
               <>
-                <CheckIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+                <CheckIcon className="h-3.25 w-3.25" aria-hidden="true" />
                 Saved
               </>
             ) : (

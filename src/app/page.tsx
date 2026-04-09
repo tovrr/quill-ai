@@ -192,7 +192,7 @@ export default function HomePage() {
 
         <div className="relative flex flex-col items-center gap-3 sm:gap-4 mt-5 sm:mt-10 w-full px-4 sm:px-0">
           <HeroInput />
-          <p className="text-xs text-[#4a4a6a]">
+          <p className="text-xs text-[#6F737A]">
             Already have an account?{" "}
             <Link href="/login" className="text-[#F87171] hover:text-[#fca5a5] transition-colors">
               Sign in
@@ -309,7 +309,7 @@ export default function HomePage() {
                   <div className="min-w-0">
                     <p className="font-semibold text-quill-text group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
                     <p className="text-sm text-quill-muted mt-0.5">{killer.tagline}</p>
-                    <p className="text-xs text-[#4a4a6a] mt-1.5 leading-relaxed line-clamp-2">{killer.description}</p>
+                    <p className="text-xs text-[#6F737A] mt-1.5 leading-relaxed line-clamp-2">{killer.description}</p>
                   </div>
                 </Link>
               );

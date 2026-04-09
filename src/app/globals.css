@@ -70,7 +70,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a3e;
+  background: #343944;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {

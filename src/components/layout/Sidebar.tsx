@@ -552,7 +552,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="space-y-1">
           <button
             onClick={() => setCommandOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#a8a8c0]"
+            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
           >
             <span className="flex items-center gap-1.5">
               <HomeIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -580,7 +580,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                   >
                     <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-[#c8c8e0]">{item.label}</span>
+                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                     </span>
                   </button>
@@ -593,7 +593,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="space-y-1 pt-1">
           <button
             onClick={() => setAgentsOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#a8a8c0]"
+            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
           >
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="h-2.5 w-2.5 text-[#F87171]" aria-hidden="true" />
@@ -619,7 +619,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                 >
                   <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: killer.accent }} />
                   <span className="min-w-0">
-                    <span className="block text-[13px] font-medium leading-tight text-[#c8c8e0]">{killer.name}</span>
+                    <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{killer.name}</span>
                     <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{killer.tagline}</span>
                   </span>
                 </button>
@@ -631,7 +631,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="space-y-1 pt-1">
           <button
             onClick={() => setMemoryOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#a8a8c0]"
+            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
           >
             <span className="flex items-center gap-1.5">
               <FolderIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -668,7 +668,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                   >
                     <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-[#c8c8e0]">{item.label}</span>
+                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                     </span>
                   </button>
@@ -686,7 +686,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                 >
                   <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" aria-hidden="true" />
                   <span className="min-w-0">
-                    <span className="block text-[13px] font-medium leading-tight text-[#c8c8e0]">{item.label}</span>
+                    <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                     <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                   </span>
                 </button>
@@ -698,7 +698,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="space-y-1 pt-1">
           <button
             onClick={() => setStudioOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#a8a8c0]"
+            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
           >
             <span className="flex items-center gap-1.5">
               <DocumentTextIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -736,7 +736,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                         >
                           <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#EF4444]" />
                           <span className="min-w-0">
-                            <span className="block text-[12px] font-medium leading-tight text-[#c8c8e0]">{item.label}</span>
+                            <span className="block text-[12px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                             <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                           </span>
                         </button>
@@ -754,7 +754,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="space-y-1">
           <button
             onClick={() => setHistoryOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#a8a8c0]"
+            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
           >
             <span className="flex items-center gap-1.5">
               <ClockIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -800,7 +800,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                     >
                       <span
                         className="mt-1.5 h-1 w-1 shrink-0 rounded-full transition-colors"
-                        style={{ background: isPinned ? "#EF4444" : "#2a2a3e" }}
+                        style={{ background: isPinned ? "#EF4444" : "#343944" }}
                       />
                       <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-[#b8b8d0]">
                         {chat.title}
@@ -818,7 +818,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                         }}
                         title={isPinned ? "Unpin" : "Pin to top"}
                         className="rounded-md p-1 transition-all hover:bg-quill-border"
-                        style={{ color: isPinned ? "#EF4444" : "#6b6b8a" }}
+                        style={{ color: isPinned ? "#EF4444" : "#838387" }}
                       >
                         {isPinned ? <StarIconSolid className="h-2.75 w-2.75" aria-hidden="true" /> : <StarIconOutline className="h-2.75 w-2.75" aria-hidden="true" />}
                       </button>
@@ -836,7 +836,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                           });
                         }}
                         title={shareToast === chat.id ? "Copied!" : "Copy share link"}
-                        className={`rounded-md p-1 transition-all ${shareToast === chat.id ? "bg-[#22c55e]/10 text-[#4ade80]" : "text-quill-muted hover:bg-quill-border hover:text-[#a8a8c0]"}`}
+                        className={`rounded-md p-1 transition-all ${shareToast === chat.id ? "bg-[#22c55e]/10 text-[#4ade80]" : "text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]"}`}
                       >
                         <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
                       </button>
@@ -874,7 +874,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                               togglePin(chat.id);
                               setOpenChatMenuId(null);
                             }}
-                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#c8c8e0] transition-all hover:bg-quill-border"
+                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] transition-all hover:bg-quill-border"
                           >
                             {isPinned ? "Unpin" : "Pin to top"}
                           </button>
@@ -891,7 +891,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
                               });
                               setOpenChatMenuId(null);
                             }}
-                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#c8c8e0] transition-all hover:bg-quill-border"
+                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] transition-all hover:bg-quill-border"
                           >
                             Copy share link
                           </button>
@@ -1004,12 +1004,12 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
             <p className="mt-2 text-xs leading-relaxed text-quill-muted">
               This action cannot be undone. The conversation will be removed from your history.
             </p>
-            <p className="mt-2 line-clamp-2 text-xs text-[#a8a8c0]">{pendingDeleteChat.title}</p>
+            <p className="mt-2 line-clamp-2 text-xs text-[#A1A7B0]">{pendingDeleteChat.title}</p>
 
             <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 onClick={() => setPendingDeleteChat(null)}
-                className="rounded-lg border border-quill-border px-3 py-1.5 text-xs text-[#a8a8c0] transition-all hover:border-quill-border-2 hover:text-quill-text"
+                className="rounded-lg border border-quill-border px-3 py-1.5 text-xs text-[#A1A7B0] transition-all hover:border-quill-border-2 hover:text-quill-text"
               >
                 Cancel
               </button>

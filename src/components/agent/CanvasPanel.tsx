@@ -159,7 +159,7 @@ function MarkdownDocument({ text }: { text: string }) {
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={i} className="pl-4 border-l-4 border-[#EF4444] text-[#5a5a8a] italic my-2 py-1">
+        <blockquote key={i} className="pl-4 border-l-4 border-[#EF4444] text-[#7A7F88] italic my-2 py-1">
           {renderInlineCanvas(line.slice(2))}
         </blockquote>
       );
@@ -420,7 +420,7 @@ function FileBundlePreview({
         </div>
       </div>
       <div className="overflow-auto min-h-0">
-        <pre className="p-5 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+        <pre className="p-5 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
           {activeCode}
         </pre>
       </div>
@@ -743,15 +743,15 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     <div
       className="flex flex-col h-full w-full md:w-130"
       style={{
-        borderLeft: "1px solid #1e1e2e",
-        background: dark ? "#0a0a0f" : "#fafafe",
+        borderLeft: "1px solid #272B33",
+        background: dark ? "#0E1015" : "#fafafe",
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2.5 shrink-0"
         style={{
-          borderBottom: `1px solid ${dark ? "#1e1e2e" : "#e8e6ff"}`,
+          borderBottom: `1px solid ${dark ? "#272B33" : "#e8e6ff"}`,
           background: dark ? "#0d0d15" : "#fff",
         }}
       >
@@ -788,7 +788,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 <button
                   onClick={() => setPreferredTab("preview")}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    effectiveTab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
+                    effectiveTab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#A1A7B0]"
                   }`}
                 >
                   Preview
@@ -797,7 +797,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               <button
                 onClick={() => setPreferredTab("code")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    effectiveTab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#a8a8c0]"
+                    effectiveTab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#A1A7B0]"
                 }`}
               >
                 Code
@@ -815,7 +815,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               title="Open in new tab"
               className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
             >
-              <ArrowTopRightOnSquareIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              <ArrowTopRightOnSquareIcon className="h-3.25 w-3.25" aria-hidden="true" />
             </button>
           )}
 
@@ -827,7 +827,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
               dark
                 ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
             {copied ? (
@@ -846,10 +846,10 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
               dark
                 ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
-            <ArrowDownTrayIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+            <ArrowDownTrayIcon className="h-3.25 w-3.25" aria-hidden="true" />
           </button>
 
           {fileBundle?.type === "nextjs-bundle" && (
@@ -880,7 +880,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             className={`p-1.5 rounded-lg transition-all ${
               dark
                 ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                : "text-[#9090b0] hover:bg-[#f0f0ff] hover:text-[#5a5a8a]"
+                : "text-[#8E949E] hover:bg-[#f0f0ff] hover:text-[#7A7F88]"
             }`}
           >
             <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -894,13 +894,13 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-quill-surface" : "bg-[#f0f0ff]"}`}>
-              <CodeBracketIcon className="h-[22px] w-[22px] text-[#EF4444]" aria-hidden="true" />
+              <CodeBracketIcon className="h-5.5 w-5.5 text-[#EF4444]" aria-hidden="true" />
             </div>
             <div>
               <p className={`text-sm font-medium ${dark ? "text-quill-text" : "text-[#2a2a4e]"}`}>
                 Canvas is empty
               </p>
-              <p className={`text-xs mt-1 max-w-55 ${dark ? "text-quill-muted" : "text-[#9090b0]"}`}>
+              <p className={`text-xs mt-1 max-w-55 ${dark ? "text-quill-muted" : "text-[#8E949E]"}`}>
                 Ask Quill to build a landing page, UI component, or write a document to see it rendered here.
               </p>
             </div>
@@ -919,7 +919,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
                   Raw response
                 </div>
-                <pre className="p-4 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all max-h-120 overflow-auto">
+                <pre className="p-4 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all max-h-120 overflow-auto">
                   {content}
                 </pre>
               </div>
@@ -938,7 +938,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           ) : (
             /* Code view */
             <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
-              <pre className="p-6 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+              <pre className="p-6 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
                 {htmlSrc}
               </pre>
             </div>
@@ -1011,7 +1011,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           </div>
         ) : showRawStream ? (
           <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
-            <pre className="p-6 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+            <pre className="p-6 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
               {content}
             </pre>
           </div>

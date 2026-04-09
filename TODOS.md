@@ -101,6 +101,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 ## High Priority (Production Safety)
 
 **NOTE: Escalated to "Critical Business Blockers" section above. See "Distribute rate limiting from in-memory to Redis" for full specs. Keeping this line for cross-reference:**
+
 - [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash) — see blocker section for acceptance criteria
 - [ ] Keep current API rate-limit headers and 429 behavior unchanged after migration
 - [ ] Add env vars for distributed limiter and document fail-open/fail-closed behavior
@@ -109,6 +110,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 ## High Priority (Storage and Performance)
 
 **NOTE: This is subsumed by the "Fix message persistence" blocker above. Unified implementation:**
+
 - [ ] Add `partsJson` column to store full `UIMessagePart[]` structures (not flattened text)
 - [ ] Stop storing generated images as data URLs; upload to S3/R2 or equivalent
 - [ ] Persist only image URLs and metadata; deserialize on chat reload

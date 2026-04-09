@@ -192,7 +192,7 @@ export function HeroInput() {
               }}
               placeholder={isTyping ? displayed + "▌" : displayed}
               rows={2}
-              className="w-full bg-transparent resize-none overflow-y-auto px-5 pb-16 pr-36 pt-4 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-28 sm:min-h-24"
+              className="w-full bg-transparent resize-none overflow-y-auto px-5 pb-16 pr-36 pt-4 text-sm sm:text-base text-quill-text placeholder-[#6F737A] outline-none leading-relaxed min-w-0 min-h-28 sm:min-h-24"
               autoComplete="off"
               spellCheck="false"
               aria-label="Describe your task"

@@ -49,16 +49,16 @@ function ToolCallBadge({
       }}
     >
       {isRunning ? (
-        <ArrowPathIcon className="h-[13px] w-[13px] animate-spin-slow shrink-0 text-[#EF4444]" aria-hidden="true" />
+        <ArrowPathIcon className="h-3.25 w-3.25 animate-spin-slow shrink-0 text-[#EF4444]" aria-hidden="true" />
       ) : isDone ? (
-        <CheckIcon className="h-[13px] w-[13px] shrink-0 text-[#34d399]" aria-hidden="true" />
+        <CheckIcon className="h-3.25 w-3.25 shrink-0 text-quill-green" aria-hidden="true" />
       ) : (
         <span className="w-2 h-2 rounded-full bg-quill-muted shrink-0" />
       )}
 
       <span
         className="font-semibold"
-        style={{ color: isRunning ? "#F87171" : isDone ? "#34d399" : isError ? "#fca5a5" : "#6b6b8a" }}
+        style={{ color: isRunning ? "#F87171" : isDone ? "#34d399" : isError ? "#fca5a5" : "#838387" }}
       >
         {toolName}
       </span>
@@ -91,7 +91,7 @@ function renderInline(text: string) {
     }
     if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
       return (
-        <em key={i} className="italic text-[#c8c8e0]">
+        <em key={i} className="italic text-[#C1C7D0]">
           {part.slice(1, -1)}
         </em>
       );
@@ -124,7 +124,7 @@ function MarkdownText({ text }: { text: string }) {
               {lang}
             </div>
           )}
-          <pre className="p-4 bg-[#0d0d15] overflow-x-auto text-[12px] font-mono text-[#c8c8e0] leading-relaxed">
+          <pre className="p-4 bg-[#0d0d15] overflow-x-auto text-[12px] font-mono text-[#C1C7D0] leading-relaxed">
             <code>{codeLines.join("\n")}</code>
           </pre>
         </div>
@@ -168,7 +168,7 @@ function MarkdownText({ text }: { text: string }) {
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="text-sm font-semibold text-[#c8c8e0] mt-2 mb-0.5">
+        <h3 key={i} className="text-sm font-semibold text-[#C1C7D0] mt-2 mb-0.5">
           {renderInline(line.slice(4))}
         </h3>
       );
@@ -193,7 +193,7 @@ function MarkdownText({ text }: { text: string }) {
       elements.push(
         <blockquote
           key={i}
-          className="pl-3 border-l-2 border-[#EF4444] text-[#a8a8c0] italic my-1"
+          className="pl-3 border-l-2 border-[#EF4444] text-[#A1A7B0] italic my-1"
         >
           {renderInline(line.slice(2))}
         </blockquote>
@@ -314,7 +314,7 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { messag
             ) : hasMarkdownSyntax(text) ? (
               <MarkdownText text={text} />
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{text}</p>
             )}
           </div>
         );
@@ -331,7 +331,7 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { messag
           node: (
           <details
             key={i}
-            className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6]"
+            className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#B1B7C0]"
           >
             <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-quill-muted">
               Reasoning summary
@@ -375,9 +375,9 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { messag
             rel="noreferrer noopener"
             download={filePart.filename ?? true}
             title="Open attachment"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#A1A7B0]"
           >
-            <PaperClipIcon className="h-[13px] w-[13px] text-[#EF4444]" aria-hidden="true" />
+            <PaperClipIcon className="h-3.25 w-3.25 text-[#EF4444]" aria-hidden="true" />
             <span className="max-w-40 truncate">
               {filePart.filename ?? "Attached file"}
             </span>
@@ -496,23 +496,23 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { messag
           <div className="relative flex items-center gap-1.5 px-1">
             <button
               onClick={handleCopy}
-              className={`p-1 rounded-md transition-all ${copied ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
+              className={`p-1 rounded-md transition-all ${copied ? "text-quill-green bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
               title={copied ? "Copied" : "Copy"}
               aria-label="Copy assistant message"
             >
               {copied ? (
-                <CheckIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+                <CheckIcon className="h-3.25 w-3.25" aria-hidden="true" />
               ) : (
-                <ClipboardDocumentIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+                <ClipboardDocumentIcon className="h-3.25 w-3.25" aria-hidden="true" />
               )}
             </button>
             <button
               onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
-              className={`p-1 rounded-md transition-all ${reaction === "like" ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
+              className={`p-1 rounded-md transition-all ${reaction === "like" ? "text-quill-green bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
               title="Like"
               aria-label="Like assistant message"
             >
-              <HandThumbUpIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              <HandThumbUpIcon className="h-3.25 w-3.25" aria-hidden="true" />
             </button>
             <button
               onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
@@ -520,11 +520,11 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { messag
               title="Dislike"
               aria-label="Dislike assistant message"
             >
-              <HandThumbDownIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              <HandThumbDownIcon className="h-3.25 w-3.25" aria-hidden="true" />
             </button>
             {copied && (
               <span
-                className="absolute -bottom-6 left-1 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.12)] px-2 py-0.5 text-[10px] font-medium text-[#34d399]"
+                className="absolute -bottom-6 left-1 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.12)] px-2 py-0.5 text-[10px] font-medium text-quill-green"
                 aria-live="polite"
               >
                 Copied

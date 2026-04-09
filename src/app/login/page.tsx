@@ -111,7 +111,7 @@ function LoginContent() {
                 type="button"
                 onClick={() => handleTabChange(t)}
                 className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-[#a8a8c0]"
+                  tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-[#A1A7B0]"
                 }`}
               >
                 {t === "signin" ? "Sign in" : "Sign up"}
@@ -192,7 +192,7 @@ function LoginContent() {
 
         {/* Guest */}
         <div className="flex items-center justify-center mt-4">
-          <Link href="/agent" className="text-xs text-quill-muted hover:text-[#a8a8c0] transition-colors">
+          <Link href="/agent" className="text-xs text-quill-muted hover:text-[#A1A7B0] transition-colors">
             Continue without signing in →
           </Link>
         </div>

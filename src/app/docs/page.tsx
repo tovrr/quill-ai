@@ -109,7 +109,7 @@ export default function DocsPage() {
 
         {/* Search placeholder */}
         <div className="mt-6 max-w-md mx-auto">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#4a4a6a]">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#6F737A]">
             <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
             Search docs…
           </div>
@@ -154,7 +154,7 @@ export default function DocsPage() {
               Contact support
             </a>
           </p>
-          <div className="flex items-center justify-center gap-5 mt-4 text-xs text-[#4a4a6a]">
+          <div className="flex items-center justify-center gap-5 mt-4 text-xs text-[#6F737A]">
             <Link href="/privacy" className="hover:text-quill-muted transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-quill-muted transition-colors">Terms</Link>
             <Link href="/" className="hover:text-quill-muted transition-colors">Home</Link>

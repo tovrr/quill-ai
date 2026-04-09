@@ -6,7 +6,7 @@ Quill AI is a personal AI agent and builder experience for research, writing, co
 
 Research, write, code, and build in one flow. Ask Quill for a result, inspect it in Canvas, and iterate fast.
 
-Live app: https://quill-ai-xi.vercel.app
+Live app: <https://quill-ai-xi.vercel.app>
 
 ## Who Quill Is For
 
@@ -29,7 +29,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000
+Open <http://localhost:3000>
 
 Recommended validation before opening PRs:
 
@@ -94,7 +94,7 @@ Required keys:
 npm run dev
 ```
 
-Open http://localhost:3000
+Open <http://localhost:3000>
 
 ## Repo Navigation
 
@@ -164,7 +164,7 @@ Short launch post (X/LinkedIn):
 
 I shipped Quill AI: a personal AI agent + builder canvas for research, writing, coding, and app artifact generation.
 It can generate page, react-app, and nextjs-bundle outputs, then let you inspect and iterate fast.
-Open source: https://github.com/tovrr/quill-ai
+Open source: <https://github.com/tovrr/quill-ai>
 
 Indie community post:
 

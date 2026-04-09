@@ -18,7 +18,7 @@ export default function TwitterImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "52px",
-          background: "linear-gradient(135deg, #0a0a0f 0%, #11111a 50%, #0a0a0f 100%)",
+          background: "linear-gradient(135deg, #0E1015 0%, #11111a 50%, #0E1015 100%)",
           color: "#f4f4fa",
           fontFamily: "Inter, system-ui, sans-serif",
         }}

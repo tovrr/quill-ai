@@ -219,9 +219,9 @@ export function TaskInput({
             {Array.from(attachedFiles).map((file, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-border border border-quill-border-2 text-xs text-[#A1A7B0]"
               >
-                <PaperClipIcon className="h-[11px] w-[11px] shrink-0" aria-hidden="true" />
+                <PaperClipIcon className="h-2.75 w-2.75 shrink-0" aria-hidden="true" />
                 <span className="max-w-25 truncate">{file.name}</span>
                 <button
                   onClick={() => removeFile(i)}
@@ -239,7 +239,7 @@ export function TaskInput({
         {imageMode && (
           <div className="px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-accent-glow border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
-              <SparklesIcon className="h-[11px] w-[11px]" aria-hidden="true" />
+              <SparklesIcon className="h-2.75 w-2.75" aria-hidden="true" />
               Image generation mode
             </span>
           </div>
@@ -298,8 +298,8 @@ export function TaskInput({
               }`}
             >
               {/* Mobile: + icon; Desktop: paperclip */}
-              <PlusIcon className="h-[13px] w-[13px] md:hidden" aria-hidden="true" />
-              <PaperClipIcon className="hidden h-[13px] w-[13px] md:block" aria-hidden="true" />
+              <PlusIcon className="h-3.25 w-3.25 md:hidden" aria-hidden="true" />
+              <PaperClipIcon className="hidden h-3.25 w-3.25 md:block" aria-hidden="true" />
               {attachedFiles && attachedFiles.length > 0 && (
                 <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
                   {attachedFiles.length}
@@ -344,7 +344,7 @@ export function TaskInput({
                     : "text-quill-muted bg-quill-border/40 opacity-70"
               } ${isDisabled ? "opacity-30" : ""}`}
             >
-              <GlobeAltIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              <GlobeAltIcon className="h-3.25 w-3.25" aria-hidden="true" />
               {webSearchState === "coming-soon" && (
                 <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
                   Soon
@@ -375,7 +375,7 @@ export function TaskInput({
               }`}
             >
               {/* Sparkles icon */}
-              <SparklesIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              <SparklesIcon className="h-3.25 w-3.25" aria-hidden="true" />
             </button>
           )}
 
@@ -426,14 +426,14 @@ export function TaskInput({
                           setBuilderDropdownOpen(false);
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
-                        style={{ color: builderTarget === target.id ? "#F87171" : "#a8a8c0" }}
+                        style={{ color: builderTarget === target.id ? "#F87171" : "#A1A7B0" }}
                       >
                         <span className="flex-1">
                           {target.label}
                           <span className="ml-2 text-[11px] text-quill-muted">{target.desc}</span>
                         </span>
                         {builderTarget === target.id && (
-                          <CheckIcon className="h-[13px] w-[13px] shrink-0" aria-hidden="true" />
+                          <CheckIcon className="h-3.25 w-3.25 shrink-0" aria-hidden="true" />
                         )}
                       </button>
                     ))}
@@ -445,7 +445,7 @@ export function TaskInput({
                         onCanvasToggle();
                         setBuilderDropdownOpen(false);
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#A1A7B0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
                     >
                       <RectangleGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       Preview panel
@@ -501,7 +501,7 @@ export function TaskInput({
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm transition-all text-left hover:bg-quill-surface-2"
                         style={{
-                          color: !isEnabled ? "#6b6b8a" : mode === m.id ? "#F87171" : "#a8a8c0",
+                          color: !isEnabled ? "#838387" : mode === m.id ? "#F87171" : "#A1A7B0",
                         }}
                       >
                         <span className="flex-1">
@@ -514,7 +514,7 @@ export function TaskInput({
                           </span>
                         )}
                         {isEnabled && mode === m.id && (
-                          <CheckIcon className="h-[13px] w-[13px] shrink-0" aria-hidden="true" />
+                          <CheckIcon className="h-3.25 w-3.25 shrink-0" aria-hidden="true" />
                         )}
                       </button>
                     );})}
@@ -530,7 +530,7 @@ export function TaskInput({
                           className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white transition-all hover:bg-[#DC2626]"
                         >
                           Upgrade
-                          <ArrowRightIcon className="h-[11px] w-[11px]" aria-hidden="true" />
+                          <ArrowRightIcon className="h-2.75 w-2.75" aria-hidden="true" />
                         </button>
                       </div>
                     )}
@@ -559,11 +559,11 @@ export function TaskInput({
                 }`}
               >
                 {isGeneratingImage ? (
-                  <ArrowPathIcon className="h-[13px] w-[13px] animate-spin text-white" aria-hidden="true" />
+                  <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-white" aria-hidden="true" />
                 ) : imageMode ? (
-                  <SparklesIcon className="h-[13px] w-[13px] text-white" aria-hidden="true" />
+                  <SparklesIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
                 ) : (
-                  <PaperAirplaneIcon className="h-[13px] w-[13px] text-white" aria-hidden="true" />
+                  <PaperAirplaneIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
                 )}
               </button>
             )}
@@ -573,9 +573,9 @@ export function TaskInput({
 
       {/* Hint */}
       <p className="keyboard-hint text-center text-[11px] text-quill-muted">
-        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Enter</kbd>{" "}
+        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Enter</kbd>{" "}
         send &middot;{" "}
-        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#a8a8c0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
+        <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
         new line
         {imageMode && <span className="ml-2 text-[#EF4444]">· Image generation active</span>}
       </p>
