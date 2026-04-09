@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
+  CheckIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+  ShieldCheckIcon,
+  SwatchIcon,
+  UserCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import {
   DEFAULT_USER_PROFILE,
   USER_PRESET_TEMPLATES,
   type UserInstructionProfile,
@@ -126,52 +135,27 @@ const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
   {
     id: "general",
     label: "General",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
-      </svg>
-    ),
+    icon: <Cog6ToothIcon className="h-3.5 w-3.5" aria-hidden="true" />,
   },
   {
     id: "usage",
     label: "Usage & API",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" />
-        <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6" y1="20" x2="6" y2="14" />
-      </svg>
-    ),
+    icon: <ChartBarIcon className="h-3.5 w-3.5" aria-hidden="true" />,
   },
   {
     id: "appearance",
     label: "Appearance",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity="0.15" />
-      </svg>
-    ),
+    icon: <SwatchIcon className="h-3.5 w-3.5" aria-hidden="true" />,
   },
   {
     id: "privacy",
     label: "Privacy",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
+    icon: <ShieldCheckIcon className="h-3.5 w-3.5" aria-hidden="true" />,
   },
   {
     id: "account",
     label: "Account",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
+    icon: <UserCircleIcon className="h-3.5 w-3.5" aria-hidden="true" />,
   },
 ];
 
@@ -306,10 +290,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             onClick={onClose}
             className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <XMarkIcon className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -600,9 +581,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           >
             {saved ? (
               <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <CheckIcon className="h-[13px] w-[13px]" aria-hidden="true" />
                 Saved
               </>
             ) : (

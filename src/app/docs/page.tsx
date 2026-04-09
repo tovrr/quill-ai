@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 
 export const metadata: Metadata = {
@@ -109,9 +110,7 @@ export default function DocsPage() {
         {/* Search placeholder */}
         <div className="mt-6 max-w-md mx-auto">
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#4a4a6a]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
             Search docs…
           </div>
         </div>

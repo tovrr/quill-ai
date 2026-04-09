@@ -132,6 +132,21 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 - [ ] Show explicit in-chat confirmation that files were sent to model
 - [ ] Add richer file preview cards (type, size, open/download)
 
+## Medium Priority (URL & Navigation UX - 2026 Assessment)
+
+- [ ] Migrate primary chat identity from query param to path segment (`/agent/[chatId]`) while preserving backward compatibility for existing `/agent?chat=<id>` links
+  - Scope: Introduce dynamic App Router route for chat sessions, keep query-param support with canonical redirect/replaceState for old links
+  - Acceptance: Opening a chat from history lands on `/agent/<chatId>`; existing shared/internal links using `?chat=` still resolve correctly
+  - Verification: Open 10 historical chats from sidebar and direct-paste old `?chat=` URLs; all resolve to the same chat and canonicalize URL
+- [ ] Keep query params for transient UI state only (mode, draft, panel), not primary resource identity
+  - Scope: Audit `page.tsx` URL sync logic and remove `chat` as canonical query field once path migration is complete
+  - Acceptance: `chatId` is derived from route segment, not query param; query params only represent optional view state
+  - Verification: Trigger send/new-chat/share/refresh flows and confirm stable route-based chat identity
+- [ ] Add canonical URL policy for chat routes and document it in developer docs
+  - Scope: Define route conventions for internal navigation, share URLs, and migration behavior to avoid route drift
+  - Acceptance: Route policy is documented and followed by sidebar navigation + chat page URL sync
+  - Verification: Code review checklist includes route policy item; no new `?chat=` links introduced in new features
+
 ## Medium Priority (Observability)
 
 - [x] Per-model usage + cost telemetry (`model_usage_event` table, `recordModelUsage()` lib, `/api/admin/model-usage`, `/admin/model-usage` UI). — commit `a590f99`.

@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import {
+  ArrowPathIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 export type ToolStatus = "pending" | "running" | "done" | "error";
 
@@ -53,50 +59,19 @@ export function ToolCallCard({ call }: { call: ToolCall }) {
         {/* Spinner or check */}
         <span className="shrink-0">
           {call.status === "running" ? (
-            <svg
-              className="animate-spin-slow"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#EF4444"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-            </svg>
+            <ArrowPathIcon className="h-3.5 w-3.5 animate-spin-slow text-[#EF4444]" aria-hidden="true" />
           ) : call.status === "done" ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <CheckIcon className="h-3.5 w-3.5 text-[#34d399]" aria-hidden="true" />
           ) : call.status === "error" ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <ExclamationCircleIcon className="h-3.5 w-3.5 text-[#f87171]" aria-hidden="true" />
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-            </svg>
+            <span className="h-3.5 w-3.5 rounded-full border border-[#6b6b8a]" aria-hidden="true" />
           )}
         </span>
 
         {/* Expand toggle */}
         {call.result && (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6b6b8a"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <ChevronDownIcon className={`h-3 w-3 shrink-0 text-[#6b6b8a] transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden="true" />
         )}
       </button>
 

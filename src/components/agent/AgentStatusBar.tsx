@@ -11,10 +11,10 @@ interface AgentStatusBarProps {
 
 const statusMessages: Record<AgentStatus, string> = {
   idle: "Ready",
-  thinking: "Thinking...",
-  running: "Working on it...",
-  done: "Task complete",
-  error: "Something went wrong",
+  thinking: "Planning...",
+  running: "Building...",
+  done: "Done — ready to review",
+  error: "Ran into an issue",
 };
 
 const statusColors: Record<AgentStatus, string> = {

@@ -2,6 +2,19 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowPathIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  GlobeAltIcon,
+  PaperAirplaneIcon,
+  PaperClipIcon,
+  PlusIcon,
+  RectangleGroupIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { SparklesIcon, StopIcon } from "@heroicons/react/20/solid";
 import type { BuilderTarget } from "@/lib/builder-artifacts";
 
 export type Mode = "fast" | "thinking" | "advanced";
@@ -33,16 +46,16 @@ interface TaskInputProps {
 }
 
 const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }> = [
-  { id: "auto", label: "Auto", desc: "Infer from prompt" },
-  { id: "page", label: "Page", desc: "HTML live preview" },
-  { id: "react-app", label: "React", desc: "Multi-file app" },
-  { id: "nextjs-bundle", label: "Next.js", desc: "Bundle files" },
+  { id: "auto", label: "Smart", desc: "Quill picks the best format" },
+  { id: "page", label: "Live Page", desc: "Preview in browser instantly" },
+  { id: "react-app", label: "React App", desc: "Interactive component" },
+  { id: "nextjs-bundle", label: "Next.js", desc: "Full app bundle" },
 ];
 
 const MODES: { id: Mode; label: string; desc: string }[] = [
-  { id: "fast", label: "Fast", desc: "Quick responses" },
-  { id: "thinking", label: "Think", desc: "Deep reasoning" },
-  { id: "advanced", label: "Pro", desc: "Best quality" },
+  { id: "fast", label: "Fast", desc: "Instant answers" },
+  { id: "thinking", label: "Think", desc: "More careful and thorough" },
+  { id: "advanced", label: "Pro", desc: "Highest quality output" },
 ];
 
 export function TaskInput({
@@ -208,29 +221,14 @@ export function TaskInput({
                 key={i}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
               >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="shrink-0"
-                >
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                </svg>
+                <PaperClipIcon className="h-[11px] w-[11px] shrink-0" aria-hidden="true" />
                 <span className="max-w-25 truncate">{file.name}</span>
                 <button
                   onClick={() => removeFile(i)}
                   className="ml-0.5 text-quill-muted hover:text-quill-text transition-colors"
                   aria-label="Remove file"
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <XMarkIcon className="h-2.5 w-2.5" aria-hidden="true" />
                 </button>
               </div>
             ))}
@@ -241,11 +239,7 @@ export function TaskInput({
         {imageMode && (
           <div className="px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-accent-glow border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
+              <SparklesIcon className="h-[11px] w-[11px]" aria-hidden="true" />
               Image generation mode
             </span>
           </div>
@@ -304,13 +298,8 @@ export function TaskInput({
               }`}
             >
               {/* Mobile: + icon; Desktop: paperclip */}
-              <svg className="md:hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <svg className="hidden md:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
+              <PlusIcon className="h-[13px] w-[13px] md:hidden" aria-hidden="true" />
+              <PaperClipIcon className="hidden h-[13px] w-[13px] md:block" aria-hidden="true" />
               {attachedFiles && attachedFiles.length > 0 && (
                 <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
                   {attachedFiles.length}
@@ -355,11 +344,7 @@ export function TaskInput({
                     : "text-quill-muted bg-quill-border/40 opacity-70"
               } ${isDisabled ? "opacity-30" : ""}`}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
+              <GlobeAltIcon className="h-[13px] w-[13px]" aria-hidden="true" />
               {webSearchState === "coming-soon" && (
                 <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
                   Soon
@@ -390,13 +375,7 @@ export function TaskInput({
               }`}
             >
               {/* Sparkles icon */}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                <path d="M5 3v4" />
-                <path d="M19 17v4" />
-                <path d="M3 5h4" />
-                <path d="M17 19h4" />
-              </svg>
+              <SparklesIcon className="h-[13px] w-[13px]" aria-hidden="true" />
             </button>
           )}
 
@@ -418,37 +397,25 @@ export function TaskInput({
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 }`}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <line x1="15" y1="3" x2="15" y2="21" />
-                </svg>
+                <RectangleGroupIcon className="h-3 w-3" aria-hidden="true" />
                 {(builderTarget !== "auto" || canvasMode) && (
                   <span className="hidden md:inline">{BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}</span>
                 )}
                 {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
                 )}
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-transform duration-150"
+                <ChevronDownIcon
+                  className="h-2.5 w-2.5 transition-transform duration-150"
+                  aria-hidden="true"
                   style={{ transform: builderDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                />
               </button>
 
               {builderDropdownOpen && (
                 <div className="absolute bottom-full right-0 mb-2 w-64 bg-quill-surface border border-quill-border rounded-2xl shadow-2xl shadow-black/50 z-50 animate-fade-in overflow-hidden">
                   <div className="overflow-y-auto" style={{ maxHeight: "min(360px, calc(100vh - 140px))" }}>
                     <div className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-quill-muted uppercase tracking-wider">
-                      Builder target
+                      Output format
                     </div>
 
                     {BUILDER_TARGETS.map((target) => (
@@ -466,9 +433,7 @@ export function TaskInput({
                           <span className="ml-2 text-[11px] text-quill-muted">{target.desc}</span>
                         </span>
                         {builderTarget === target.id && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <CheckIcon className="h-[13px] w-[13px] shrink-0" aria-hidden="true" />
                         )}
                       </button>
                     ))}
@@ -482,11 +447,8 @@ export function TaskInput({
                       }}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#a8a8c0] hover:text-quill-text hover:bg-quill-surface-2 transition-all text-left mb-1"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <line x1="15" y1="3" x2="15" y2="21" />
-                      </svg>
-                      Canvas view
+                      <RectangleGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Preview panel
                       {canvasMode && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />}
                     </button>
                   </div>
@@ -509,20 +471,11 @@ export function TaskInput({
                 }`}
               >
                 <span>{currentModeLabel}</span>
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-transform duration-150"
+                <ChevronDownIcon
+                  className="h-2.5 w-2.5 transition-transform duration-150"
+                  aria-hidden="true"
                   style={{ transform: modeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                />
               </button>
 
               {modeDropdownOpen && (
@@ -561,9 +514,7 @@ export function TaskInput({
                           </span>
                         )}
                         {isEnabled && mode === m.id && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <CheckIcon className="h-[13px] w-[13px] shrink-0" aria-hidden="true" />
                         )}
                       </button>
                     );})}
@@ -579,10 +530,7 @@ export function TaskInput({
                           className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white transition-all hover:bg-[#DC2626]"
                         >
                           Upgrade
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                            <polyline points="12 5 19 12 12 19" />
-                          </svg>
+                          <ArrowRightIcon className="h-[11px] w-[11px]" aria-hidden="true" />
                         </button>
                       </div>
                     )}
@@ -598,9 +546,7 @@ export function TaskInput({
                 title="Stop generation"
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                  <rect x="6" y="6" width="12" height="12" rx="1.5" />
-                </svg>
+                  <StopIcon className="h-3 w-3 text-white" aria-hidden="true" />
               </button>
             ) : (
               <button
@@ -613,18 +559,11 @@ export function TaskInput({
                 }`}
               >
                 {isGeneratingImage ? (
-                  <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-                  </svg>
+                  <ArrowPathIcon className="h-[13px] w-[13px] animate-spin text-white" aria-hidden="true" />
                 ) : imageMode ? (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+                  <SparklesIcon className="h-[13px] w-[13px] text-white" aria-hidden="true" />
                 ) : (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
+                  <PaperAirplaneIcon className="h-[13px] w-[13px] text-white" aria-hidden="true" />
                 )}
               </button>
             )}

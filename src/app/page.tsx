@@ -1,8 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ComponentType, SVGProps } from "react";
+import {
+  ArrowDownIcon,
+  ArrowRightIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CodeBracketIcon,
+  LightBulbIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  PhotoIcon,
+  PlayIcon,
+} from "@heroicons/react/24/outline";
+import { SparklesIcon } from "@heroicons/react/20/solid";
 import { QuillLogo } from "@/components/ui/QuillLogo";
-import { KillerSvgIcon } from "@/components/ui/KillerIcon";
-import { KILLERS } from "@/lib/killers";
+import { KILLERS, type KillerIconKey } from "@/lib/killers";
 import { HeroInput } from "@/components/HeroInput";
 
 export const metadata: Metadata = {
@@ -47,9 +60,7 @@ export const metadata: Metadata = {
 const capabilities = [
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </svg>
+      <MagnifyingGlassIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Deep Research",
     description: "Quill searches the web, reads pages, and synthesizes intelligence from dozens of sources — in seconds.",
@@ -57,9 +68,7 @@ const capabilities = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-      </svg>
+      <CodeBracketIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "App Builder",
     description: "Generate page/React/Next.js artifacts with quality scoring, section-level regenerate actions, and export-readiness checks.",
@@ -67,9 +76,7 @@ const capabilities = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg>
+      <PencilSquareIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Write & Create",
     description: "Blog posts, emails, reports, presentations, and more — written in your voice with expert-level quality.",
@@ -77,9 +84,7 @@ const capabilities = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-      </svg>
+      <ChartBarIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Analyze Data",
     description: "Upload spreadsheets, CSVs, or PDFs and get instant insights, charts, and actionable recommendations.",
@@ -87,9 +92,7 @@ const capabilities = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-      </svg>
+      <PhotoIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Generate Images",
     description: "Create stunning visuals, illustrations, and graphics from simple text prompts using Imagen.",
@@ -97,22 +100,21 @@ const capabilities = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z" />
-        <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
-        <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z" />
-        <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z" />
-        <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z" />
-        <path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" />
-        <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z" />
-        <path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z" />
-      </svg>
+      <SparklesIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Specialist Agents",
     description: "Switch between expert modes — Code Wizard, Deep Dive researcher, Pen Master writer, and more.",
     color: "#FCA5A5",
   },
 ];
+
+const killerIconMap: Record<KillerIconKey, ComponentType<SVGProps<SVGSVGElement>>> = {
+  code: CodeBracketIcon,
+  flow: ClockIcon,
+  idea: LightBulbIcon,
+  research: MagnifyingGlassIcon,
+  pen: PencilSquareIcon,
+};
 
 const exampleTasks = [
   "Research all Series A AI startups from Q1 2026 and create a competitive landscape report",
@@ -282,7 +284,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] text-[#F87171] text-xs font-medium mb-4">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L22 12L12 22L2 12Z" /></svg>
+              <SparklesIcon className="h-2.5 w-2.5" aria-hidden="true" />
               Specialist Agents
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Switch to the right expert instantly</h2>
@@ -291,23 +293,27 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {KILLERS.map((killer) => (
-              <Link
-                key={killer.id}
-                href={`/agent?killer=${killer.id}`}
-                className="flex items-start gap-4 p-5 rounded-2xl border transition-all duration-200 group hover:scale-[1.02]"
-                style={{ borderColor: `${killer.accent}25`, background: `${killer.accent}06` }}
-              >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${killer.accent}18`, border: `1px solid ${killer.accent}35`, color: killer.accent }}>
-                  <KillerSvgIcon iconKey={killer.iconKey} size={20} />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-quill-text group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
-                  <p className="text-sm text-quill-muted mt-0.5">{killer.tagline}</p>
-                  <p className="text-xs text-[#4a4a6a] mt-1.5 leading-relaxed line-clamp-2">{killer.description}</p>
-                </div>
-              </Link>
-            ))}
+            {KILLERS.map((killer) => {
+              const KillerIcon = killerIconMap[killer.iconKey];
+
+              return (
+                <Link
+                  key={killer.id}
+                  href={`/agent?killer=${killer.id}`}
+                  className="flex items-start gap-4 p-5 rounded-2xl border transition-all duration-200 group hover:scale-[1.02]"
+                  style={{ borderColor: `${killer.accent}25`, background: `${killer.accent}06` }}
+                >
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${killer.accent}18`, border: `1px solid ${killer.accent}35`, color: killer.accent }}>
+                    <KillerIcon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-quill-text group-hover:text-white transition-colors" style={{ color: killer.accent }}>{killer.name}</p>
+                    <p className="text-sm text-quill-muted mt-0.5">{killer.tagline}</p>
+                    <p className="text-xs text-[#4a4a6a] mt-1.5 leading-relaxed line-clamp-2">{killer.description}</p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -382,19 +388,13 @@ export default function HomePage() {
                 {/* Connector arrow between cards (desktop only) */}
                 {i < 2 && (
                   <div className="hidden md:flex items-center justify-center w-10 shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
+                    <ArrowRightIcon className="h-5 w-5 text-quill-border-2" aria-hidden="true" />
                   </div>
                 )}
                 {/* Connector arrow (mobile only) */}
                 {i < 2 && (
                   <div className="flex md:hidden items-center justify-center h-8 shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <polyline points="5 12 12 19 19 12" />
-                    </svg>
+                    <ArrowDownIcon className="h-5 w-5 text-quill-border-2" aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -407,10 +407,7 @@ export default function HomePage() {
               className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl border border-quill-border hover:border-quill-border-2 text-quill-text-2 hover:text-quill-text font-medium text-base transition-all"
             >
               See Pricings
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
+              <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
 
@@ -432,9 +429,7 @@ export default function HomePage() {
                 className="flex items-center gap-4 px-4 sm:px-5 py-4 rounded-2xl border border-quill-border bg-quill-bg hover:border-[rgba(239,68,68,0.4)] hover:bg-[rgba(239,68,68,0.04)] transition-all duration-200 group text-left"
               >
                 <div className="w-8 h-8 rounded-xl bg-[rgba(239,68,68,0.1)] flex items-center justify-center shrink-0 text-[#EF4444] group-hover:bg-[rgba(239,68,68,0.2)] transition-colors">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
+                  <PlayIcon className="h-3.5 w-3.5" aria-hidden="true" />
                 </div>
                 <p className="text-sm text-quill-text-2 group-hover:text-quill-text transition-colors leading-snug">{task}</p>
               </Link>

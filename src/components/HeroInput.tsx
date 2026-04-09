@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRightIcon, PaperClipIcon } from "@heroicons/react/24/outline";
 
 const PLACEHOLDERS = [
   "Research top AI startups from Q1 2026 and write a report...",
@@ -160,7 +161,7 @@ export function HeroInput() {
           Describe a task
         </div>
 
-        <div className="flex flex-col gap-2 px-3 pb-3 pt-1 sm:flex-row sm:items-end">
+        <div className="px-3 pb-3 pt-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -172,43 +173,41 @@ export function HeroInput() {
             }}
           />
 
-          <textarea
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Tab" && !e.shiftKey) {
-                e.preventDefault();
-                acceptSuggestion();
-                return;
-              }
+          <div className="relative min-h-28 sm:min-h-24">
+            <textarea
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Tab" && !e.shiftKey) {
+                  e.preventDefault();
+                  acceptSuggestion();
+                  return;
+                }
 
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
-            }}
-            placeholder={isTyping ? displayed + "▌" : displayed}
-            rows={2}
-            className="w-full sm:flex-1 bg-transparent resize-none overflow-y-auto px-2 py-2.5 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-22 sm:min-h-13"
-            autoComplete="off"
-            spellCheck="false"
-            aria-label="Describe your task"
-          />
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+              }}
+              placeholder={isTyping ? displayed + "▌" : displayed}
+              rows={2}
+              className="w-full bg-transparent resize-none overflow-y-auto px-5 pb-16 pr-36 pt-4 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-28 sm:min-h-24"
+              autoComplete="off"
+              spellCheck="false"
+              aria-label="Describe your task"
+            />
 
-          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               title="Attach a file"
               onClick={triggerFilePicker}
-              className="shrink-0 w-10 h-10 rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.16)] text-[#f3b1b1] transition-all active:scale-95 flex items-center justify-center"
+              className="absolute bottom-2 left-2 shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] text-[#f3b1b1] transition-all active:scale-95 hover:bg-[rgba(239,68,68,0.16)]"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 1 1 5.65 5.66L9.4 17.43a2 2 0 1 1-2.83-2.83l8.49-8.48" />
-              </svg>
+              <PaperClipIcon className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="absolute bottom-2 right-2 flex items-center gap-2">
               <button
                 type="button"
                 onClick={acceptSuggestion}
@@ -227,12 +226,9 @@ export function HeroInput() {
                 type="submit"
                 title="Run task"
                 disabled={!value.trim() && !selectedFile}
-                className="shrink-0 w-10 h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white transition-all active:scale-95 flex items-center justify-center"
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[#EF4444] text-white transition-all active:scale-95 hover:bg-[#DC2626]"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>

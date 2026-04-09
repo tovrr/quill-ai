@@ -112,6 +112,8 @@ Open http://localhost:3000
 - `npm run lint` - Run lint checks
 - `npm run typecheck` - Run TypeScript checks
 - `npm run bundle:check` - Enforce bundle budgets
+- `npm run audit:ui-standards` - Generate UI standards debt report
+- `npm run enforce:ui-standards` - Enforce UI no-regression guardrails
 
 Database scripts:
 
@@ -122,7 +124,9 @@ Database scripts:
 ## Reliability
 
 - CI smoke workflow: `.github/workflows/ci-smoke.yml`
+- UI standards workflow: `.github/workflows/ui-standards.yml`
 - Deployment hardening checklist: `DEPLOYMENT_CHECKLIST.md`
+- UI standards policy: `UI_STANDARDS.md`
 
 ## Tech Stack
 

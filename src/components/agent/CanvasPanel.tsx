@@ -2,6 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckIcon,
+  CodeBracketIcon,
+  DocumentTextIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import {
   analyzeArtifactQuality,
   analyzeBundleReadiness,
   parseBuilderArtifact,
@@ -464,16 +473,64 @@ function applyMobilePreviewGuardrails(html: string): string {
 }
 </style>`;
 
+  const onePageLinkGuard = `<script id="quill-onepage-link-guard">
+(function () {
+  const isBypassHref = (href) => {
+    const value = (href || "").trim();
+    return (
+      value.length === 0 ||
+      value.startsWith("#") ||
+      value.startsWith("javascript:") ||
+      value.startsWith("mailto:") ||
+      value.startsWith("tel:")
+    );
+  };
+
+  document.addEventListener("click", function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const anchor = target.closest("a");
+    if (!anchor) return;
+
+    const href = anchor.getAttribute("href") || "";
+    if (isBypassHref(href)) return;
+
+    if (/^https?:\/\//i.test(href)) {
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute("rel", "noopener noreferrer");
+      return;
+    }
+
+    event.preventDefault();
+
+    const hashIndex = href.indexOf("#");
+    if (hashIndex >= 0) {
+      const rawId = href.slice(hashIndex + 1).trim();
+      if (rawId) {
+        const decodedId = decodeURIComponent(rawId);
+        const el = document.getElementById(decodedId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          history.replaceState(null, "", "#" + encodeURIComponent(decodedId));
+        }
+      }
+    }
+  }, true);
+})();
+</script>`;
+
   if (/<\/head>/i.test(html)) {
-    return html.replace(/<\/head>/i, `${guardrails}</head>`);
+    return html.replace(/<\/head>/i, `${guardrails}${onePageLinkGuard}</head>`);
   }
 
-  return `${guardrails}${html}`;
+  return `${guardrails}${onePageLinkGuard}${html}`;
 }
 
 export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanelProps) {
   const [preferredTab, setPreferredTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
+  const streamContainerRef = useRef<HTMLDivElement>(null);
   const [bundleValidation, setBundleValidation] = useState<{
     running: boolean;
     ok: boolean | null;
@@ -568,6 +625,15 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
   const previewLoading = isReactApp && !previewUrl;
   const hasPreview = isHTML || (fileBundle?.type === "react-app" && canRunReactPreview);
   const effectiveTab: Tab = isWorking || !hasPreview ? "code" : preferredTab;
+  const showRawStream = isWorking && !isHTML && !fileBundle;
+
+  useEffect(() => {
+    if (!isWorking || effectiveTab !== "code") return;
+    const el = streamContainerRef.current;
+    if (!el) return;
+
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [content, isWorking, effectiveTab]);
 
   const copyText = isArtifact
     ? JSON.stringify({ artifactVersion: 1, artifact }, null, 2)
@@ -694,15 +760,9 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-md bg-linear-to-br from-quill-accent to-quill-accent-2 flex items-center justify-center shrink-0">
               {isHTML ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
+                <CodeBracketIcon className="h-2.5 w-2.5 text-white" aria-hidden="true" />
               ) : (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
+                <DocumentTextIcon className="h-2.5 w-2.5 text-white" aria-hidden="true" />
               )}
             </div>
             <span className={`text-sm font-semibold ${dark ? "text-quill-text" : "text-[#1a1a2e]"}`}>
@@ -755,11 +815,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               title="Open in new tab"
               className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
+              <ArrowTopRightOnSquareIcon className="h-[13px] w-[13px]" aria-hidden="true" />
             </button>
           )}
 
@@ -775,14 +831,9 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             }`}
           >
             {copied ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <CheckIcon className="h-3 w-3" aria-hidden="true" />
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
+              <DocumentTextIcon className="h-3 w-3" aria-hidden="true" />
             )}
             {copied ? "Copied" : "Copy"}
           </button>
@@ -798,11 +849,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 : "text-[#5a5a8a] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
             }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <ArrowDownTrayIcon className="h-[13px] w-[13px]" aria-hidden="true" />
           </button>
 
           {fileBundle?.type === "nextjs-bundle" && (
@@ -836,10 +883,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 : "text-[#9090b0] hover:bg-[#f0f0ff] hover:text-[#5a5a8a]"
             }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -850,10 +894,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-quill-surface" : "bg-[#f0f0ff]"}`}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
-              </svg>
+              <CodeBracketIcon className="h-[22px] w-[22px] text-[#EF4444]" aria-hidden="true" />
             </div>
             <div>
               <p className={`text-sm font-medium ${dark ? "text-quill-text" : "text-[#2a2a4e]"}`}>
@@ -896,7 +937,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             />
           ) : (
             /* Code view */
-            <div className="h-full overflow-auto bg-[#0d0d15]">
+            <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
               <pre className="p-6 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
                 {htmlSrc}
               </pre>
@@ -915,9 +956,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             ) : (
               /* Loading state while the server generates the preview blob */
               <div className="flex items-center justify-center h-full gap-3 text-[#9b9bb7]">
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
+                <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
                 <span className="text-sm">Building preview…</span>
               </div>
             )
@@ -969,6 +1008,12 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             <div className="min-h-0 flex-1 mt-3">
               <FileBundlePreview files={fileBundle.payload.files} entry={fileBundle.payload.entry} type={fileBundle.type} />
             </div>
+          </div>
+        ) : showRawStream ? (
+          <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
+            <pre className="p-6 text-[12px] font-mono text-[#c8c8e0] leading-relaxed whitespace-pre-wrap break-all">
+              {content}
+            </pre>
           </div>
         ) : (
           /* Markdown document */

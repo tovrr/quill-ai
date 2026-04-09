@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeftIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 
 export const metadata: Metadata = {
@@ -54,9 +55,7 @@ const PRO_FEATURES = [
 
 function Check({ color }: { color: string }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
+    <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color }} />
   );
 }
 
@@ -71,10 +70,7 @@ export default function PricingPage() {
         </Link>
         <div className="flex items-center gap-3">
           <Link href="/" className="hidden sm:inline-flex items-center h-9 px-3 rounded-xl text-sm text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
+            <ArrowLeftIcon className="mr-1.5 h-3.5 w-3.5" />
             Home
           </Link>
           <Link href="/login" className="flex items-center h-9 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-95">

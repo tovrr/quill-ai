@@ -254,12 +254,35 @@ Your personality:
 
 Always be helpful, direct, and get things done.`;
 
+const RESPONSE_STYLE_PROMPT = [
+  "Response style rules:",
+  "- Use clean, valid Markdown with proper bullets/headings and no dangling '*' tokens.",
+  "- When emphasizing labels, use full bold syntax like **Start Date:** not Start Date:*.",
+  "- Use emojis sparingly and intentionally (0-2 per response) when they improve clarity or tone.",
+  "- Avoid emoji overuse in technical/code-heavy responses.",
+].join("\n");
+
 function isCanvasBuildIntent(input: string | null): boolean {
   if (!input) return false;
 
   const lower = input.toLowerCase();
   const buildWords = ["build", "create", "make", "design", "generate"];
   const previewTargets = [
+    "doc",
+    "docs",
+    "document",
+    "report",
+    "outline",
+    "brief",
+    "proposal",
+    "plan",
+    "slides",
+    "presentation",
+    "deck",
+    "sheet",
+    "sheets",
+    "spreadsheet",
+    "table",
     "landing page",
     "website",
     "web app",
@@ -340,6 +363,23 @@ function buildIterationConstraintsPrompt(locks: BuilderLocks, session: BuilderSe
 
 function buildCanvasArtifactPrompt(input: string | null, requestedTarget: BuilderTarget): string {
   const lower = (input ?? "").toLowerCase();
+  const looksLikeDocumentRequest = [
+    "doc",
+    "docs",
+    "document",
+    "report",
+    "outline",
+    "brief",
+    "proposal",
+    "plan",
+    "slides",
+    "presentation",
+    "deck",
+    "sheet",
+    "sheets",
+    "spreadsheet",
+    "table",
+  ].some((token) => lower.includes(token));
   const wantsFrameworkCode =
     lower.includes("next.js") ||
     lower.includes("nextjs") ||
@@ -360,7 +400,13 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
     ? [
         "Page quality requirements:",
         "- Return a complete, polished page (not a skeleton).",
+        "- Build as a single one-page prototype by default.",
+        "- Keep navigation on the same page using hash anchors (e.g., #features, #pricing, #cta).",
+        "- Do not use internal route links like /about, /pricing, /contact in prototype buttons/nav.",
+        "- If an external link is necessary, use target='_blank' and rel='noopener noreferrer'.",
         "- Mobile-first responsive layout, then desktop enhancement.",
+        "- Include a fully responsive header/nav and footer from the first render (no desktop-only assumptions).",
+        "- Ensure tap targets are mobile-friendly and nav/actions remain usable at 320px width.",
         "- Include clear visual hierarchy, meaningful typography scale, and strong spacing rhythm.",
         "- Use at least one intentional motion effect (subtle reveal, hover, or transition) without over-animating.",
         "- Include practical sections when relevant: hero, social proof, features, CTA.",
@@ -396,10 +442,21 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
         ]
       : [];
 
+  const documentRules = looksLikeDocumentRequest
+    ? [
+        "Document artifact requirements:",
+        "- Prefer type=document for docs, slides, sheets, outlines, plans, and reports.",
+        "- Use payload.markdown with well-structured Markdown content.",
+        "- Ensure headings, lists, and emphasis render cleanly with standard Markdown.",
+        "- Do not output malformed emphasis tokens (e.g., 'Key Milestones:*').",
+      ]
+    : [];
+
   return [
     "The user is asking for something that should render in the app canvas.",
     targetHint,
     "Return a typed builder artifact as valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
+    "Only allowed artifact.type values are: page, document, react-app, nextjs-bundle. Do not invent custom type names.",
     "Output the artifact block first, then optional explanation after it.",
     "Use this shape:",
     '{ "artifactVersion": 1, "artifact": { "type": "page|document|react-app|nextjs-bundle", "title": "...", "payload": { ... } } }',
@@ -411,6 +468,7 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
     wantsFrameworkCode
       ? "If the user asks for Next.js or React, prefer type=react-app or type=nextjs-bundle with realistic file paths and runnable file contents."
       : "After the HTML artifact, you may include brief implementation notes only if they add clear value.",
+    ...documentRules,
     ...pageQualityRules,
     ...reactRuntimeRules,
     ...nextBundleRules,
@@ -467,6 +525,85 @@ function extractTextMessages(body: Record<string, unknown>): Array<{ role: strin
   return [];
 }
 
+function decodeDataUrlText(url: string): string | null {
+  const match = url.match(/^data:([^;,]*)(;base64)?,(.*)$/i);
+  if (!match) return null;
+
+  const [, , isBase64, payload] = match;
+  try {
+    const decoded = isBase64
+      ? Buffer.from(payload, "base64").toString("utf8")
+      : decodeURIComponent(payload);
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+function isTextLikeMediaType(mediaType: string): boolean {
+  const normalized = mediaType.toLowerCase();
+  return (
+    normalized.startsWith("text/") ||
+    normalized === "application/json" ||
+    normalized === "application/xml" ||
+    normalized === "application/javascript" ||
+    normalized === "application/x-javascript" ||
+    normalized === "application/csv" ||
+    normalized === "text/csv"
+  );
+}
+
+function sanitizePartsForModel(parts: unknown[]): unknown[] {
+  const output: unknown[] = [];
+
+  for (const part of parts) {
+    if (!part || typeof part !== "object") {
+      output.push(part);
+      continue;
+    }
+
+    const candidate = part as {
+      type?: unknown;
+      url?: unknown;
+      mediaType?: unknown;
+      filename?: unknown;
+    };
+
+    if (
+      candidate.type === "file" &&
+      typeof candidate.url === "string" &&
+      candidate.url.startsWith("data:")
+    ) {
+      const mediaType = typeof candidate.mediaType === "string" ? candidate.mediaType : "application/octet-stream";
+      const filename = typeof candidate.filename === "string" && candidate.filename.trim().length > 0
+        ? candidate.filename.trim()
+        : "attachment";
+
+      if (isTextLikeMediaType(mediaType)) {
+        const decoded = decodeDataUrlText(candidate.url);
+        if (decoded && decoded.trim().length > 0) {
+          const excerpt = decoded.slice(0, 12_000);
+          output.push({
+            type: "text",
+            text: [`[Attached file: ${filename} (${mediaType})]`, excerpt].join("\n\n"),
+          });
+          continue;
+        }
+      }
+
+      output.push({
+        type: "text",
+        text: `[Attached file: ${filename} (${mediaType}) was provided, but direct inline file URLs are not supported for this provider.]`,
+      });
+      continue;
+    }
+
+    output.push(part);
+  }
+
+  return output;
+}
+
 async function extractModelMessages(body: Record<string, unknown>): Promise<ModelMessage[]> {
   if (Array.isArray(body.messages) && body.messages.length > 0) {
     const normalized = body.messages
@@ -475,7 +612,7 @@ async function extractModelMessages(body: Record<string, unknown>): Promise<Mode
 
         // Preferred: UIMessage parts (text/file/tool/source/etc.)
         if (Array.isArray(m?.parts) && m.parts.length > 0) {
-          return { role, parts: m.parts };
+          return { role, parts: sanitizePartsForModel(m.parts) };
         }
 
         // Compatibility: string content payloads
@@ -793,7 +930,7 @@ export async function POST(req: Request) {
     }
 
     const baseSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
-    const systemPromptParts = [baseSystemPrompt];
+    const systemPromptParts = [baseSystemPrompt, RESPONSE_STYLE_PROMPT];
 
     if (killer) {
       systemPromptParts.push(buildExecutionPolicyGuidance(killer.executionPolicy));

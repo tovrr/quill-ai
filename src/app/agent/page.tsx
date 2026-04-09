@@ -4,6 +4,14 @@ export const dynamic = "force-dynamic";
 
 import { Suspense, useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowPathIcon,
+  Bars3Icon,
+  CheckIcon,
+  ExclamationCircleIcon,
+  PlusIcon,
+  ShareIcon,
+} from "@heroicons/react/24/outline";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
@@ -31,7 +39,7 @@ import {
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
-const ASSISTANT_STREAM_WATCHDOG_MS = 15000;
+const ASSISTANT_STREAM_WATCHDOG_MS = 90000;
 const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
 
 type StoredGuestSession = {
@@ -220,6 +228,36 @@ function isLikelyCanvasBuildIntent(input: string | null): boolean {
   return buildWords.some((word) => lower.includes(word)) && previewTargets.some((word) => lower.includes(word));
 }
 
+function isLikelyCodeTaskIntent(input: string | null): boolean {
+  if (!input) return false;
+  const lower = input.toLowerCase();
+  const codeWords = [
+    "code",
+    "function",
+    "class",
+    "component",
+    "script",
+    "bug",
+    "fix",
+    "debug",
+    "refactor",
+    "typescript",
+    "javascript",
+    "python",
+    "sql",
+    "api",
+    "endpoint",
+  ];
+
+  return codeWords.some((word) => lower.includes(word));
+}
+
+function looksLikeCodeStream(text: string): boolean {
+  return /```[a-zA-Z]*|\b(import|export|const|let|var|function|class|interface|type|def|async|await|from|SELECT|INSERT|UPDATE|CREATE TABLE)\b/.test(
+    text,
+  );
+}
+
 function extractMessageText(message: UIMessage): string {
   return extractTextFromMessageParts(getMessageParts(message) as unknown[]);
 }
@@ -279,6 +317,7 @@ export default function AgentPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [initialComposerDraft, setInitialComposerDraft] = useState("");
   const [initialHomepageFile, setInitialHomepageFile] = useState<File | null>(null);
+  const [isDraftReview, setIsDraftReview] = useState(false);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
@@ -347,6 +386,14 @@ export default function AgentPage() {
     } finally {
       sessionStorage.removeItem(`${HOMEPAGE_FILE_HANDOFF_PREFIX}${handoffId}`);
     }
+  }, []);
+
+  // Pre-fill composer from ?draft= param without auto-sending (used by QuillClaw shortcuts)
+  useEffect(() => {
+    const draft = getSearchParam("draft");
+    if (!draft) return;
+    setInitialComposerDraft(draft);
+    setIsDraftReview(true);
   }, []);
 
   // Load persistent user customization profile from settings storage.
@@ -502,6 +549,7 @@ export default function AgentPage() {
   useEffect(() => {
     if (heroTaskFiredRef.current) return;
     if (getSearchParam("hf")) return;
+    if (getSearchParam("draft")) return;
     const q = getSearchParam("q");
     if (!q) return;
     heroTaskFiredRef.current = true;
@@ -747,6 +795,7 @@ export default function AgentPage() {
     const lastUserText = lastUser ? extractMessageText(lastUser) : null;
     const hasExplicitBuilderTarget = builderTarget !== "auto";
     const userBuildIntent = hasExplicitBuilderTarget || isLikelyCanvasBuildIntent(lastUserText);
+    const userCodeIntent = isLikelyCodeTaskIntent(lastUserText);
 
     const lastAssistantWithText = [...messages]
       .reverse()
@@ -758,12 +807,17 @@ export default function AgentPage() {
     const renderableNow = isCanvasRenderableContent(text);
     const looksLikeArtifactStream =
       /<quill-artifact>|artifactVersion|"type"\s*:\s*"(page|document|react-app|nextjs-bundle)"|```(?:json|html)/i.test(text);
+    const looksCodeLike = looksLikeCodeStream(text);
+    const shouldTrackInCanvas =
+      renderableNow ||
+      (isLoading && userBuildIntent && looksLikeArtifactStream) ||
+      (isLoading && userCodeIntent && looksCodeLike);
 
-    if (userBuildIntent || renderableNow) {
+    if (shouldTrackInCanvas) {
       setCanvasContent(text);
     }
 
-    if (renderableNow || (isLoading && userBuildIntent && looksLikeArtifactStream)) {
+    if (shouldTrackInCanvas) {
       setCanvasMode(true);
     }
   }, [messages, isLoading, builderTarget]);
@@ -775,7 +829,9 @@ export default function AgentPage() {
 
   const handleSend = useCallback(
     (text: string, files?: FileList) => {
-      const shouldUseCanvas = builderTarget !== "auto" || isLikelyCanvasBuildIntent(text);
+      setIsDraftReview(false);
+      const shouldUseCanvas =
+        builderTarget !== "auto" || isLikelyCanvasBuildIntent(text) || isLikelyCodeTaskIntent(text);
       if (!shouldUseCanvas) {
         setCanvasMode(false);
       }
@@ -953,11 +1009,7 @@ export default function AgentPage() {
             className="icon-btn md:hidden p-1.5 rounded-lg transition-all text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
             aria-label="Toggle sidebar"
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+            <Bars3Icon className="h-[17px] w-[17px]" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -1002,20 +1054,12 @@ export default function AgentPage() {
             >
               {shareCopied ? (
                 <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <CheckIcon className="h-3 w-3" aria-hidden="true" />
                   <span className="hidden md:inline">Copied</span>
                 </>
               ) : (
                 <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                  </svg>
+                  <ShareIcon className="h-3 w-3" aria-hidden="true" />
                   <span className="hidden md:inline">Share</span>
                 </>
               )}
@@ -1026,10 +1070,7 @@ export default function AgentPage() {
               onClick={handleNewChat}
               className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <PlusIcon className="h-3 w-3" aria-hidden="true" />
               <span className="hidden md:inline">New chat</span>
             </button>
 
@@ -1094,9 +1135,7 @@ export default function AgentPage() {
                     <QuillLogo size={16} />
                   </div>
                   <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
-                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-                    </svg>
+                    <ArrowPathIcon className="h-[13px] w-[13px] animate-spin text-[#F87171]" aria-hidden="true" />
                     <span className="text-xs text-[#F87171]">Generating image...</span>
                   </div>
                 </div>
@@ -1108,6 +1147,18 @@ export default function AgentPage() {
             {/* Input — safe-area bottom padding for iPhone home indicator */}
             <div className="agent-composer-shell shrink-0 px-4 md:px-6 pb-8 pt-3 border-t border-quill-border bg-quill-bg pb-safe">
               <div className="max-w-3xl mx-auto">
+                {/* QuillClaw review banner — shown when draft came from a QuillClaw shortcut */}
+                {isDraftReview && messages.length === 0 && !isLoading && (
+                  <div className="mb-3 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.06)] animate-fade-in">
+                    <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]" aria-hidden="true" />
+                    <p className="text-[12px] text-[#f7b0b0] leading-relaxed">
+                      <span className="font-medium text-[#F87171]">Review before running.</span>{" "}
+                      Read the task below, edit it if needed, then press{" "}
+                      <kbd className="px-1 py-0.5 rounded bg-[rgba(239,68,68,0.15)] text-[#F87171] text-[10px] font-mono">Enter</kbd>{" "}
+                      to start. Quill will show you a plan before making any changes.
+                    </p>
+                  </div>
+                )}
                 <TaskInput
                   onSend={handleSend}
                   onStop={() => {
@@ -1215,10 +1266,10 @@ export default function AgentPage() {
                 type="button"
                 aria-label="Close canvas"
                 onClick={() => setCanvasMode(false)}
-                className="hidden md:block absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px]"
+                className="hidden md:block absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] animate-fade-in"
               />
               <div
-                className="hidden md:block absolute inset-y-0 right-0 z-30 shadow-2xl shadow-black/40"
+                className="hidden md:block absolute inset-y-0 right-0 z-30 shadow-2xl shadow-black/40 animate-slide-in-left"
                 style={{ width: "min(520px, 42vw)" }}
               >
                 <CanvasPanel content={canvasContent} onClose={() => setCanvasMode(false)} isWorking={isLoading} />

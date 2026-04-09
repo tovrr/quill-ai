@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRightIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { getChatById, getMessagesByChatId } from "@/lib/db-helpers";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { auth } from "@/lib/auth/server";
@@ -88,10 +89,7 @@ export default async function SharePage({ params }: Props) {
             href="/agent"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <PlusIcon className="h-3 w-3" />
             Try Quill AI
           </Link>
         </div>
@@ -142,10 +140,7 @@ export default async function SharePage({ params }: Props) {
             className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.3)]"
           >
             Start chatting
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
+            <ArrowRightIcon className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

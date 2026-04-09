@@ -1,5 +1,15 @@
 "use client";
 
+import { useState } from "react";
+import {
+  ArrowPathIcon,
+  CheckIcon,
+  ClipboardDocumentIcon,
+  ExclamationCircleIcon,
+  HandThumbDownIcon,
+  HandThumbUpIcon,
+  PaperClipIcon,
+} from "@heroicons/react/24/outline";
 import type { UIMessage } from "ai";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import Image from "next/image";
@@ -39,32 +49,9 @@ function ToolCallBadge({
       }}
     >
       {isRunning ? (
-        <svg
-          className="animate-spin-slow shrink-0"
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#EF4444"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        >
-          <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-        </svg>
+        <ArrowPathIcon className="h-[13px] w-[13px] animate-spin-slow shrink-0 text-[#EF4444]" aria-hidden="true" />
       ) : isDone ? (
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#34d399"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="shrink-0"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <CheckIcon className="h-[13px] w-[13px] shrink-0 text-[#34d399]" aria-hidden="true" />
       ) : (
         <span className="w-2 h-2 rounded-full bg-quill-muted shrink-0" />
       )}
@@ -229,14 +216,28 @@ function hasMarkdownSyntax(text: string): boolean {
   return /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)|```|`[^`]|!\[[^\]]*\]\([^)]*\)|\*\*|__/.test(text);
 }
 
-function ArtifactSummary({ text }: { text: string }) {
+function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: (content: string) => void }) {
   const artifact = parseBuilderArtifact(text);
   if (!artifact) return null;
 
+  const action = onOpenCanvas ? (
+    <button
+      onClick={() => onOpenCanvas(text)}
+      className="shrink-0 px-2 py-1 rounded-md border border-quill-border text-[10px] font-medium text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface-2 transition-all"
+      title="Open this artifact in Canvas"
+      aria-label="Open this artifact in Canvas"
+    >
+      Show Canvas
+    </button>
+  ) : null;
+
   if (artifact.type === "page") {
     return (
-      <div className="text-sm text-quill-text">
-        Built page artifact ready in Canvas preview.
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm text-quill-text">
+          Built page artifact ready in Canvas preview.
+        </div>
+        {action}
       </div>
     );
   }
@@ -244,16 +245,22 @@ function ArtifactSummary({ text }: { text: string }) {
   if (artifact.type === "react-app" || artifact.type === "nextjs-bundle") {
     const fileCount = Object.keys(artifact.payload.files ?? {}).length;
     return (
-      <div className="text-sm text-quill-text">
-        Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open Canvas to inspect code.
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm text-quill-text">
+          Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open Canvas to inspect code.
+        </div>
+        {action}
       </div>
     );
   }
 
   if (artifact.type === "document") {
     return (
-      <div className="text-sm text-quill-text">
-        Built document artifact. Open Canvas to read and export.
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm text-quill-text">
+          Built document artifact. Open Canvas to read and export.
+        </div>
+        {action}
       </div>
     );
   }
@@ -261,11 +268,25 @@ function ArtifactSummary({ text }: { text: string }) {
   return null;
 }
 
-export function RealMessageBubble({ message }: { message: UIMessage }) {
+export function RealMessageBubble({ message, onOpenCanvasFromMessage }: { message: UIMessage; onOpenCanvasFromMessage?: (content: string) => void }) {
+  const [copied, setCopied] = useState(false);
+  const [reaction, setReaction] = useState<"like" | "dislike" | null>(null);
   const isUser = message.role === "user";
   const parts = getMessageParts(message);
   const isAssistant = !isUser && message.role === "assistant";
   const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
+  const canReact = isAssistant && hasRenderableTextValue(assistantPlainText);
+
+  const handleCopy = async () => {
+    if (!assistantPlainText) return;
+    try {
+      await navigator.clipboard.writeText(assistantPlainText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore clipboard failures
+    }
+  };
 
   const renderedPartEntries = parts
     .map((part, i) => {
@@ -289,11 +310,11 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
           >
             {hasArtifact ? (
-              <ArtifactSummary text={text} />
+              <ArtifactSummary text={text} onOpenCanvas={onOpenCanvasFromMessage} />
             ) : hasMarkdownSyntax(text) ? (
               <MarkdownText text={text} />
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{text}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
             )}
           </div>
         );
@@ -308,13 +329,17 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         return {
           kind: "reasoning" as const,
           node: (
-          <div
+          <details
             key={i}
-            className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6] w-full"
+            className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6]"
           >
-            <p className="text-[11px] uppercase tracking-wide text-quill-muted mb-1">Reasoning</p>
-            <MarkdownText text={text} />
-          </div>
+            <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-quill-muted">
+              Reasoning summary
+            </summary>
+            <div className="border-t border-quill-border px-4 py-3">
+              <MarkdownText text={text} />
+            </div>
+          </details>
           ),
         };
       }
@@ -352,9 +377,7 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
             title="Open attachment"
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-            </svg>
+            <PaperClipIcon className="h-[13px] w-[13px] text-[#EF4444]" aria-hidden="true" />
             <span className="max-w-40 truncate">
               {filePart.filename ?? "Attached file"}
             </span>
@@ -469,6 +492,46 @@ export function RealMessageBubble({ message }: { message: UIMessage }) {
         }`}
       >
         {renderedParts}
+        {canReact && (
+          <div className="relative flex items-center gap-1.5 px-1">
+            <button
+              onClick={handleCopy}
+              className={`p-1 rounded-md transition-all ${copied ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
+              title={copied ? "Copied" : "Copy"}
+              aria-label="Copy assistant message"
+            >
+              {copied ? (
+                <CheckIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              ) : (
+                <ClipboardDocumentIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+              )}
+            </button>
+            <button
+              onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
+              className={`p-1 rounded-md transition-all ${reaction === "like" ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
+              title="Like"
+              aria-label="Like assistant message"
+            >
+              <HandThumbUpIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
+              className={`p-1 rounded-md transition-all ${reaction === "dislike" ? "text-[#f87171] bg-[rgba(248,113,113,0.12)]" : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"}`}
+              title="Dislike"
+              aria-label="Dislike assistant message"
+            >
+              <HandThumbDownIcon className="h-[13px] w-[13px]" aria-hidden="true" />
+            </button>
+            {copied && (
+              <span
+                className="absolute -bottom-6 left-1 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.12)] px-2 py-0.5 text-[10px] font-medium text-[#34d399]"
+                aria-live="polite"
+              >
+                Copied
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
