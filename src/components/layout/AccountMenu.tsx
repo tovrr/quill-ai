@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { authClient } from "@/lib/auth/client";
 import { SettingsModal } from "@/components/ui/SettingsModal";
+import { Button } from "@/components/ui/button";
 
 type SessionData = {
   user: { id: string; name: string; email: string; image?: string | null } | null;
@@ -63,16 +64,18 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
     return (
       <>
         <div className="relative">
-          <button
+          <Button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-quill-surface-2 transition-all"
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1.5 px-2 py-1.5"
             title={`${session.user.name ?? session.user.email}`}
           >
             <div className="w-6 h-6 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-xs font-bold text-white">
               {userInitial}
             </div>
             <ChevronDownIcon className="w-3.5 h-3.5 text-quill-muted" aria-hidden="true" />
-          </button>
+          </Button>
 
           {/* Dropdown menu */}
           {dropdownOpen && (
@@ -87,27 +90,31 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
 
               {/* Actions */}
               <div className="p-1.5 space-y-1">
-                <button
+                <Button
                   onClick={() => {
                     setSettingsOpen(true);
                     setDropdownOpen(false);
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm text-quill-text hover:bg-quill-surface-2 transition-all"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
                 >
                   <Cog6ToothIcon className="w-4 h-4" aria-hidden="true" />
                   Settings
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => {
                     handleSignOut();
                     setDropdownOpen(false);
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm text-quill-muted hover:text-[#f87171] hover:bg-quill-surface-2 transition-all"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-quill-muted hover:text-[#f87171]"
                 >
                   <ArrowRightStartOnRectangleIcon className="w-4 h-4" aria-hidden="true" />
                   Sign out
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -141,20 +148,24 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
           </p>
           <p className="truncate text-[11px] leading-tight text-quill-muted">{session.user.email}</p>
         </div>
-        <button
+        <Button
           onClick={() => setSettingsOpen(true)}
           title="Settings"
-          className="shrink-0 rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-quill-text"
+          variant="ghost"
+          size="sm"
+          className="shrink-0 p-1.5 text-quill-muted hover:text-quill-text"
         >
           <Cog6ToothIcon className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSignOut}
           title="Sign out"
-          className="shrink-0 rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-[#f87171]"
+          variant="ghost"
+          size="sm"
+          className="shrink-0 p-1.5 text-quill-muted hover:text-[#f87171]"
         >
           <ArrowRightStartOnRectangleIcon className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
