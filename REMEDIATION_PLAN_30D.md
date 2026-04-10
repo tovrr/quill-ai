@@ -9,6 +9,52 @@
 
 ---
 
+## Sidebar and Agent Concept Checkpoint (April 10, 2026)
+
+### Scope Covered
+
+1. Preserve assistant message structure so reasoning and artifact parts render correctly.
+2. Expand build-intent detection so document prompts open and stream in Canvas.
+3. Wire status metadata to surface task title and step progress in the status bar.
+
+### Implementation Status
+
+1. Completed in [src/app/agent/page.tsx](src/app/agent/page.tsx).
+2. Completed in [src/components/agent/AgentStatusBar.tsx](src/components/agent/AgentStatusBar.tsx).
+3. Automated guard added in [scripts/test-agent-remediation.mjs](scripts/test-agent-remediation.mjs).
+
+### Regression Guardrails
+
+Run this check locally and in CI:
+
+1. npm run test:agent-remediation
+
+This verifies:
+
+1. document keywords remain in canvas build-intent detection
+2. assistant canonicalization preserves structured parts
+3. status bar wiring remains connected to task title and steps
+4. progress calculation remains safe for zero or missing totals
+
+### QA Checklist (Staging)
+
+1. Sidebar shortcut for Docs, Slides, and Sheets opens [src/app/agent/page.tsx](src/app/agent/page.tsx) with Canvas activation behavior intact.
+2. Assistant responses that include reasoning still render a Reasoning summary block in chat.
+3. Artifact responses still show the artifact summary and open in Canvas.
+4. Status bar transitions through thinking, running, and done with a visible task title.
+5. Progress indicator does not disappear when step counters start at zero.
+
+### Rollout Gate
+
+Promote to production only after all of the following pass:
+
+1. npm run typecheck
+2. npm run lint
+3. npm run test:agent-remediation
+4. Staging smoke flow for sidebar shortcut to Canvas build path
+
+---
+
 ## Executive Summary
 
 This plan remediates the UI-system drift identified in the repository audit.

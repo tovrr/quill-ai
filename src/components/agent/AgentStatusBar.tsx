@@ -33,8 +33,11 @@ export function AgentStatusBar({
 }: AgentStatusBarProps) {
   const color = statusColors[status];
   const message = statusMessages[status];
-  const progress =
-    stepCount && totalSteps ? Math.round((stepCount / totalSteps) * 100) : null;
+  const hasStepData =
+    typeof stepCount === "number" &&
+    typeof totalSteps === "number" &&
+    totalSteps > 0;
+  const progress = hasStepData ? Math.round((stepCount / totalSteps) * 100) : null;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0d0d15] border-b border-quill-border">

@@ -29,6 +29,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:chatbot": "node scripts/test-chatbot-responses.mjs",
+    "test:agent-remediation": "node scripts/test-agent-remediation.mjs",
     "audit:chat-render": "node scripts/audit-chat-render.mjs",
     "audit:ui-standards": "node scripts/ui-standards.mjs audit --write-report",
     "enforce:ui-standards": "node scripts/ui-standards.mjs enforce",

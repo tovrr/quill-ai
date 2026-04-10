@@ -16,6 +16,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatusBar";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
@@ -223,6 +224,15 @@ function isLikelyCanvasBuildIntent(input: string | null): boolean {
     "react",
     "tailwind",
     "artifact",
+    "doc",
+    "docs",
+    "document",
+    "report",
+    "slides",
+    "deck",
+    "sheet",
+    "spreadsheet",
+    "table",
   ];
 
   return buildWords.some((word) => lower.includes(word)) && previewTargets.some((word) => lower.includes(word));
@@ -263,18 +273,23 @@ function extractMessageText(message: UIMessage): string {
 }
 
 function canonicalizeAssistantForDisplay(message: UIMessage): UIMessage {
-  const parts = getMessageParts(message);
-  const text = extractTextFromMessageParts(parts as unknown[]);
+  const normalized = normalizeAssistantMessage({
+    ...message,
+    parts: getMessageParts(message),
+  });
 
-  if (text.length > 0) {
-    return {
-      ...message,
-      role: "assistant",
-      parts: [{ type: "text", text }] as UIMessage["parts"],
-    };
+  if (hasRenderableAssistantContent(normalized)) {
+    return normalized;
   }
 
-  return normalizeAssistantMessage({ ...message, parts });
+  const fallbackText = extractTextFromMessageParts(getMessageParts(normalized) as unknown[]);
+  if (fallbackText.length === 0) return normalized;
+
+  return {
+    ...normalized,
+    role: "assistant",
+    parts: [{ type: "text", text: fallbackText }] as UIMessage["parts"],
+  };
 }
 
 function replaceOrAppendAssistantFallback(prev: UIMessage[], text: string): UIMessage[] {
@@ -314,6 +329,8 @@ export default function AgentPage() {
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasContent, setCanvasContent] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [activeTaskTitle, setActiveTaskTitle] = useState<string | undefined>(undefined);
+  const [statusStepCount, setStatusStepCount] = useState<number | undefined>(undefined);
   const [shareCopied, setShareCopied] = useState(false);
   const [initialComposerDraft, setInitialComposerDraft] = useState("");
   const [initialHomepageFile, setInitialHomepageFile] = useState<File | null>(null);
@@ -744,7 +761,13 @@ export default function AgentPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (status === "streaming" || status === "submitted") {
-        setAgentStatus("running");
+        if (status === "submitted") {
+          setAgentStatus("thinking");
+          setStatusStepCount(1);
+        } else {
+          setAgentStatus("running");
+          setStatusStepCount(2);
+        }
       } else if (status === "ready" && messages.length > 0) {
         const last = messages[messages.length - 1];
 
@@ -782,7 +805,11 @@ export default function AgentPage() {
         }
 
         setAgentStatus("done");
-        const resetTimer = setTimeout(() => setAgentStatus("idle"), 3000);
+        setStatusStepCount(3);
+        const resetTimer = setTimeout(() => {
+          setAgentStatus("idle");
+          setStatusStepCount(undefined);
+        }, 3000);
         return () => clearTimeout(resetTimer);
       }
     }, 0);
@@ -830,6 +857,8 @@ export default function AgentPage() {
   const handleSend = useCallback(
     (text: string, files?: FileList) => {
       setIsDraftReview(false);
+      setActiveTaskTitle(text.trim().slice(0, 80) || "Task");
+      setStatusStepCount(1);
       const shouldUseCanvas =
         builderTarget !== "auto" || isLikelyCanvasBuildIntent(text) || isLikelyCodeTaskIntent(text);
       if (!shouldUseCanvas) {
@@ -852,6 +881,8 @@ export default function AgentPage() {
         const next = [label, ...prev.filter((item) => item !== label)];
         return next.slice(0, 5);
       });
+      setActiveTaskTitle(label);
+      setStatusStepCount(1);
       setAgentStatus("thinking");
       sendMessageTracked({
         text: [
@@ -892,6 +923,8 @@ export default function AgentPage() {
         const next = [label, ...prev.filter((item) => item !== label)];
         return next.slice(0, 5);
       });
+      setActiveTaskTitle(`Regenerate ${section}`);
+      setStatusStepCount(1);
       setAgentStatus("thinking");
       sendMessageTracked({
         text: [
@@ -910,6 +943,8 @@ export default function AgentPage() {
   const handleGenerateImage = useCallback(
     async (prompt: string) => {
       setIsGeneratingImage(true);
+      setActiveTaskTitle(prompt.trim().slice(0, 80) || "Generate image");
+      setStatusStepCount(1);
       setAgentStatus("thinking");
 
       setMessages((msgs: UIMessage[]) => [
@@ -962,6 +997,8 @@ export default function AgentPage() {
     if (!isAuthenticated) {
       clearGuestSession();
     }
+    setActiveTaskTitle(undefined);
+    setStatusStepCount(undefined);
     const url = new URL(window.location.href);
     url.searchParams.delete("chat");
     url.searchParams.delete("q");
@@ -1045,6 +1082,13 @@ export default function AgentPage() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Account menu (top-right on header) */}
+            <div className="hidden md:flex">
+              <Suspense fallback={null}>
+                <AccountMenu compact />
+              </Suspense>
+            </div>
+
             {/* Share button */}
             <button
               onClick={handleShare}
@@ -1080,7 +1124,12 @@ export default function AgentPage() {
           </div>
         </header>
 
-        <AgentStatusBar status={agentStatus} />
+        <AgentStatusBar
+          status={agentStatus}
+          taskTitle={activeTaskTitle}
+          stepCount={statusStepCount}
+          totalSteps={statusStepCount !== undefined ? 3 : undefined}
+        />
 
         {/* Content */}
         <div className="relative flex flex-1 min-h-0">
