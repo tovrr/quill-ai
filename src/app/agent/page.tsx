@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense, useCallback, useRef, useEffect, useState, useMemo } from "react";
+import dynamicImport from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowPathIcon,
@@ -21,7 +22,7 @@ import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatus
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
-import { CanvasPanel, isCanvasRenderableContent, isHTMLContent } from "@/components/agent/CanvasPanel";
+import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
 import {
   buildAssistantFallbackMessage,
   extractTextFromMessageParts,
@@ -42,6 +43,17 @@ const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 const ASSISTANT_STREAM_WATCHDOG_MS = 90000;
 const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
+
+const CanvasPanel = dynamicImport(
+  () => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel),
+  {
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center border-l border-quill-border bg-[#0E1015] text-sm text-quill-muted">
+        Loading canvas...
+      </div>
+    ),
+  },
+);
 
 type StoredGuestSession = {
   chatId: string;
@@ -341,6 +353,7 @@ export default function AgentPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
   const [isMounted, setIsMounted] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
   const activeKiller = isMounted ? killer : null;
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
@@ -494,6 +507,8 @@ export default function AgentPage() {
           ? error.message.trim()
           : "The assistant ran into an error before completing the response.";
 
+      setPageError(userFacingError);
+
       setMessages((prev: UIMessage[]) => {
         const last = prev[prev.length - 1];
         const shouldAppend = !hasRenderableAssistantContent(last);
@@ -523,6 +538,7 @@ export default function AgentPage() {
 
   const sendMessageTracked = useCallback(
     (payload: { text: string; files?: FileList }) => {
+      setPageError(null);
       awaitingAssistantRef.current = true;
       pendingAssistantSinceRef.current = Date.now();
       sendMessage(payload);
@@ -589,6 +605,9 @@ export default function AgentPage() {
           setPlanLabel("Free");
           setTrialDaysLeft(null);
           setWebSearchState("coming-soon");
+          if (res.status >= 500) {
+            setPageError("Could not verify your account status. Paid features may be shown conservatively until retry.");
+          }
           return;
         }
         const data = (await res.json()) as {
@@ -609,6 +628,7 @@ export default function AgentPage() {
         setPlanLabel("Free");
         setTrialDaysLeft(null);
         setWebSearchState("coming-soon");
+        setPageError("Could not verify your account status. Check your connection and try again.");
       } finally {
         setAuthResolved(true);
       }
@@ -642,14 +662,22 @@ export default function AgentPage() {
     const loadChat = async () => {
       try {
         const response = await fetch(`/api/chats/${chatId}`, { cache: "no-store" });
-        if (!response.ok) return;
+        if (!response.ok) {
+          if (!cancelled) {
+            setPageError("Failed to load this conversation. Refresh and try again.");
+          }
+          return;
+        }
 
         const payload = (await response.json()) as { messages?: PersistedMessage[] };
         if (cancelled || !Array.isArray(payload.messages) || payload.messages.length === 0) return;
 
+        setPageError(null);
         setMessages(toUiMessages(payload.messages));
       } catch {
-        // Keep empty state on fetch failures.
+        if (!cancelled) {
+          setPageError("Failed to load this conversation. Check your connection and try again.");
+        }
       }
     };
 
@@ -721,6 +749,7 @@ export default function AgentPage() {
       } catch {
         // Keep local session if import fails so user does not lose conversation.
         setGuestImportStatus("error");
+        setPageError("We could not import your guest conversation after sign-in. Your local copy is still intact.");
       }
     };
 
@@ -942,6 +971,7 @@ export default function AgentPage() {
 
   const handleGenerateImage = useCallback(
     async (prompt: string) => {
+      setPageError(null);
       setIsGeneratingImage(true);
       setActiveTaskTitle(prompt.trim().slice(0, 80) || "Generate image");
       setStatusStepCount(1);
@@ -969,6 +999,7 @@ export default function AgentPage() {
         setTimeout(() => setAgentStatus("idle"), 3000);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to generate image";
+        setPageError(`Image generation failed: ${msg}`);
         setMessages((msgs: UIMessage[]) => [
           ...msgs,
           { id: crypto.randomUUID(), role: "assistant" as const, parts: [{ type: "text" as const, text: `Image generation failed: ${msg}.` }], metadata: {} },
@@ -1196,6 +1227,21 @@ export default function AgentPage() {
             {/* Input — safe-area bottom padding for iPhone home indicator */}
             <div className="agent-composer-shell shrink-0 px-4 md:px-6 pb-8 pt-3 border-t border-quill-border bg-quill-bg pb-safe">
               <div className="max-w-3xl mx-auto">
+                {pageError && (
+                  <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 animate-fade-in">
+                    <div className="flex items-start gap-2.5">
+                      <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]" aria-hidden="true" />
+                      <p className="text-[12px] leading-relaxed text-[#f7b0b0]">{pageError}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPageError(null)}
+                      className="shrink-0 rounded-lg border border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] transition-colors hover:bg-[rgba(239,68,68,0.12)]"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
                 {/* QuillClaw review banner — shown when draft came from a QuillClaw shortcut */}
                 {isDraftReview && messages.length === 0 && !isLoading && (
                   <div className="mb-3 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.06)] animate-fade-in">

@@ -34,12 +34,13 @@ async function persistDurableFileParts(chatId: string, rawParts: unknown[] | und
   const nextParts: unknown[] = [];
 
   for (const rawPart of rawParts) {
-    if (!isRecord(rawPart) || rawPart.type !== "file") {
+    if (!isRecord(rawPart) || (rawPart.type !== "file" && rawPart.type !== "image")) {
       nextParts.push(rawPart);
       continue;
     }
 
-    const url = typeof rawPart.url === "string" ? rawPart.url : "";
+    const url = typeof rawPart.url === "string" ? rawPart.url : 
+                typeof rawPart.image === "string" ? rawPart.image : "";
     if (!url || url.startsWith("/api/files/")) {
       nextParts.push(rawPart);
       continue;
@@ -70,10 +71,12 @@ async function persistDurableFileParts(chatId: string, rawParts: unknown[] | und
       })
       .returning({ id: messageFiles.id });
 
-    nextParts.push({
-      ...rawPart,
-      url: `/api/files/${stored.id}`,
-    });
+    const replacementUrl = `/api/files/${stored.id}`;
+    if (rawPart.type === "image") {
+      nextParts.push({ ...rawPart, image: replacementUrl });
+    } else {
+      nextParts.push({ ...rawPart, url: replacementUrl });
+    }
   }
 
   return nextParts;
@@ -105,10 +108,15 @@ export async function updateChatTitle(chatId: string, title: string) {
 }
 
 export async function getMessagesByChatId(chatId: string) {
-  return db.query.messages.findMany({
+  const rows = await db.query.messages.findMany({
     where: eq(messages.chatId, chatId),
     orderBy: [messages.createdAt],
   });
+
+  return rows.map((row) => ({
+    ...row,
+    partsJson: row.partsJson && typeof row.partsJson === "string" ? JSON.parse(row.partsJson) : row.partsJson
+  }));
 }
 
 export async function saveMessage({
@@ -136,11 +144,19 @@ export async function saveMessage({
     });
   }
 
+  const partsJsonString = normalized.parts ? JSON.stringify(normalized.parts) : null;
+
   const [msg] = await db
     .insert(messages)
-    .values({ chatId, role, content: normalized.content, partsJson: normalized.parts })
+    .values({ chatId, role, content: normalized.content, partsJson: partsJsonString })
     .returning();
-  return msg;
+
+  return {
+    ...msg,
+    partsJson: msg.partsJson && typeof msg.partsJson === "string" 
+      ? JSON.parse(msg.partsJson) 
+      : msg.partsJson
+  };
 }
 
 export async function deleteChat(chatId: string) {

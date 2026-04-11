@@ -16,16 +16,15 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
   - Acceptance: User can purchase $12 or $29 plan from pricing page, entitlements update on webhook, portal link works in settings.
   - Verification: Run end-to-end purchase flow in Stripe test mode on staging; verify DB reflects purchase; confirm paid features unlock immediately.
 
-- [ ] **Stream the two-pass builder to prevent UI blocking**
+- [x] **Stream the two-pass builder to prevent UI blocking**
   - Scope: Swap builder pipeline from blocking `generateText` calls to `streamText` with real-time artifact updates. Show "Draft" → "Critic review" → "Final" progression in UI.
   - Acceptance: Complex page builds show streaming progress instead of blank canvas; draft appears in editor within 5 seconds.
   - Verification: Build a SaaS landing page in agent UI; verify timestamps on each phase appear in console; no 30+ second blank periods.
 
-- [ ] **Fix message persistence: stop losing images and file attachments**
+- [x] **Fix message persistence: stop losing images and file attachments**
   - Scope: Add `partsJson` column to `message` table to store full `UIMessagePart[]` structure (not flattened text). Migrate persisted messages. Update `saveMessage()` to serialize parts; `getMessagesByChatId()` to deserialize.
   - Acceptance: Reload a chat that contains images → images reappear. File attachments show correct file type badge + size.
   - Verification: Upload 3 images + PDF to a chat, save it, reload it, inspect message history in DevTools — all media present.
-
 - [ ] **Add OAuth / social login (Google minimum)**
   - Scope: Wire Google OAuth provider into Better Auth. Add Google Sign In button on login/registration pages. Update auth server/client.
   - Acceptance: User can sign up and log in via Google accounts. Email/password still works as fallback.

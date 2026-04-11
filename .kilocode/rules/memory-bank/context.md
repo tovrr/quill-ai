@@ -87,6 +87,8 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Updated Canvas interaction to match modern builder apps: force Code view while artifact generation is active, suppress parse-failed banner during streaming partials, and auto-switch to Preview once generation completes and preview is available
 - [x] Added public-repo credibility scaffolding: README, MIT license, contributing/security/code-of-conduct docs, issue templates, PR template, and package metadata fields (homepage/repository/bugs/keywords/license)
 - [x] Set project release version to 1.0.0 for public launch positioning (instead of 0.1.0 beta signaling)
+- [x] Fixed the `/agent` bundle budget regression by extracting lightweight canvas helpers into `canvas-utils.ts` and lazy-loading `CanvasPanel`; measured result: largest JS chunk dropped from 670.23 KB to 635.18 KB and `npm run bundle:check` now passes
+- [x] Began splitting the chat backend god-route: extracted the two-pass builder streaming flow into `src/lib/chat/two-pass-builder.ts`, leaving `/api/chat` to orchestrate request handling while preserving the same builder persistence and usage tracking behavior
 
 ## Current Structure
 
@@ -211,3 +213,5 @@ export async function GET() {
 - 2026-04-09: Began UI remediation Phase 1 by introducing a Shadcn-style primitive foundation in `src/components/ui` (button, input, textarea, dialog, select, switch, card, badge, sheet, dropdown-menu, tabs, separator, scroll-area, collapsible, tooltip), added shared `cn()` helper (`src/lib/utils.ts`), and aligned guardrails by allowlisting internal primitive implementations for raw primitive checks; revalidated with passing enforce, lint, and typecheck.
 - 2026-04-09: Started UI remediation Phase 2 by removing the custom `KillerSvgIcon` layer (`src/components/ui/KillerIcon.tsx` deleted), migrating `src/app/page.tsx` icon rendering to canonical Heroicons imports (including Killer card icon mapping by `iconKey`), and revalidating with passing `enforce:ui-standards`, `lint`, and `typecheck`; refreshed `UI_STANDARDS_BASELINE.md` via `audit:ui-standards`.
 - 2026-04-09: Finished UI remediation Phase 2 icon migration by converting remaining inline SVG product icons in agent/docs/pricing/share UI files to Heroicons, leaving only `src/components/ui/QuillLogo.tsx` as the sanctioned brand-logo SVG; revalidated with passing `enforce:ui-standards`, `lint`, and `typecheck`.
+- 2026-04-11: Fixed the `/agent` bundle budget regression by extracting `isHTMLContent` / `isCanvasRenderableContent` into `src/components/agent/canvas-utils.ts` and dynamically importing `CanvasPanel`; revalidated with passing typecheck, production build, and bundle budget (`largest JS chunk: 635.18 KB`, down from `670.23 KB`)
+- 2026-04-11: Started route decomposition for `/api/chat` by moving the two-pass builder implementation into `src/lib/chat/two-pass-builder.ts`; revalidated with passing typecheck and production build

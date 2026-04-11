@@ -107,6 +107,15 @@ export function isRenderableMessagePart(part: unknown): boolean {
     return typeof part.url === "string" && part.url.trim().length > 0;
   }
 
+  if (part.type === "image") {
+    const imageUrl = typeof part.image === "string"
+      ? part.image
+      : typeof part.url === "string"
+        ? part.url
+        : "";
+    return imageUrl.trim().length > 0;
+  }
+
   if (part.type === "dynamic-tool") {
     const toolName = normalizeVisibleText(part.toolName);
     const state = normalizeVisibleText(part.state);
@@ -131,12 +140,24 @@ export function hasRenderableAssistantContent(message: MessageLike | null | unde
   return getMessageParts(message).some((part) => {
     if (!isRecord(part) || typeof part.type !== "string") return false;
 
-    if (part.type === "text" || part.type === "reasoning") {
-      return hasRenderableTextValue(part.text);
+    const partRecord = part as Record<string, unknown>;
+    const partType = partRecord.type;
+
+    if (partType === "text" || partType === "reasoning") {
+      return hasRenderableTextValue(partRecord.text);
     }
 
-    if (part.type === "file") {
-      return typeof part.url === "string" && part.url.trim().length > 0;
+    if (partType === "file") {
+      return typeof partRecord.url === "string" && partRecord.url.trim().length > 0;
+    }
+
+    if (partType === "image") {
+      const imageUrl = typeof partRecord.image === "string"
+        ? partRecord.image
+        : typeof partRecord.url === "string"
+          ? partRecord.url
+          : "";
+      return imageUrl.trim().length > 0;
     }
 
     return false;

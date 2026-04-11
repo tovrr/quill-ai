@@ -1,10 +1,8 @@
 import { google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
-  createUIMessageStream,
   createUIMessageStreamResponse,
   streamText,
-  generateText,
   stepCountIs,
   convertToModelMessages,
   type ModelMessage,
@@ -38,13 +36,21 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability";
-import { analyzeArtifactQuality, parseBuilderArtifact } from "@/lib/builder-artifacts";
+import { parseBuilderArtifact } from "@/lib/builder-artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/assistant-message-utils";
 import { buildExecutionPolicyGuidance, evaluatePermissionDecision } from "@/lib/killer-autonomy";
 import { buildSandboxProviderRuntimeNote, getSandboxProviderStatus } from "@/lib/sandbox-providers";
+import { buildTwoPassBuilderStream } from "@/lib/chat/two-pass-builder";
+import {
+  chatRequestSchema,
+  type ChatRequestBody,
+  type ChatRequestContentBlock,
+  type ChatRequestMessage,
+  type ChatRequestPart,
+} from "@/lib/chat-request";
 
 function buildRunCodeTool() {
   return tool({
@@ -132,40 +138,6 @@ function safeRecordBuilderMetric(input: {
   }
 }
 
-function buildBuilderCriticPrompt(input: string | null, requestedTarget: BuilderTarget, draft: string): string {
-  return [
-    "You are a strict UI/code quality reviewer for Quill builder artifacts.",
-    `Requested target: ${requestedTarget}`,
-    "Review the draft artifact and return concise, actionable issues only.",
-    "Focus on: artifact validity, missing required sections, mobile responsiveness, accessibility basics, visual hierarchy, CTA clarity, and implementation completeness.",
-    "Return max 10 bullets, ordered by impact.",
-    "",
-    "User request:",
-    input ?? "(not provided)",
-    "",
-    "Draft artifact:",
-    draft,
-  ].join("\n");
-}
-
-function buildBuilderRewritePrompt(input: string | null, critic: string, draft: string): string {
-  return [
-    "Improve the draft using the critic feedback.",
-    "Return only one final artifact block in valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
-    "Do not include analysis text before the artifact.",
-    "Ensure the artifact is internally consistent and renderable.",
-    "",
-    "User request:",
-    input ?? "(not provided)",
-    "",
-    "Critic feedback:",
-    critic,
-    "",
-    "Draft artifact:",
-    draft,
-  ].join("\n");
-}
-
 async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
   const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
@@ -220,21 +192,21 @@ async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedMode
   }
 }
 
-function requestHasImageInput(body: Record<string, unknown>): boolean {
-  if (!Array.isArray(body.messages)) return false;
+function requestHasImageInput(body: ChatRequestBody): boolean {
+  if (!body.messages) return false;
 
-  for (const message of body.messages as any[]) {
-    if (Array.isArray(message?.parts)) {
+  for (const message of body.messages) {
+    if (Array.isArray(message.parts)) {
       for (const part of message.parts) {
-        if (part?.type === "file" && typeof part?.mediaType === "string" && part.mediaType.startsWith("image/")) {
+        if (part.type === "file" && typeof part.mediaType === "string" && part.mediaType.startsWith("image/")) {
           return true;
         }
       }
     }
 
-    if (Array.isArray(message?.content)) {
+    if (Array.isArray(message.content)) {
       for (const block of message.content) {
-        if (typeof block?.type === "string" && block.type.startsWith("image")) {
+        if (typeof block.type === "string" && block.type.startsWith("image")) {
           return true;
         }
       }
@@ -475,34 +447,34 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
   ].join("\n");
 }
 
-function extractTextMessages(body: Record<string, unknown>): Array<{ role: string; content: string }> {
-  if (Array.isArray(body.messages) && body.messages.length > 0) {
+function extractTextMessages(body: ChatRequestBody): Array<{ role: string; content: string }> {
+  if (body.messages && body.messages.length > 0) {
     return body.messages
-      .map((m: any) => {
+      .map((message) => {
         // If it already has string content, use it
-        if (typeof m.content === "string" && m.content.trim()) {
-          return { role: m.role, content: m.content };
+        if (typeof message.content === "string" && message.content.trim()) {
+          return { role: message.role ?? "user", content: message.content };
         }
         // If content is array (ContentBlock format), convert it
-        if (Array.isArray(m.content)) {
-          const text = m.content
-            .filter((c: any) => c.type === "text")
-            .map((c: any) => (typeof c.text === "string" ? c.text : ""))
+        if (Array.isArray(message.content)) {
+          const text = message.content
+            .filter((block) => block.type === "text")
+            .map((block) => (typeof block.text === "string" ? block.text : ""))
             .join("");
-          if (text.trim()) return { role: m.role, content: text };
+          if (text.trim()) return { role: message.role ?? "user", content: text };
         }
         // If message has parts (UIMessage format)
-        if (Array.isArray(m.parts)) {
-          const text = m.parts
-            .filter((p: any) => p.type === "text")
-            .map((p: any) => (typeof p.text === "string" ? p.text : ""))
+        if (Array.isArray(message.parts)) {
+          const text = message.parts
+            .filter((part) => part.type === "text")
+            .map((part) => (typeof part.text === "string" ? part.text : ""))
             .join("");
-          if (text.trim()) return { role: m.role, content: text };
+          if (text.trim()) return { role: message.role ?? "user", content: text };
         }
         // Last resort: stringify the entire message
-        const stringified = JSON.stringify(m);
+        const stringified = JSON.stringify(message);
         if (stringified && stringified.length > 2) {
-          return { role: m.role || "user", content: stringified };
+          return { role: message.role || "user", content: stringified };
         }
         return null;
       })
@@ -553,7 +525,7 @@ function isTextLikeMediaType(mediaType: string): boolean {
   );
 }
 
-function sanitizePartsForModel(parts: unknown[]): unknown[] {
+function sanitizePartsForModel(parts: ChatRequestPart[]): unknown[] {
   const output: unknown[] = [];
 
   for (const part of parts) {
@@ -562,7 +534,7 @@ function sanitizePartsForModel(parts: unknown[]): unknown[] {
       continue;
     }
 
-    const candidate = part as {
+    const candidate = part as ChatRequestPart & {
       type?: unknown;
       url?: unknown;
       mediaType?: unknown;
@@ -604,30 +576,30 @@ function sanitizePartsForModel(parts: unknown[]): unknown[] {
   return output;
 }
 
-async function extractModelMessages(body: Record<string, unknown>): Promise<ModelMessage[]> {
-  if (Array.isArray(body.messages) && body.messages.length > 0) {
+async function extractModelMessages(body: ChatRequestBody): Promise<ModelMessage[]> {
+  if (body.messages && body.messages.length > 0) {
     const normalized = body.messages
-      .map((m: any) => {
-        const role = typeof m?.role === "string" ? m.role : "user";
+      .map((message) => {
+        const role = typeof message.role === "string" ? message.role : "user";
 
         // Preferred: UIMessage parts (text/file/tool/source/etc.)
-        if (Array.isArray(m?.parts) && m.parts.length > 0) {
-          return { role, parts: sanitizePartsForModel(m.parts) };
+        if (Array.isArray(message.parts) && message.parts.length > 0) {
+          return { role, parts: sanitizePartsForModel(message.parts) };
         }
 
         // Compatibility: string content payloads
-        if (typeof m?.content === "string" && m.content.trim()) {
+        if (typeof message.content === "string" && message.content.trim()) {
           return {
             role,
-            parts: [{ type: "text", text: m.content }],
+            parts: [{ type: "text", text: message.content }],
           };
         }
 
         // Compatibility: content blocks that contain text
-        if (Array.isArray(m?.content)) {
-          const text = m.content
-            .filter((c: any) => c?.type === "text" && typeof c?.text === "string")
-            .map((c: any) => c.text)
+        if (Array.isArray(message.content)) {
+          const text = message.content
+            .filter((block) => block.type === "text" && typeof block.text === "string")
+            .map((block) => block.text as string)
             .join("");
 
           if (text.trim()) {
@@ -658,25 +630,25 @@ async function extractModelMessages(body: Record<string, unknown>): Promise<Mode
   }));
 }
 
-function summarizeLastUserInput(body: Record<string, unknown>): string | null {
-  if (!Array.isArray(body.messages)) return null;
+function summarizeLastUserInput(body: ChatRequestBody): string | null {
+  if (!body.messages) return null;
 
-  const lastUserMessage = [...body.messages].reverse().find((m: any) => m?.role === "user");
+  const lastUserMessage = [...body.messages].reverse().find((message) => message.role === "user");
   if (!lastUserMessage) return null;
 
   // UIMessage format with parts supports file attachments.
   if (Array.isArray(lastUserMessage.parts)) {
     const text = lastUserMessage.parts
-      .filter((p: any) => p?.type === "text" && typeof p?.text === "string")
-      .map((p: any) => p.text)
+      .filter((part) => part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text as string)
       .join("\n")
       .trim();
 
     const files = lastUserMessage.parts
-      .filter((p: any) => p?.type === "file")
-      .map((p: any, index: number) =>
-        typeof p?.filename === "string" && p.filename.trim()
-          ? p.filename.trim()
+      .filter((part) => part.type === "file")
+      .map((part, index: number) =>
+        typeof part.filename === "string" && part.filename.trim()
+          ? part.filename.trim()
           : `file-${index + 1}`
       );
 
@@ -694,10 +666,10 @@ function summarizeLastUserInput(body: Record<string, unknown>): string | null {
   return null;
 }
 
-function getLastUserParts(body: Record<string, unknown>): unknown[] | undefined {
-  if (!Array.isArray(body.messages)) return undefined;
+function getLastUserParts(body: ChatRequestBody): ChatRequestPart[] | undefined {
+  if (!body.messages) return undefined;
 
-  const lastUserMessage = [...body.messages].reverse().find((m: any) => m?.role === "user");
+  const lastUserMessage = [...body.messages].reverse().find((message) => message.role === "user");
   if (!lastUserMessage) return undefined;
 
   if (Array.isArray(lastUserMessage.parts) && lastUserMessage.parts.length > 0) {
@@ -761,7 +733,20 @@ export async function POST(req: Request) {
       return jsonResponse({ error: "Too many requests. Please retry shortly." }, 429, headers);
     }
 
-    const body = await req.json();
+    const rawBody = await req.json();
+    const parsedBody = chatRequestSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      const issue = parsedBody.error.issues[0];
+      const issuePath = issue?.path?.length ? issue.path.join(".") : "body";
+      logApiCompletion(requestContext, { status: 400, error: "invalid_request_body" });
+      return jsonResponse(
+        { error: `Invalid request body at ${issuePath}: ${issue?.message ?? "Request payload is malformed."}` },
+        400,
+        { "x-request-id": requestContext.requestId },
+      );
+    }
+
+    const body = parsedBody.data;
     originalMessages = Array.isArray(body.messages) ? (body.messages as UIMessage[]) : undefined;
     if (DEBUG_CHAT_LOGS) {
       console.log("[chat] body keys:", JSON.stringify(Object.keys(body)));
@@ -1011,7 +996,7 @@ export async function POST(req: Request) {
         await saveMessage({ chatId: id, role: "user", content: persistedUserContent, parts: lastUserParts });
 
         const userTurnCount = Array.isArray(body.messages)
-          ? body.messages.filter((m: any) => m?.role === "user").length
+          ? body.messages.filter((message) => message.role === "user").length
           : textMsgs.filter((m) => m.role === "user").length;
 
         if (userTurnCount === 1) {
@@ -1023,114 +1008,20 @@ export async function POST(req: Request) {
     const resolvedModel = await getModel(selectedMode, preferVision);
 
     if (canvasBuildIntent && TWO_PASS_BUILDER_ENABLED) {
-      const userInput = summarizedUserInput ?? textMsgs.at(-1)?.content ?? null;
-
-      const draftResult = await generateText({
+      const stream = buildTwoPassBuilderStream({
+        originalMessages,
+        userInput: summarizedUserInput ?? textMsgs.at(-1)?.content ?? null,
+        requestedBuilderTarget,
         model: resolvedModel.model,
-        system: systemPrompt,
-        messages: modelMessages,
-      });
-
-      const draftText = (draftResult.text ?? "").trim();
-
-      const criticResult = await generateText({
-        model: resolvedModel.model,
-        prompt: buildBuilderCriticPrompt(userInput, requestedBuilderTarget, draftText),
-      });
-
-      const criticText = (criticResult.text ?? "").trim();
-
-      const rewriteResult = await generateText({
-        model: resolvedModel.model,
-        system: systemPrompt,
-        prompt: buildBuilderRewritePrompt(userInput, criticText, draftText),
-      });
-
-      let finalText = (rewriteResult.text ?? "").trim() || draftText;
-      let artifact = parseBuilderArtifact(finalText);
-
-      // Quality gate: run one extra rewrite pass when the artifact is valid but weak.
-      if (artifact) {
-        const quality = analyzeArtifactQuality(artifact);
-        if (quality.score < BUILDER_QUALITY_RETRY_THRESHOLD) {
-          const qualityRetryPrompt = [
-            "Improve this artifact to meet production quality.",
-            `Current score: ${quality.score}/100. Target: >= ${BUILDER_QUALITY_RETRY_THRESHOLD}.`,
-            quality.issues.length > 0 ? `Critical issues: ${quality.issues.join("; ")}` : "",
-            quality.recommendations.length > 0 ? `Recommendations: ${quality.recommendations.join("; ")}` : "",
-            "Return only one corrected artifact block in valid JSON wrapped in <quill-artifact>...</quill-artifact>.",
-            "Do not include commentary.",
-            "",
-            "Current artifact:",
-            finalText,
-          ]
-            .filter(Boolean)
-            .join("\n");
-
-          const retryResult = await generateText({
-            model: resolvedModel.model,
-            system: systemPrompt,
-            prompt: qualityRetryPrompt,
-          });
-
-          const retriedText = (retryResult.text ?? "").trim();
-          const retriedArtifact = retriedText ? parseBuilderArtifact(retriedText) : null;
-
-          if (retriedArtifact) {
-            const retriedQuality = analyzeArtifactQuality(retriedArtifact);
-            if (retriedQuality.score >= quality.score) {
-              finalText = retriedText;
-              artifact = retriedArtifact;
-            }
-          }
-        }
-      }
-
-      safeRecordBuilderMetric({
-        parseSuccess: Boolean(artifact),
-        artifactType: artifact?.type,
-        requestedTarget: requestedBuilderTarget,
-      });
-
-      if (!finalText.trim()) {
-        finalText = NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
-      }
-
-      if (finalText.trim() && shouldPersist) {
-        await saveMessage({
-          chatId: id,
-          role: "assistant",
-          content: finalText,
-          parts: [{ type: "text", text: finalText }],
-        });
-      }
-
-      await recordModelUsage({
+        modelId: resolvedModel.modelId,
+        provider: resolvedModel.provider,
+        modelMessages,
+        systemPrompt,
+        qualityRetryThreshold: BUILDER_QUALITY_RETRY_THRESHOLD,
+        shouldPersist,
         userId: shouldPersist ? userId : undefined,
         chatId: shouldPersist ? id : undefined,
-        route: "/api/chat",
-        feature: "chat",
-        mode: selectedMode,
-        provider: resolvedModel.provider,
-        model: resolvedModel.modelId,
-        usage: (rewriteResult as any).usage,
-        providerMetadata: {
-          ...(rewriteResult as any).providerMetadata,
-          builderTwoPass: true,
-        },
-      });
-
-      const stream = createUIMessageStream({
-        originalMessages,
-        execute: ({ writer }) => {
-          writer.write({ type: "start" });
-          writer.write({ type: "start-step" });
-          writer.write({ type: "text-start", id: "text-1" });
-          writer.write({ type: "text-delta", id: "text-1", delta: finalText });
-          writer.write({ type: "text-end", id: "text-1" });
-          writer.write({ type: "finish-step" });
-          writer.write({ type: "finish" });
-        },
+        selectedMode,
       });
 
       logApiCompletion(requestContext, { status: 200 });
