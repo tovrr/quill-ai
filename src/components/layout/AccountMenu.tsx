@@ -121,15 +121,17 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
                   />
                 </div>
                 {planLabel === "Free" && (
-                  <button
+                  <Button
                     onClick={() => {
                       setDropdownOpen(false);
                       router.push("/pricing");
                     }}
-                    className="mt-2 text-[11px] text-quill-muted transition-colors hover:text-quill-text"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 h-auto px-0 py-0 text-[11px] text-quill-muted transition-colors hover:bg-transparent hover:text-quill-text"
                   >
                     Upgrade
-                  </button>
+                  </Button>
                 )}
               </div>
 

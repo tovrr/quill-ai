@@ -12,8 +12,8 @@ Thanks for your interest in contributing.
 npm install
 ```
 
-4. Configure `.env.local` (see `.env.example`)
-5. Start development
+1. Configure `.env.local` (see `.env.example`)
+2. Start development
 
 ```bash
 npm run dev

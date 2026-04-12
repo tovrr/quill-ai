@@ -12,6 +12,7 @@ src/
 ├── components/             # UI and feature components
 ├── lib/                    # Auth/data/provider helpers
 └── db/                     # Drizzle schema and DB client
+```
 
 Chat backend decomposition (anti-hallucination critical):
 
@@ -22,7 +23,6 @@ src/lib/chat/model-selection.ts          # Mode limits + provider/model resoluti
 src/lib/chat/access-gates.ts             # Entitlement and quota gates
 src/lib/chat/policy-runtime.ts           # Killer permission + sandbox runtime derivation
 src/lib/chat/two-pass-builder.ts         # Two-pass builder streaming path
-```
 ```
 
 ## Key Design Patterns

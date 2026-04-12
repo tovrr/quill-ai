@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import type { UIMessage } from "ai";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
   extractTextFromMessageParts,
@@ -49,9 +50,9 @@ function ToolCallBadge({
       }}
     >
       {isRunning ? (
-        <ArrowPathIcon className="h-[13px] w-[13px] animate-spin-slow shrink-0 text-[#EF4444]" aria-hidden="true" />
+        <ArrowPathIcon className="h-3.25 w-3.25 animate-spin-slow shrink-0 text-[#EF4444]" aria-hidden="true" />
       ) : isDone ? (
-        <CheckIcon className="h-[13px] w-[13px] shrink-0 text-[#34d399]" aria-hidden="true" />
+        <CheckIcon className="h-3.25 w-3.25 shrink-0 text-quill-green" aria-hidden="true" />
       ) : (
         <span className="w-2 h-2 rounded-full bg-quill-muted shrink-0" />
       )}
@@ -221,14 +222,16 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
   if (!artifact) return null;
 
   const action = onOpenCanvas ? (
-    <button
+    <Button
       onClick={() => onOpenCanvas(text)}
-      className="shrink-0 px-2 py-1 rounded-md border border-quill-border text-[10px] font-medium text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface-2 transition-all"
+      variant="outline"
+      size="sm"
+      className="shrink-0 h-auto rounded-md px-2 py-1 text-[10px] font-medium text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
       title="Open this artifact in Canvas"
       aria-label="Open this artifact in Canvas"
     >
       Show Canvas
-    </button>
+    </Button>
   ) : null;
 
   if (artifact.type === "page") {
@@ -276,8 +279,8 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
   const isAssistant = !isUser && message.role === "assistant";
   const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
   const canReact = isAssistant && hasRenderableTextValue(assistantPlainText);
-  const actionButtonBaseClass = "flex h-11 w-11 items-center justify-center rounded-lg border border-transparent transition-all sm:h-9 sm:w-9";
-  const actionIconClass = "h-4.5 w-4.5 sm:h-5 sm:w-5";
+  const actionButtonBaseClass = "flex h-[30px] w-[30px] items-center justify-center rounded-full border border-transparent transition-all sm:h-8 sm:w-8";
+  const actionIconClass = "h-[15px] w-[15px] sm:h-4 sm:w-4";
 
   const handleCopy = async () => {
     if (!assistantPlainText) return;
@@ -316,7 +319,7 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
             ) : hasMarkdownSyntax(text) ? (
               <MarkdownText text={text} />
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{text}</p>
             )}
           </div>
         );
@@ -379,7 +382,7 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
             title="Open attachment"
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
           >
-            <PaperClipIcon className="h-[13px] w-[13px] text-[#EF4444]" aria-hidden="true" />
+            <PaperClipIcon className="h-3.25 w-3.25 text-[#EF4444]" aria-hidden="true" />
             <span className="max-w-40 truncate">
               {filePart.filename ?? "Attached file"}
             </span>
@@ -495,64 +498,64 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
       >
         {renderedParts}
         {canReact && (
-          <div className="relative mt-1 flex items-center gap-1 sm:gap-1">
-            {/* Like */}
-            <button
-              onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
-              className={`${actionButtonBaseClass} ${
-                reaction === "like"
-                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-[#34d399]"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title="Good response"
-              aria-label="Like assistant message"
-            >
-              <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
-            </button>
-            {/* Dislike */}
-            <button
-              onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
-              className={`${actionButtonBaseClass} ${
-                reaction === "dislike"
-                  ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title="Bad response"
-              aria-label="Dislike assistant message"
-            >
-              <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
-            </button>
-            {/* Regenerate */}
-            {onRegenerate && (
+          <div className="relative mt-1 flex items-center gap-px sm:gap-0.5">
+              {/* Like */}
               <button
-                onClick={onRegenerate}
-                className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
-                title="Regenerate response"
-                aria-label="Regenerate response"
+                onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
+                className={`${actionButtonBaseClass} ${
+                  reaction === "like"
+                    ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
+                title="Good response"
+                aria-label="Like assistant message"
               >
-                <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
+                <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
               </button>
-            )}
-            {/* Copy */}
-            <button
-              onClick={handleCopy}
-              className={`${actionButtonBaseClass} ${
-                copied
-                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-[#34d399]"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title={copied ? "Copied!" : "Copy"}
-              aria-label="Copy assistant message"
-            >
-              {copied ? (
-                <CheckIcon className={actionIconClass} aria-hidden="true" />
-              ) : (
-                <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
+              {/* Dislike */}
+              <button
+                onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
+                className={`${actionButtonBaseClass} ${
+                  reaction === "dislike"
+                    ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
+                title="Bad response"
+                aria-label="Dislike assistant message"
+              >
+                <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
+              </button>
+              {/* Regenerate */}
+              {onRegenerate && (
+                <button
+                  onClick={onRegenerate}
+                  className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
+                  title="Regenerate response"
+                  aria-label="Regenerate response"
+                >
+                  <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
+                </button>
               )}
-            </button>
+              {/* Copy */}
+              <button
+                onClick={handleCopy}
+                className={`${actionButtonBaseClass} ${
+                  copied
+                    ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
+                title={copied ? "Copied!" : "Copy"}
+                aria-label="Copy assistant message"
+              >
+                {copied ? (
+                  <CheckIcon className={actionIconClass} aria-hidden="true" />
+                ) : (
+                  <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
+                )}
+              </button>
             {copied && (
               <span
-                className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-[#34d399] whitespace-nowrap pointer-events-none"
+                className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-quill-green whitespace-nowrap pointer-events-none"
                 aria-live="polite"
               >
                 Copied!

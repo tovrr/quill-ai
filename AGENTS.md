@@ -1,3 +1,5 @@
+# AGENTS
+
 ## ⚠️ HALLUCINATION RISK — Next.js 16
 
 This project uses **Next.js 16**. Most AI training data covers Next.js 13/14/15. Do NOT generate code based on older version assumptions for:
@@ -32,21 +34,21 @@ The chat backend was intentionally decomposed from one large route into focused 
 Current module boundaries:
 
 1. `src/lib/chat/request-utils.ts`
-	- Request parsing/validation (`parseChatRequestBody`)
-	- Message extraction/normalization (`extractModelMessages`, `extractTextMessages`)
-	- Last-user helpers (`summarizeLastUserInput`, `getLastUserParts`)
+   - Request parsing/validation (`parseChatRequestBody`)
+   - Message extraction/normalization (`extractModelMessages`, `extractTextMessages`)
+   - Last-user helpers (`summarizeLastUserInput`, `getLastUserParts`)
 2. `src/lib/chat/model-selection.ts`
-	- Mode typing (`ChatMode`)
-	- Daily mode limits (`getDailyLimitForMode`)
-	- Provider/model resolution (`resolveModelForMode`)
+   - Mode typing (`ChatMode`)
+   - Daily mode limits (`getDailyLimitForMode`)
+   - Provider/model resolution (`resolveModelForMode`)
 3. `src/lib/chat/access-gates.ts`
-	- Entitlement and quota enforcement (`evaluateChatAccess`)
-	- Guest-mode restrictions, paid-tier checks, web search gates
+   - Entitlement and quota enforcement (`evaluateChatAccess`)
+   - Guest-mode restrictions, paid-tier checks, web search gates
 4. `src/lib/chat/policy-runtime.ts`
-	- Killer policy/runtime derivation (`evaluatePolicyRuntime`)
-	- Permission decisions, sandbox status, `canRunCode`, policy warnings
+   - Killer policy/runtime derivation (`evaluatePolicyRuntime`)
+   - Permission decisions, sandbox status, `canRunCode`, policy warnings
 5. `src/lib/chat/two-pass-builder.ts`
-	- Two-pass builder orchestration and persistence path
+   - Two-pass builder orchestration and persistence path
 
 Required workflow before modifying chat behavior:
 

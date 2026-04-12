@@ -19,6 +19,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatusBar";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
@@ -48,7 +50,7 @@ const CanvasPanel = dynamicImport(
   () => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel),
   {
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center border-l border-quill-border bg-[#0E1015] text-sm text-quill-muted">
+      <div className="flex h-full w-full items-center justify-center border-l border-quill-border bg-quill-bg text-sm text-quill-muted">
         Loading canvas...
       </div>
     ),
@@ -1145,13 +1147,15 @@ export default function AgentPage() {
         {/* Header */}
         <header className="flex items-center gap-3 px-4 py-3 border-b border-quill-border bg-quill-bg shrink-0">
           {/* Hamburger: mobile drawer toggle */}
-          <button
+          <Button
             onClick={() => setMobileSidebarOpen((v) => !v)}
-            className="icon-btn md:hidden p-1.5 rounded-lg transition-all text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
+            variant="ghost"
+            size="sm"
+            className="icon-btn md:hidden h-auto rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-quill-text"
             aria-label="Toggle sidebar"
           >
             <Bars3Icon className="h-4.25 w-4.25" aria-hidden="true" />
-          </button>
+          </Button>
 
           {/* Active mode badge */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
@@ -1168,7 +1172,7 @@ export default function AgentPage() {
 
           <div className="ml-1 min-w-0 flex-1">
             {isEditingChatTitle ? (
-              <input
+              <Input
                 ref={chatTitleInputRef}
                 value={chatTitleDraft}
                 onChange={(e) => setChatTitleDraft(e.target.value)}
@@ -1186,19 +1190,21 @@ export default function AgentPage() {
                   }
                 }}
                 disabled={isSavingChatTitle}
-                className="w-full max-w-md rounded-lg border border-quill-border bg-quill-surface px-3 py-1.5 text-sm text-quill-text outline-none focus:border-quill-border-2"
+                className="h-auto max-w-md rounded-lg py-1.5 focus-visible:ring-0"
                 aria-label="Edit active chat name"
               />
             ) : (
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsEditingChatTitle(true)}
-                className="group inline-flex max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
+                variant="ghost"
+                size="sm"
+                className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
                 title="Rename chat"
               >
                 <span className="truncate">{chatTitle}</span>
                 <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
-              </button>
+              </Button>
             )}
           </div>
 
@@ -1210,7 +1216,7 @@ export default function AgentPage() {
               aria-label="New chat"
               className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
             >
-              <PlusIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+              <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
 
             {/* Unified auth slot: same header position, switches by auth state */}

@@ -29,10 +29,8 @@ function isAuthorized(req: Request): boolean {
 
 export async function GET(req: Request) {
   if (!process.env.API_METRICS_TOKEN) {
-    return NextResponse.json(
-      { error: "Metrics endpoint not configured" },
-      { status: 503 }
-    );
+    // Fail closed when token is missing so the endpoint never reveals config state.
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!isAuthorized(req)) {
