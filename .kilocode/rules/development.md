@@ -25,6 +25,31 @@ This project uses **Next.js 16**, which is newer than most AI training data. Man
   npm run typecheck && npm run lint && git add -A && git commit -m "descriptive message" && git push
   ```
 
+## Chat Backend Guardrails
+
+For `/api/chat`, preserve the decomposed module boundaries and avoid re-inlining logic in the route.
+
+- `src/lib/chat/request-utils.ts`: request validation + message normalization
+- `src/lib/chat/model-selection.ts`: mode limits + provider/model resolution
+- `src/lib/chat/access-gates.ts`: entitlement and quota checks
+- `src/lib/chat/policy-runtime.ts`: killer permission/sandbox runtime derivation
+- `src/lib/chat/two-pass-builder.ts`: builder two-pass streaming and persistence
+
+Rule of thumb:
+
+1. If a change touches request shape, update `request-utils`.
+2. If a change touches modes/models, update `model-selection`.
+3. If a change touches auth, plans, quotas, or web-search limits, update `access-gates`.
+4. If a change touches killer permissions/sandbox execution behavior, update `policy-runtime`.
+5. Keep `src/app/api/chat/route.ts` as orchestration glue only.
+
+Validation required after chat changes:
+
+```bash
+npm run typecheck
+npm run build
+```
+
 ## Commands
 
 - `npm install`: Install dependencies

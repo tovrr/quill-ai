@@ -104,6 +104,19 @@ Open <http://localhost:3000>
 - CI workflow: `.github/workflows/ci-smoke.yml`
 - Deployment runbook: `DEPLOYMENT_CHECKLIST.md`
 
+### Chat Backend Module Map
+
+To reduce regressions and AI-assistant hallucinations, `/api/chat` is intentionally split into focused helpers:
+
+- `src/app/api/chat/route.ts`: orchestration only
+- `src/lib/chat/request-utils.ts`: request validation + message normalization
+- `src/lib/chat/model-selection.ts`: mode limits + model/provider resolution
+- `src/lib/chat/access-gates.ts`: entitlements and quota enforcement
+- `src/lib/chat/policy-runtime.ts`: killer policy decisions + sandbox runtime flags
+- `src/lib/chat/two-pass-builder.ts`: two-pass builder streaming flow
+
+When changing chat behavior, update the owning module first and keep route logic thin.
+
 ## Scripts
 
 - `npm run dev` - Start development server

@@ -306,11 +306,11 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [pendingDeleteChat, setPendingDeleteChat] = useState<Chat | null>(null);
-  const [commandOpen, setCommandOpen] = useState(true);
-  const [agentsOpen, setAgentsOpen] = useState(true);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [agentsOpen, setAgentsOpen] = useState(false);
   const [memoryOpen, setMemoryOpen] = useState(false);
-  const [studioOpen, setStudioOpen] = useState(true);
-  const [historyOpen, setHistoryOpen] = useState(true);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [engineStatus, setEngineStatus] = useState<"loading" | "ok" | "degraded" | "down">("loading");
@@ -984,15 +984,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
               )}
             </div>
           </>
-        ) : (
-          <Link
-            href="/login"
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-quill-border px-3 py-2 text-xs font-medium text-quill-muted transition-all hover:border-[rgba(239,68,68,0.4)] hover:bg-quill-surface hover:text-quill-text"
-          >
-            <ArrowRightStartOnRectangleIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            Sign in to sync
-          </Link>
-        )}
+        ) : null}
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />

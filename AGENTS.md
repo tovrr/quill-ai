@@ -25,6 +25,38 @@ For app-builder requests in this repository:
 
 ---
 
+## Chat Backend Guardrails (Anti-Hallucination)
+
+The chat backend was intentionally decomposed from one large route into focused modules. Do not re-inline these responsibilities into `src/app/api/chat/route.ts`.
+
+Current module boundaries:
+
+1. `src/lib/chat/request-utils.ts`
+	- Request parsing/validation (`parseChatRequestBody`)
+	- Message extraction/normalization (`extractModelMessages`, `extractTextMessages`)
+	- Last-user helpers (`summarizeLastUserInput`, `getLastUserParts`)
+2. `src/lib/chat/model-selection.ts`
+	- Mode typing (`ChatMode`)
+	- Daily mode limits (`getDailyLimitForMode`)
+	- Provider/model resolution (`resolveModelForMode`)
+3. `src/lib/chat/access-gates.ts`
+	- Entitlement and quota enforcement (`evaluateChatAccess`)
+	- Guest-mode restrictions, paid-tier checks, web search gates
+4. `src/lib/chat/policy-runtime.ts`
+	- Killer policy/runtime derivation (`evaluatePolicyRuntime`)
+	- Permission decisions, sandbox status, `canRunCode`, policy warnings
+5. `src/lib/chat/two-pass-builder.ts`
+	- Two-pass builder orchestration and persistence path
+
+Required workflow before modifying chat behavior:
+
+1. Read `src/app/api/chat/route.ts` and the relevant module(s) above before coding.
+2. Prefer adding logic to the owning module instead of adding new branches in the route.
+3. Keep the route orchestration-first: parse -> derive runtime -> enforce access -> build prompt -> stream.
+4. Run both `npm run typecheck` and `npm run build` after chat changes.
+
+---
+
 ## Optional Feature Guides
 
 When users request features beyond the base template, check for available recipes in `.kilocode/recipes/`.

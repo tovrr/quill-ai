@@ -173,7 +173,7 @@ export function HeroInput() {
             }}
           />
 
-          <div className="relative min-h-28 sm:min-h-24">
+          <div className="min-h-28 sm:min-h-24">
             <textarea
               ref={inputRef}
               value={value}
@@ -192,22 +192,23 @@ export function HeroInput() {
               }}
               placeholder={isTyping ? displayed + "▌" : displayed}
               rows={2}
-              className="w-full bg-transparent resize-none overflow-y-auto px-5 pb-16 pr-36 pt-4 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-28 sm:min-h-24"
+              className="w-full bg-transparent resize-none overflow-y-auto px-5 pt-4 pb-3 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-22 sm:min-h-20"
               autoComplete="off"
               spellCheck="false"
               aria-label="Describe your task"
             />
 
-            <button
-              type="button"
-              title="Attach a file"
-              onClick={triggerFilePicker}
-              className="absolute bottom-2 left-2 shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] text-[#f3b1b1] transition-all active:scale-95 hover:bg-[rgba(239,68,68,0.16)]"
-            >
-              <PaperClipIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+            <div className="flex items-center justify-between px-2 pb-2">
+              <button
+                type="button"
+                title="Attach a file"
+                onClick={triggerFilePicker}
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] text-[#f3b1b1] transition-all active:scale-95 hover:bg-[rgba(239,68,68,0.16)]"
+              >
+                <PaperClipIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
 
-            <div className="absolute bottom-2 right-2 flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={acceptSuggestion}
@@ -230,6 +231,7 @@ export function HeroInput() {
               >
                 <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
+              </div>
             </div>
           </div>
         </div>

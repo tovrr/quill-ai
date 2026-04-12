@@ -39,7 +39,7 @@ npm run dev
 | --- | --- |
 | `BETTER_AUTH_SECRET` | Session signing — must match production exactly |
 | `DATABASE_URL` | Neon Postgres connection string |
-| `GEMINI_API_KEY` | Primary AI model |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Primary AI model |
 | `UPSTASH_REDIS_REST_URL` | Rate limiting (optional; falls back to in-memory) |
 | `UPSTASH_REDIS_REST_TOKEN` | Rate limiting token |
 | `OPENROUTER_API_KEY` | Free fast-model fallback (optional) |
@@ -48,7 +48,7 @@ npm run dev
 
 ```powershell
 # Verify .env.local exists and has the critical keys
-Select-String -Path .env.local -Pattern "BETTER_AUTH_SECRET|DATABASE_URL|GEMINI_API_KEY"
+Select-String -Path .env.local -Pattern "BETTER_AUTH_SECRET|DATABASE_URL|GOOGLE_GENERATIVE_AI_API_KEY"
 ```
 
 ---

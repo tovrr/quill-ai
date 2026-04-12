@@ -89,6 +89,12 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Set project release version to 1.0.0 for public launch positioning (instead of 0.1.0 beta signaling)
 - [x] Fixed the `/agent` bundle budget regression by extracting lightweight canvas helpers into `canvas-utils.ts` and lazy-loading `CanvasPanel`; measured result: largest JS chunk dropped from 670.23 KB to 635.18 KB and `npm run bundle:check` now passes
 - [x] Began splitting the chat backend god-route: extracted the two-pass builder streaming flow into `src/lib/chat/two-pass-builder.ts`, leaving `/api/chat` to orchestrate request handling while preserving the same builder persistence and usage tracking behavior
+- [x] Continued chat-route decomposition by extracting request validation and message normalization helpers into `src/lib/chat/request-utils.ts` (`parseChatRequestBody`, model-message extraction, last-user summary/parts helpers), keeping `/api/chat` focused on orchestration
+- [x] Continued chat-route decomposition by extracting mode limits + provider/model selection into `src/lib/chat/model-selection.ts` (`getDailyLimitForMode`, `resolveModelForMode`) and wiring `/api/chat` to consume it
+- [x] Continued chat-route decomposition by extracting entitlement and quota checks into `src/lib/chat/access-gates.ts` (`evaluateChatAccess`) and replacing in-route guard branches with a single orchestration call
+- [x] Continued chat-route decomposition by extracting killer permission + sandbox runtime derivation into `src/lib/chat/policy-runtime.ts` (`evaluatePolicyRuntime`) and replacing in-route branching with a single computed runtime payload
+- [x] Updated anti-hallucination documentation for the decomposed chat backend across `AGENTS.md`, `README.md`, `.kilocode/rules/development.md`, and `.kilocode/rules/memory-bank/architecture.md` with explicit module ownership and route orchestration rules
+- [x] Added reviewer-facing chat guardrails to `CONTRIBUTING.md` and `.github/pull_request_template.md` so PRs enforce module ownership for `/api/chat` changes
 
 ## Current Structure
 
@@ -215,3 +221,9 @@ export async function GET() {
 - 2026-04-09: Finished UI remediation Phase 2 icon migration by converting remaining inline SVG product icons in agent/docs/pricing/share UI files to Heroicons, leaving only `src/components/ui/QuillLogo.tsx` as the sanctioned brand-logo SVG; revalidated with passing `enforce:ui-standards`, `lint`, and `typecheck`.
 - 2026-04-11: Fixed the `/agent` bundle budget regression by extracting `isHTMLContent` / `isCanvasRenderableContent` into `src/components/agent/canvas-utils.ts` and dynamically importing `CanvasPanel`; revalidated with passing typecheck, production build, and bundle budget (`largest JS chunk: 635.18 KB`, down from `670.23 KB`)
 - 2026-04-11: Started route decomposition for `/api/chat` by moving the two-pass builder implementation into `src/lib/chat/two-pass-builder.ts`; revalidated with passing typecheck and production build
+- 2026-04-11: Continued `/api/chat` decomposition by moving request validation and message/parts normalization helpers to `src/lib/chat/request-utils.ts`; revalidated with passing typecheck and production build
+- 2026-04-12: Continued `/api/chat` decomposition by moving mode quota lookup and model/provider resolution into `src/lib/chat/model-selection.ts`; revalidated with passing typecheck and production build
+- 2026-04-12: Continued `/api/chat` decomposition by moving entitlement + guest/web-search/daily quota enforcement into `src/lib/chat/access-gates.ts` and wiring route-level failure mapping (`status`, `errorCode`, `message`); revalidated with passing typecheck and production build
+- 2026-04-12: Continued `/api/chat` decomposition by moving killer policy evaluation and sandbox availability/runtime flags into `src/lib/chat/policy-runtime.ts`; route now consumes `killer`, `policyWarnings`, `effectiveWebSearchRequested`, `canvasBuildIntent`, `sandboxStatus`, and `canRunCode` from one helper; revalidated with passing typecheck and production build
+- 2026-04-12: Added anti-hallucination architecture guardrails for the chat backend in `AGENTS.md` + internal rules/docs and corrected stale runbook env-key references (`GOOGLE_GENERATIVE_AI_API_KEY`) to keep agent guidance aligned with the current codebase
+- 2026-04-12: Added a Chat Backend Change Checklist in `CONTRIBUTING.md` and chat-specific review checks in `.github/pull_request_template.md` to prevent re-inlining and keep chat edits routed through the correct `src/lib/chat/*` modules

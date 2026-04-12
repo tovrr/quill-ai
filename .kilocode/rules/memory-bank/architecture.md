@@ -12,6 +12,17 @@ src/
 ├── components/             # UI and feature components
 ├── lib/                    # Auth/data/provider helpers
 └── db/                     # Drizzle schema and DB client
+
+Chat backend decomposition (anti-hallucination critical):
+
+```text
+src/app/api/chat/route.ts                # Orchestration-only flow
+src/lib/chat/request-utils.ts            # Request parsing + message normalization
+src/lib/chat/model-selection.ts          # Mode limits + provider/model resolution
+src/lib/chat/access-gates.ts             # Entitlement and quota gates
+src/lib/chat/policy-runtime.ts           # Killer permission + sandbox runtime derivation
+src/lib/chat/two-pass-builder.ts         # Two-pass builder streaming path
+```
 ```
 
 ## Key Design Patterns
@@ -22,13 +33,15 @@ Uses Next.js App Router with file-based routing:
 
 ```text
 src/app/
-├── page.tsx           # Route: /
-├── about/page.tsx     # Route: /about
-├── blog/
-│   ├── page.tsx       # Route: /blog
-│   └── [slug]/page.tsx # Route: /blog/:slug
+├── page.tsx                    # Route: /
+├── agent/page.tsx              # Route: /agent
+├── login/page.tsx              # Route: /login
+├── docs/page.tsx               # Route: /docs
+├── pricing/page.tsx            # Route: /pricing
 └── api/
-    └── route.ts       # API Route: /api
+  ├── chat/route.ts           # API Route: /api/chat
+  ├── chats/route.ts          # API Route: /api/chats
+  └── generate-image/route.ts # API Route: /api/generate-image
 ```
 
 ### 2. Component Organization Pattern
@@ -109,10 +122,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 - Components: PascalCase (`Button.tsx`, `Header.tsx`)
 - Utilities: camelCase (`utils.ts`, `helpers.ts`)
 - Pages/Routes: lowercase (`page.tsx`, `layout.tsx`)
-- Directories: kebab-case (`api-routes/`) or lowercase (`components/`)
+- Directories: route-segment lowercase for App Router, lowercase for library folders
 
 ## State Management
 
 - Local UI state via `useState`/`useMemo` in client components.
 - Chat state handled through AI SDK hooks and transport layer.
 - Persistent state (history/messages) via server routes + Drizzle.
+
+## Chat Route Editing Rules
+
+1. Keep `src/app/api/chat/route.ts` orchestration-first: parse -> policy runtime -> access gates -> prompt build -> stream.
+2. Add logic to the owner module in `src/lib/chat/*` instead of re-inlining in route.
+3. Re-run both `npm run typecheck` and `npm run build` after chat backend edits.

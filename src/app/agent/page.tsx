@@ -1036,6 +1036,19 @@ export default function AgentPage() {
     window.location.href = url.toString();
   }, [isAuthenticated]);
 
+  const handleRegenerate = useCallback(() => {
+    if (isLoading) return;
+    const lastUserIdx = messages.reduceRight((found: number, msg, idx) => {
+      return found !== -1 ? found : msg.role === "user" ? idx : -1;
+    }, -1);
+    if (lastUserIdx === -1) return;
+    const lastUserMsg = messages[lastUserIdx];
+    const userText = extractTextFromMessageParts(getMessageParts(lastUserMsg) as unknown[]);
+    if (!userText?.trim()) return;
+    setMessages(messages.slice(0, lastUserIdx));
+    sendMessage({ text: userText.trim() });
+  }, [messages, setMessages, sendMessage, isLoading]);
+
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
   const sidebarFallback = <div className="h-full w-full bg-quill-bg" aria-hidden="true" />;
 
@@ -1113,40 +1126,52 @@ export default function AgentPage() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Account menu (top-right on header) */}
-            <div className="hidden md:flex">
-              <Suspense fallback={null}>
-                <AccountMenu compact />
-              </Suspense>
+            {/* Unified auth slot: same header position, switches by auth state */}
+            <div className="flex items-center justify-center min-w-8 min-h-8">
+              {isAuthenticated ? (
+                <Suspense
+                  fallback={
+                    <div className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse" aria-hidden="true" />
+                  }
+                >
+                  <AccountMenu compact />
+                </Suspense>
+              ) : authResolved ? (
+                <button
+                  onClick={() => router.push("/login")}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-medium text-quill-muted hover:text-quill-text border border-quill-border hover:border-quill-border-2 hover:bg-quill-surface-2 transition-all"
+                  title="Sign in"
+                >
+                  Sign in
+                </button>
+              ) : (
+                <div className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse" aria-hidden="true" />
+              )}
             </div>
 
             {/* Share button */}
             <button
               onClick={handleShare}
               disabled={messages.length === 0}
-              title="Copy share link"
-              className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              title={shareCopied ? "Link copied!" : "Share conversation"}
+              aria-label="Share conversation"
+              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {shareCopied ? (
-                <>
-                  <CheckIcon className="h-3 w-3" aria-hidden="true" />
-                  <span className="hidden md:inline">Copied</span>
-                </>
+                <CheckIcon className="h-[18px] w-[18px]" aria-hidden="true" />
               ) : (
-                <>
-                  <ShareIcon className="h-3 w-3" aria-hidden="true" />
-                  <span className="hidden md:inline">Share</span>
-                </>
+                <ShareIcon className="h-[18px] w-[18px]" aria-hidden="true" />
               )}
             </button>
 
             {/* New chat */}
             <button
               onClick={handleNewChat}
-              className="flex items-center justify-center size-8 md:size-auto md:gap-1.5 md:px-3 md:py-1.5 rounded-lg border border-quill-border text-xs text-quill-muted hover:text-quill-text hover:border-quill-border-2 transition-all"
+              title="New chat"
+              aria-label="New chat"
+              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
             >
-              <PlusIcon className="h-3 w-3" aria-hidden="true" />
-              <span className="hidden md:inline">New chat</span>
+              <PlusIcon className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
 
             {guestImportStatus === "importing" && (
@@ -1191,9 +1216,18 @@ export default function AgentPage() {
                 </div>
               )}
 
-              {displayMessages.map((msg: UIMessage) => (
-                <RealMessageBubble key={msg.id} message={msg} />
-              ))}
+              {displayMessages.map((msg: UIMessage, idx: number) => {
+                const isLastAssistant =
+                  msg.role === "assistant" &&
+                  !displayMessages.slice(idx + 1).some((m) => m.role === "assistant");
+                return (
+                  <RealMessageBubble
+                    key={msg.id}
+                    message={msg}
+                    onRegenerate={isLastAssistant && !isLoading ? handleRegenerate : undefined}
+                  />
+                );
+              })}
 
               {isLoading && !isGeneratingImage && !hasActiveAssistantMessage && (
                 <div className="flex items-start gap-3 animate-fade-in">

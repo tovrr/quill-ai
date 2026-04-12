@@ -1,15 +1,11 @@
-import { google } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
 import {
   createUIMessageStreamResponse,
   streamText,
   stepCountIs,
-  convertToModelMessages,
-  type ModelMessage,
   type UIMessage,
 } from "ai";
 import { tool, jsonSchema } from "ai";
-import { executeCode, isSandboxEnabled } from "@/lib/docker-executor";
+import { executeCode } from "@/lib/docker-executor";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -21,14 +17,10 @@ import {
   saveMessage,
   updateChatTitle,
   getChatById,
-  countUserMessagesToday,
 } from "@/lib/db-helpers";
-import { KILLERS } from "@/lib/killers";
 import { recordModelUsage } from "@/lib/model-usage";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getBestFreeModel } from "@/lib/openrouter-models";
-import { resolveUserEntitlements } from "@/lib/entitlements";
-import { buildWebSearchContext, isWebSearchConfigured, searchWeb } from "@/lib/web-search";
+import { buildWebSearchContext, searchWeb } from "@/lib/web-search";
 import {
   buildRateLimitHeaders,
   createApiRequestContext,
@@ -41,16 +33,20 @@ import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/b
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/assistant-message-utils";
-import { buildExecutionPolicyGuidance, evaluatePermissionDecision } from "@/lib/killer-autonomy";
-import { buildSandboxProviderRuntimeNote, getSandboxProviderStatus } from "@/lib/sandbox-providers";
+import { buildExecutionPolicyGuidance } from "@/lib/killer-autonomy";
+import { buildSandboxProviderRuntimeNote } from "@/lib/sandbox-providers";
 import { buildTwoPassBuilderStream } from "@/lib/chat/two-pass-builder";
 import {
-  chatRequestSchema,
-  type ChatRequestBody,
-  type ChatRequestContentBlock,
-  type ChatRequestMessage,
-  type ChatRequestPart,
-} from "@/lib/chat-request";
+  extractTextMessages,
+  extractModelMessages,
+  getLastUserParts,
+  parseChatRequestBody,
+  requestHasImageInput,
+  summarizeLastUserInput,
+} from "@/lib/chat/request-utils";
+import { resolveModelForMode, type ChatMode } from "@/lib/chat/model-selection";
+import { evaluateChatAccess } from "@/lib/chat/access-gates";
+import { evaluatePolicyRuntime } from "@/lib/chat/policy-runtime";
 
 function buildRunCodeTool() {
   return tool({
@@ -90,39 +86,6 @@ function buildRunCodeTool() {
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
 
-type Mode = "fast" | "thinking" | "advanced";
-
-type ResolvedModel = {
-  model: ReturnType<typeof google> | ReturnType<typeof openrouter>;
-  provider: "google" | "openrouter";
-  modelId: string;
-};
-
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
-
-function getDailyLimit(mode: Mode) {
-  const free = Number(process.env.FREE_DAILY_MESSAGES ?? "80");
-  const think = Number(process.env.THINK_DAILY_MESSAGES ?? "40");
-  const pro = Number(process.env.PRO_DAILY_MESSAGES ?? "120");
-
-  switch (mode) {
-    case "fast":
-      return free;
-    case "thinking":
-      return think;
-    default:
-      return pro;
-  }
-}
-
-// Tier IDs — can be overridden per-tier via env vars without redeploying.
-const FAST_MODEL_ID = process.env.FAST_MODEL_OVERRIDE ?? "gemini-2.5-flash-lite";
-const THINKING_MODEL_ID = process.env.THINKING_MODEL_OVERRIDE ?? "gemini-2.5-flash";
-const ADVANCED_MODEL_ID = process.env.ADVANCED_MODEL_OVERRIDE ?? "gemini-2.5-pro";
-const OPENROUTER_FAST_ENABLED = process.env.OPENROUTER_FAST_ENABLED === "true";
 const TWO_PASS_BUILDER_ENABLED = process.env.TWO_PASS_BUILDER_ENABLED !== "false";
 const BUILDER_QUALITY_RETRY_THRESHOLD = Number(process.env.BUILDER_QUALITY_RETRY_THRESHOLD ?? "72");
 
@@ -136,84 +99,6 @@ function safeRecordBuilderMetric(input: {
   } catch (error) {
     console.warn("[chat] builder metric recording failed:", error instanceof Error ? error.message : error);
   }
-}
-
-async function getModel(mode: Mode, preferVision: boolean): Promise<ResolvedModel> {
-  const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-
-  // Reliability-first strategy:
-  // - Default fast mode to Gemini unless OpenRouter fast is explicitly enabled.
-  // - If Google key is unavailable, still fall back to OpenRouter as last resort.
-  if (mode === "fast") {
-    if (!preferVision && OPENROUTER_FAST_ENABLED && process.env.OPENROUTER_API_KEY) {
-      const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
-      return {
-        model: openrouter(freeModel),
-        provider: "openrouter",
-        modelId: freeModel,
-      };
-    }
-
-    if (key) {
-      return {
-        model: google(FAST_MODEL_ID),
-        provider: "google",
-        modelId: FAST_MODEL_ID,
-      };
-    }
-
-    if (!preferVision && process.env.OPENROUTER_API_KEY) {
-      const freeModel = await getBestFreeModel(process.env.OPENROUTER_API_KEY);
-      return {
-        model: openrouter(freeModel),
-        provider: "openrouter",
-        modelId: freeModel,
-      };
-    }
-
-    throw new Error("No model provider configured for fast mode. Set GOOGLE_GENERATIVE_AI_API_KEY or OPENROUTER_API_KEY.");
-  }
-
-  if (!key) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set (required for Think/Pro)");
-
-  switch (mode) {
-    case "thinking":
-      return {
-        model: google(THINKING_MODEL_ID),
-        provider: "google",
-        modelId: THINKING_MODEL_ID,
-      };
-    default:
-      return {
-        model: google(ADVANCED_MODEL_ID),
-        provider: "google",
-        modelId: ADVANCED_MODEL_ID,
-      };
-  }
-}
-
-function requestHasImageInput(body: ChatRequestBody): boolean {
-  if (!body.messages) return false;
-
-  for (const message of body.messages) {
-    if (Array.isArray(message.parts)) {
-      for (const part of message.parts) {
-        if (part.type === "file" && typeof part.mediaType === "string" && part.mediaType.startsWith("image/")) {
-          return true;
-        }
-      }
-    }
-
-    if (Array.isArray(message.content)) {
-      for (const block of message.content) {
-        if (typeof block.type === "string" && block.type.startsWith("image")) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
 }
 
 const SYSTEM_PROMPT = `You are Quill, a highly capable personal AI agent.
@@ -447,242 +332,6 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
   ].join("\n");
 }
 
-function extractTextMessages(body: ChatRequestBody): Array<{ role: string; content: string }> {
-  if (body.messages && body.messages.length > 0) {
-    return body.messages
-      .map((message) => {
-        // If it already has string content, use it
-        if (typeof message.content === "string" && message.content.trim()) {
-          return { role: message.role ?? "user", content: message.content };
-        }
-        // If content is array (ContentBlock format), convert it
-        if (Array.isArray(message.content)) {
-          const text = message.content
-            .filter((block) => block.type === "text")
-            .map((block) => (typeof block.text === "string" ? block.text : ""))
-            .join("");
-          if (text.trim()) return { role: message.role ?? "user", content: text };
-        }
-        // If message has parts (UIMessage format)
-        if (Array.isArray(message.parts)) {
-          const text = message.parts
-            .filter((part) => part.type === "text")
-            .map((part) => (typeof part.text === "string" ? part.text : ""))
-            .join("");
-          if (text.trim()) return { role: message.role ?? "user", content: text };
-        }
-        // Last resort: stringify the entire message
-        const stringified = JSON.stringify(message);
-        if (stringified && stringified.length > 2) {
-          return { role: message.role || "user", content: stringified };
-        }
-        return null;
-      })
-      .filter((m): m is { role: string; content: string } => m !== null && m.content.trim().length > 0);
-  }
-
-  // Format 3: { text: "hello" }
-  if (typeof body.text === "string" && body.text.trim()) {
-    return [{ role: "user", content: body.text }];
-  }
-
-  // Format 4: { message: { role: "user", content: "..." } }
-  if (body.message && typeof body.message === "object") {
-    const msg = body.message as { role?: string; content?: string };
-    if (msg.content && msg.content.trim()) {
-      return [{ role: msg.role || "user", content: msg.content }];
-    }
-  }
-
-  return [];
-}
-
-function decodeDataUrlText(url: string): string | null {
-  const match = url.match(/^data:([^;,]*)(;base64)?,(.*)$/i);
-  if (!match) return null;
-
-  const [, , isBase64, payload] = match;
-  try {
-    const decoded = isBase64
-      ? Buffer.from(payload, "base64").toString("utf8")
-      : decodeURIComponent(payload);
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
-function isTextLikeMediaType(mediaType: string): boolean {
-  const normalized = mediaType.toLowerCase();
-  return (
-    normalized.startsWith("text/") ||
-    normalized === "application/json" ||
-    normalized === "application/xml" ||
-    normalized === "application/javascript" ||
-    normalized === "application/x-javascript" ||
-    normalized === "application/csv" ||
-    normalized === "text/csv"
-  );
-}
-
-function sanitizePartsForModel(parts: ChatRequestPart[]): unknown[] {
-  const output: unknown[] = [];
-
-  for (const part of parts) {
-    if (!part || typeof part !== "object") {
-      output.push(part);
-      continue;
-    }
-
-    const candidate = part as ChatRequestPart & {
-      type?: unknown;
-      url?: unknown;
-      mediaType?: unknown;
-      filename?: unknown;
-    };
-
-    if (
-      candidate.type === "file" &&
-      typeof candidate.url === "string" &&
-      candidate.url.startsWith("data:")
-    ) {
-      const mediaType = typeof candidate.mediaType === "string" ? candidate.mediaType : "application/octet-stream";
-      const filename = typeof candidate.filename === "string" && candidate.filename.trim().length > 0
-        ? candidate.filename.trim()
-        : "attachment";
-
-      if (isTextLikeMediaType(mediaType)) {
-        const decoded = decodeDataUrlText(candidate.url);
-        if (decoded && decoded.trim().length > 0) {
-          const excerpt = decoded.slice(0, 12_000);
-          output.push({
-            type: "text",
-            text: [`[Attached file: ${filename} (${mediaType})]`, excerpt].join("\n\n"),
-          });
-          continue;
-        }
-      }
-
-      output.push({
-        type: "text",
-        text: `[Attached file: ${filename} (${mediaType}) was provided, but direct inline file URLs are not supported for this provider.]`,
-      });
-      continue;
-    }
-
-    output.push(part);
-  }
-
-  return output;
-}
-
-async function extractModelMessages(body: ChatRequestBody): Promise<ModelMessage[]> {
-  if (body.messages && body.messages.length > 0) {
-    const normalized = body.messages
-      .map((message) => {
-        const role = typeof message.role === "string" ? message.role : "user";
-
-        // Preferred: UIMessage parts (text/file/tool/source/etc.)
-        if (Array.isArray(message.parts) && message.parts.length > 0) {
-          return { role, parts: sanitizePartsForModel(message.parts) };
-        }
-
-        // Compatibility: string content payloads
-        if (typeof message.content === "string" && message.content.trim()) {
-          return {
-            role,
-            parts: [{ type: "text", text: message.content }],
-          };
-        }
-
-        // Compatibility: content blocks that contain text
-        if (Array.isArray(message.content)) {
-          const text = message.content
-            .filter((block) => block.type === "text" && typeof block.text === "string")
-            .map((block) => block.text as string)
-            .join("");
-
-          if (text.trim()) {
-            return {
-              role,
-              parts: [{ type: "text", text }],
-            };
-          }
-        }
-
-        return null;
-      })
-      .filter((m): m is { role: string; parts: unknown[] } => m !== null);
-
-    if (normalized.length > 0) {
-      try {
-        return await convertToModelMessages(normalized as any);
-      } catch (error) {
-        console.warn("[chat] convertToModelMessages fallback:", error instanceof Error ? error.message : error);
-      }
-    }
-  }
-
-  // Legacy fallback to plain text model messages.
-  return extractTextMessages(body).map((m) => ({
-    role: m.role as "user" | "assistant" | "system",
-    content: m.content,
-  }));
-}
-
-function summarizeLastUserInput(body: ChatRequestBody): string | null {
-  if (!body.messages) return null;
-
-  const lastUserMessage = [...body.messages].reverse().find((message) => message.role === "user");
-  if (!lastUserMessage) return null;
-
-  // UIMessage format with parts supports file attachments.
-  if (Array.isArray(lastUserMessage.parts)) {
-    const text = lastUserMessage.parts
-      .filter((part) => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text as string)
-      .join("\n")
-      .trim();
-
-    const files = lastUserMessage.parts
-      .filter((part) => part.type === "file")
-      .map((part, index: number) =>
-        typeof part.filename === "string" && part.filename.trim()
-          ? part.filename.trim()
-          : `file-${index + 1}`
-      );
-
-    if (text && files.length > 0) {
-      return `${text}\n\n[Attached: ${files.join(", ")}]`;
-    }
-    if (text) return text;
-    if (files.length > 0) return `[Attached files: ${files.join(", ")}]`;
-  }
-
-  if (typeof lastUserMessage.content === "string" && lastUserMessage.content.trim()) {
-    return lastUserMessage.content.trim();
-  }
-
-  return null;
-}
-
-function getLastUserParts(body: ChatRequestBody): ChatRequestPart[] | undefined {
-  if (!body.messages) return undefined;
-
-  const lastUserMessage = [...body.messages].reverse().find((message) => message.role === "user");
-  if (!lastUserMessage) return undefined;
-
-  if (Array.isArray(lastUserMessage.parts) && lastUserMessage.parts.length > 0) {
-    return lastUserMessage.parts;
-  }
-
-  if (typeof lastUserMessage.content === "string" && lastUserMessage.content.trim()) {
-    return [{ type: "text", text: lastUserMessage.content.trim() }];
-  }
-
-  return undefined;
-}
-
 function jsonResponse(payload: Record<string, string>, status: number, headers?: HeadersInit) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -734,13 +383,11 @@ export async function POST(req: Request) {
     }
 
     const rawBody = await req.json();
-    const parsedBody = chatRequestSchema.safeParse(rawBody);
+    const parsedBody = parseChatRequestBody(rawBody);
     if (!parsedBody.success) {
-      const issue = parsedBody.error.issues[0];
-      const issuePath = issue?.path?.length ? issue.path.join(".") : "body";
       logApiCompletion(requestContext, { status: 400, error: "invalid_request_body" });
       return jsonResponse(
-        { error: `Invalid request body at ${issuePath}: ${issue?.message ?? "Request payload is malformed."}` },
+        { error: `Invalid request body at ${parsedBody.issuePath}: ${parsedBody.message}` },
         400,
         { "x-request-id": requestContext.requestId },
       );
@@ -771,7 +418,7 @@ export async function POST(req: Request) {
 
     const id: string = (body.chatId as string) || (body.id as string) || crypto.randomUUID();
     const shouldPersist = userId !== "guest";
-    const selectedMode: Mode = (body.mode as Mode) || "advanced";
+    const selectedMode: ChatMode = (body.mode as ChatMode) || "advanced";
     const requestedBuilderTarget = normalizeBuilderTarget(body.builderTarget);
     const requestedBuilderLocks = normalizeBuilderLocks(body.builderLocks ?? DEFAULT_BUILDER_LOCKS);
     const builderSession = normalizeBuilderSession(body.builderSession);
@@ -779,139 +426,36 @@ export async function POST(req: Request) {
     const preferVision = requestHasImageInput(body);
     const webSearchRequested = body.webSearch === true;
     const killerId = body.killerId as string | undefined;
-    const killer = killerId ? KILLERS.find((k) => k.id === killerId) ?? null : null;
-    const policyWarnings: string[] = [];
     const inferredCanvasBuildIntent = isCanvasBuildIntent(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null);
     const requestedCanvasBuildIntent = requestedBuilderTarget !== "auto";
 
-    const webSearchPermission = killer
-      ? evaluatePermissionDecision(killer.executionPolicy.permissions.webSearch, {
-          explicitUserCheckpoint: webSearchRequested,
-          label: "Web search",
-        })
-      : { allowed: true, requiresCheckpoint: false, reason: null };
+    const policyRuntime = await evaluatePolicyRuntime({
+      killerId,
+      webSearchRequested,
+      requestedCanvasBuildIntent,
+      inferredCanvasBuildIntent,
+    });
 
-    const externalNetworkPermission = killer
-      ? evaluatePermissionDecision(killer.executionPolicy.permissions.externalNetwork, {
-          explicitUserCheckpoint: webSearchRequested,
-          label: "External network access",
-        })
-      : { allowed: true, requiresCheckpoint: false, reason: null };
+    const killer = policyRuntime.killer;
+    const policyWarnings = policyRuntime.policyWarnings;
+    const effectiveWebSearchRequested = policyRuntime.effectiveWebSearchRequested;
+    const canvasBuildIntent = policyRuntime.canvasBuildIntent;
+    const sandboxStatus = policyRuntime.sandboxStatus;
+    const canRunCode = policyRuntime.canRunCode;
 
-    const builderPermission = killer
-      ? evaluatePermissionDecision(killer.executionPolicy.permissions.builderActions, {
-          explicitUserCheckpoint: requestedCanvasBuildIntent,
-          label: "Builder actions",
-        })
-      : { allowed: true, requiresCheckpoint: false, reason: null };
+    const access = await evaluateChatAccess({
+      userId,
+      userEmail,
+      shouldPersist,
+      selectedMode,
+      effectiveWebSearchRequested,
+    });
 
-    const effectiveWebSearchRequested =
-      webSearchRequested && webSearchPermission.allowed && externalNetworkPermission.allowed;
-    const canvasBuildIntent = builderPermission.allowed && (requestedCanvasBuildIntent || inferredCanvasBuildIntent);
-
-    for (const permission of [webSearchPermission, externalNetworkPermission]) {
-      if (permission.reason && webSearchRequested) {
-        policyWarnings.push(permission.reason);
-      }
-    }
-
-    if (builderPermission.reason && (requestedCanvasBuildIntent || inferredCanvasBuildIntent)) {
-      policyWarnings.push(builderPermission.reason);
-    }
-
-    const sandboxStatus = killer
-      ? await getSandboxProviderStatus(killer.executionPolicy)
-      : null;
-
-    const sandboxExecutionPermission = killer
-      ? evaluatePermissionDecision(killer.executionPolicy.permissions.sandboxExecution, {
-          explicitUserCheckpoint: false,
-          label: "Code execution",
-        })
-      : { allowed: false, requiresCheckpoint: false, reason: null };
-
-    const canRunCode =
-      sandboxExecutionPermission.allowed &&
-      isSandboxEnabled() &&
-      !canvasBuildIntent;
-
-    if (sandboxStatus?.reason) {
-      policyWarnings.push(sandboxStatus.reason);
-    }
-
-    const entitlement = shouldPersist
-      ? await resolveUserEntitlements({ userId, email: userEmail })
-      : null;
-    const hasPaidAccess = shouldPersist && Boolean(entitlement?.canUsePaidModes);
-
-    // Guest users are limited to free mode; auth is required for think/pro tiers.
-    if (!shouldPersist && selectedMode !== "fast") {
-      logApiCompletion(requestContext, { status: 401, error: "auth_required_mode" });
-      return jsonResponse({ error: "Sign in to use Think and Pro modes." }, 401, {
+    if (access.failure) {
+      logApiCompletion(requestContext, { status: access.failure.status, error: access.failure.errorCode });
+      return jsonResponse({ error: access.failure.message }, access.failure.status, {
         "x-request-id": requestContext.requestId,
       });
-    }
-
-    if (effectiveWebSearchRequested && !shouldPersist) {
-      logApiCompletion(requestContext, { status: 401, error: "auth_required_web_search" });
-      return jsonResponse({ error: "Sign in to use web search." }, 401, {
-        "x-request-id": requestContext.requestId,
-      });
-    }
-
-    if (effectiveWebSearchRequested && !isWebSearchConfigured()) {
-      logApiCompletion(requestContext, { status: 503, error: "web_search_not_configured" });
-      return jsonResponse({ error: "Web search is not configured yet." }, 503, {
-        "x-request-id": requestContext.requestId,
-      });
-    }
-
-    if (effectiveWebSearchRequested && shouldPersist) {
-      const freeDailySearches = Number(process.env.WEB_SEARCH_DAILY_REQUESTS_FREE ?? "20");
-      const paidDailySearches = Number(process.env.WEB_SEARCH_DAILY_REQUESTS_PAID ?? "100");
-      const dailySearchLimit = hasPaidAccess ? paidDailySearches : freeDailySearches;
-
-      const searchQuota = await checkRateLimit({
-        key: `websearch:daily:user:${userId}`,
-        max: dailySearchLimit,
-        windowMs: 86_400_000,
-      });
-
-      if (!searchQuota.allowed) {
-        logApiCompletion(requestContext, { status: 429, error: "web_search_daily_quota_reached" });
-        return jsonResponse(
-          { error: `Daily web search limit reached (${dailySearchLimit}/day).` },
-          429,
-          { "x-request-id": requestContext.requestId }
-        );
-      }
-    }
-
-    // Paid mode enforcement for authenticated users.
-    if (shouldPersist && selectedMode !== "fast") {
-      if (!hasPaidAccess) {
-        logApiCompletion(requestContext, { status: 402, error: "paid_mode_required" });
-        return jsonResponse(
-          { error: "Think and Pro are paid modes. Upgrade your account to use them." },
-          402,
-          { "x-request-id": requestContext.requestId }
-        );
-      }
-    }
-
-    if (shouldPersist) {
-      const usedToday = await countUserMessagesToday(userId);
-      const dailyLimit = getDailyLimit(selectedMode);
-      if (usedToday >= dailyLimit) {
-        logApiCompletion(requestContext, { status: 429, error: "daily_quota_reached" });
-        return jsonResponse(
-          {
-            error: `Daily limit reached for this mode (${dailyLimit} messages/day).`,
-          },
-          429,
-          { "x-request-id": requestContext.requestId }
-        );
-      }
     }
 
     const baseSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
@@ -1005,7 +549,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const resolvedModel = await getModel(selectedMode, preferVision);
+    const resolvedModel = await resolveModelForMode(selectedMode, preferVision);
 
     if (canvasBuildIntent && TWO_PASS_BUILDER_ENABLED) {
       const stream = buildTwoPassBuilderStream({

@@ -39,6 +39,28 @@ If your change touches API behavior, run or update smoke coverage where relevant
 - Add or update tests/checks when behavior changes
 - Update docs when introducing new flags, routes, or workflows
 
+### Chat Backend Change Checklist
+
+If your PR touches chat behavior, follow this ownership map instead of re-inlining logic in the route:
+
+- `src/app/api/chat/route.ts`: orchestration only
+- `src/lib/chat/request-utils.ts`: request parsing + message normalization
+- `src/lib/chat/model-selection.ts`: mode limits + provider/model resolution
+- `src/lib/chat/access-gates.ts`: entitlement and quota enforcement
+- `src/lib/chat/policy-runtime.ts`: killer permission/sandbox runtime derivation
+- `src/lib/chat/two-pass-builder.ts`: two-pass builder orchestration
+
+Required for chat backend PRs:
+
+1. Keep the route flow orchestration-first: parse -> runtime -> access -> prompt -> stream.
+2. Add logic in the owning `src/lib/chat/*` module when possible.
+3. Run both checks and include results in the PR:
+
+```bash
+npm run typecheck
+npm run build
+```
+
 ## Commit Style
 
 Use clear, descriptive commit messages.
