@@ -8,10 +8,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowPathIcon,
   Bars3Icon,
-  CheckIcon,
   ExclamationCircleIcon,
+  PencilSquareIcon,
   PlusIcon,
-  ShareIcon,
 } from "@heroicons/react/24/outline";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -43,6 +42,7 @@ const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 const ASSISTANT_STREAM_WATCHDOG_MS = 90000;
 const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
+const GUEST_CHAT_TITLE_PREFIX = "quill_guest_chat_title_v1:";
 
 const CanvasPanel = dynamicImport(
   () => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel),
@@ -343,7 +343,10 @@ export default function AgentPage() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [activeTaskTitle, setActiveTaskTitle] = useState<string | undefined>(undefined);
   const [statusStepCount, setStatusStepCount] = useState<number | undefined>(undefined);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [chatTitle, setChatTitle] = useState("New chat");
+  const [isEditingChatTitle, setIsEditingChatTitle] = useState(false);
+  const [chatTitleDraft, setChatTitleDraft] = useState("New chat");
+  const [isSavingChatTitle, setIsSavingChatTitle] = useState(false);
   const [initialComposerDraft, setInitialComposerDraft] = useState("");
   const [initialHomepageFile, setInitialHomepageFile] = useState<File | null>(null);
   const [isDraftReview, setIsDraftReview] = useState(false);
@@ -371,6 +374,7 @@ export default function AgentPage() {
   const manualStopRef = useRef(false);
   const awaitingAssistantRef = useRef(false);
   const pendingAssistantSinceRef = useRef<number | null>(null);
+  const chatTitleInputRef = useRef<HTMLInputElement>(null);
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
@@ -417,6 +421,21 @@ export default function AgentPage() {
       sessionStorage.removeItem(`${HOMEPAGE_FILE_HANDOFF_PREFIX}${handoffId}`);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedTitle = localStorage.getItem(`${GUEST_CHAT_TITLE_PREFIX}${chatId}`);
+    if (savedTitle && savedTitle.trim()) {
+      setChatTitle(savedTitle.trim());
+      setChatTitleDraft(savedTitle.trim());
+    }
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!isEditingChatTitle) return;
+    chatTitleInputRef.current?.focus();
+    chatTitleInputRef.current?.select();
+  }, [isEditingChatTitle]);
 
   // Pre-fill composer from ?draft= param without auto-sending (used by QuillClaw shortcuts)
   useEffect(() => {
@@ -669,10 +688,14 @@ export default function AgentPage() {
           return;
         }
 
-        const payload = (await response.json()) as { messages?: PersistedMessage[] };
+        const payload = (await response.json()) as { messages?: PersistedMessage[]; chat?: { title?: string } };
         if (cancelled || !Array.isArray(payload.messages) || payload.messages.length === 0) return;
 
         setPageError(null);
+        if (typeof payload.chat?.title === "string" && payload.chat.title.trim()) {
+          setChatTitle(payload.chat.title.trim());
+          setChatTitleDraft(payload.chat.title.trim());
+        }
         setMessages(toUiMessages(payload.messages));
       } catch {
         if (!cancelled) {
@@ -1013,28 +1036,65 @@ export default function AgentPage() {
     [setMessages]
   );
 
-  const handleShare = useCallback(() => {
-    // Ensure URL has chatId before copying
-    const url = new URL(window.location.href);
-    url.searchParams.set("chat", chatId);
-    const shareUrl = `${window.location.origin}/share/${chatId}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2500);
-    });
-  }, [chatId]);
-
   const handleNewChat = useCallback(() => {
     if (!isAuthenticated) {
       clearGuestSession();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`${GUEST_CHAT_TITLE_PREFIX}${chatId}`);
+      }
     }
     setActiveTaskTitle(undefined);
+    setChatTitle("New chat");
+    setChatTitleDraft("New chat");
     setStatusStepCount(undefined);
     const url = new URL(window.location.href);
     url.searchParams.delete("chat");
     url.searchParams.delete("q");
     window.location.href = url.toString();
-  }, [isAuthenticated]);
+  }, [chatId, isAuthenticated]);
+
+  const saveChatTitle = useCallback(async () => {
+    const normalized = chatTitleDraft.replace(/\s+/g, " ").trim();
+    const nextTitle = normalized || "New chat";
+
+    if (nextTitle === chatTitle) {
+      setIsEditingChatTitle(false);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setChatTitle(nextTitle);
+      setChatTitleDraft(nextTitle);
+      setIsEditingChatTitle(false);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`${GUEST_CHAT_TITLE_PREFIX}${chatId}`, nextTitle);
+      }
+      return;
+    }
+
+    setIsSavingChatTitle(true);
+    try {
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: nextTitle }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save title");
+      }
+
+      setChatTitle(nextTitle);
+      setChatTitleDraft(nextTitle);
+      setPageError(null);
+    } catch {
+      setPageError("Could not update chat title. Please try again.");
+      setChatTitleDraft(chatTitle);
+    } finally {
+      setIsSavingChatTitle(false);
+      setIsEditingChatTitle(false);
+    }
+  }, [chatId, chatTitle, chatTitleDraft, isAuthenticated]);
 
   const handleRegenerate = useCallback(() => {
     if (isLoading) return;
@@ -1093,30 +1153,11 @@ export default function AgentPage() {
             <Bars3Icon className="h-4.25 w-4.25" aria-hidden="true" />
           </button>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <QuillLogo size={20} />
-            <span className="text-sm font-semibold gradient-text whitespace-nowrap">Quill AI</span>
-          </div>
-
-          {/* Killer badge */}
-          {activeKiller && (
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium"
-              style={{ borderColor: `${activeKiller.accent}40`, background: `${activeKiller.accent}12`, color: activeKiller.accent }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: activeKiller.accent }} />
-              <span className="md:hidden">{activeKiller.shortName}</span>
-              <span className="hidden md:inline">{activeKiller.name}</span>
-            </div>
-          )}
-
           {/* Active mode badge */}
-          {!activeKiller && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
-              <span className="text-[11px] font-medium text-[#A1A7B0]">{modeLabels[selectedMode]}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
+            <span className="text-[11px] font-medium text-[#A1A7B0]">{modeLabels[selectedMode]}</span>
+          </div>
 
           {isTrialPlan && (
             <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-quill-border text-[11px] text-quill-muted">
@@ -1125,7 +1166,53 @@ export default function AgentPage() {
             </div>
           )}
 
+          <div className="ml-1 min-w-0 flex-1">
+            {isEditingChatTitle ? (
+              <input
+                ref={chatTitleInputRef}
+                value={chatTitleDraft}
+                onChange={(e) => setChatTitleDraft(e.target.value)}
+                onBlur={() => {
+                  void saveChatTitle();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void saveChatTitle();
+                  }
+                  if (e.key === "Escape") {
+                    setChatTitleDraft(chatTitle);
+                    setIsEditingChatTitle(false);
+                  }
+                }}
+                disabled={isSavingChatTitle}
+                className="w-full max-w-md rounded-lg border border-quill-border bg-quill-surface px-3 py-1.5 text-sm text-quill-text outline-none focus:border-quill-border-2"
+                aria-label="Edit active chat name"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingChatTitle(true)}
+                className="group inline-flex max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
+                title="Rename chat"
+              >
+                <span className="truncate">{chatTitle}</span>
+                <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+
           <div className="ml-auto flex items-center gap-2">
+            {/* New chat */}
+            <button
+              onClick={handleNewChat}
+              title="New chat"
+              aria-label="New chat"
+              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
+            >
+              <PlusIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+            </button>
+
             {/* Unified auth slot: same header position, switches by auth state */}
             <div className="flex items-center justify-center min-w-8 min-h-8">
               {isAuthenticated ? (
@@ -1149,43 +1236,20 @@ export default function AgentPage() {
               )}
             </div>
 
-            {/* Share button */}
-            <button
-              onClick={handleShare}
-              disabled={messages.length === 0}
-              title={shareCopied ? "Link copied!" : "Share conversation"}
-              aria-label="Share conversation"
-              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {shareCopied ? (
-                <CheckIcon className="h-[18px] w-[18px]" aria-hidden="true" />
-              ) : (
-                <ShareIcon className="h-[18px] w-[18px]" aria-hidden="true" />
-              )}
-            </button>
-
-            {/* New chat */}
-            <button
-              onClick={handleNewChat}
-              title="New chat"
-              aria-label="New chat"
-              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
-            >
-              <PlusIcon className="h-[18px] w-[18px]" aria-hidden="true" />
-            </button>
-
             {guestImportStatus === "importing" && (
               <span className="hidden md:inline text-[11px] text-quill-muted">Importing...</span>
             )}
           </div>
         </header>
 
-        <AgentStatusBar
-          status={agentStatus}
-          taskTitle={activeTaskTitle}
-          stepCount={statusStepCount}
-          totalSteps={statusStepCount !== undefined ? 3 : undefined}
-        />
+        {(agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
+          <AgentStatusBar
+            status={agentStatus}
+            taskTitle={activeTaskTitle}
+            stepCount={statusStepCount}
+            totalSteps={statusStepCount !== undefined ? 3 : undefined}
+          />
+        )}
 
         {/* Content */}
         <div className="relative flex flex-1 min-h-0">

@@ -53,7 +53,7 @@ const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }>
 ];
 
 const MODES: { id: Mode; label: string; desc: string }[] = [
-  { id: "fast", label: "Fast", desc: "Instant answers" },
+  { id: "fast", label: "Flash", desc: "Instant answers" },
   { id: "thinking", label: "Think", desc: "More careful and thorough" },
   { id: "advanced", label: "Pro", desc: "Highest quality output" },
 ];
@@ -195,7 +195,7 @@ export function TaskInput({
     : placeholder ?? "Ask Quill to do anything...";
   const enabledModes = new Set(allowedModes ?? MODES.map((m) => m.id));
   const visibleModes = showLockedModes ? MODES : MODES.filter((m) => enabledModes.has(m.id));
-  const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Fast";
+  const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Flash";
   const hasLockedModes = visibleModes.some((m) => !enabledModes.has(m.id));
   const imageGenerationEnabled = canGenerateImage ?? true;
   const hasTypedContent = value.trim().length > 0;
@@ -298,8 +298,8 @@ export function TaskInput({
               }`}
             >
               {/* Mobile: + icon; Desktop: paperclip */}
-              <PlusIcon className="h-3.25 w-3.25 md:hidden" aria-hidden="true" />
-              <PaperClipIcon className="hidden h-3.25 w-3.25 md:block" aria-hidden="true" />
+              <PlusIcon className="h-4.5 w-4.5 md:hidden" aria-hidden="true" />
+              <PaperClipIcon className="hidden h-4.5 w-4.5 md:block" aria-hidden="true" />
               {attachedFiles && attachedFiles.length > 0 && (
                 <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
                   {attachedFiles.length}
@@ -344,7 +344,7 @@ export function TaskInput({
                     : "text-quill-muted bg-quill-border/40 opacity-70"
               } ${isDisabled ? "opacity-30" : ""}`}
             >
-              <GlobeAltIcon className="h-3.25 w-3.25" aria-hidden="true" />
+              <GlobeAltIcon className="h-4.5 w-4.5" aria-hidden="true" />
               {webSearchState === "coming-soon" && (
                 <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
                   Soon
@@ -382,7 +382,7 @@ export function TaskInput({
           </div>{/* end left group */}
 
           {/* Right: mode selector + send */}
-          <div className="flex items-center gap-1.5 shrink-0" ref={dropdownRef}>
+          <div className="flex items-center gap-1.5 shrink-0 border-l border-quill-border pl-2" ref={dropdownRef}>
             <div className="relative">
               <button
                 onClick={() => {

@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, type ComponentType, type SVGProps } from "react";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 import {
-  ArrowRightStartOnRectangleIcon,
   BookOpenIcon,
   ChartBarSquareIcon,
   ChevronDownIcon,
   ClockIcon,
   CodeBracketIcon,
-  Cog6ToothIcon,
   CpuChipIcon,
   DocumentTextIcon,
   EllipsisVerticalIcon,
@@ -295,13 +292,8 @@ function matchesQuery(query: string, ...values: Array<string | undefined>) {
 }
 
 export function Sidebar({ onClose }: SidebarProps = {}) {
-  const router = useRouter();
   const [session, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
-  const [planLabel, setPlanLabel] = useState("Free");
-  const [messagesUsedToday, setMessagesUsedToday] = useState<number>(0);
-  const [recommendedDailyLimit, setRecommendedDailyLimit] = useState<number>(60);
-  const [usagePercent, setUsagePercent] = useState<number>(0);
   const [recentChats, setRecentChats] = useState<Chat[]>([]);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
@@ -332,21 +324,6 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
       if (data?.user) {
         setSession({ user: data.user });
         setSessionStatus("authenticated");
-        fetch("/api/me/entitlements", { cache: "no-store" })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((entitlements: { planLabel?: string } | null) => {
-            if (entitlements?.planLabel) setPlanLabel(entitlements.planLabel);
-          })
-          .catch(() => {});
-        fetch("/api/me/usage", { cache: "no-store" })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((usage: { messagesUsedToday?: number; recommendedDailyLimit?: number; usagePercent?: number } | null) => {
-            if (!usage) return;
-            setMessagesUsedToday(usage.messagesUsedToday ?? 0);
-            setRecommendedDailyLimit(usage.recommendedDailyLimit ?? 60);
-            setUsagePercent(usage.usagePercent ?? 0);
-          })
-          .catch(() => {});
         fetch("/api/chats")
           .then((r) => (r.ok ? r.json() : []))
           .then((chats: Chat[]) => setRecentChats(chats))
@@ -932,59 +909,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
           <p className="mt-1 text-[11px] text-quill-muted">{engineDetail}</p>
         </div>
 
-        {sessionStatus === "authenticated" && session?.user ? (
-          <>
-            <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] text-xs font-bold uppercase text-white">
-                {(session.user.name ?? session.user.email ?? "U")[0]}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium leading-tight text-quill-text">
-                  {session.user.name ?? session.user.email?.split("@")[0] ?? "User"}
-                </p>
-                <p className="truncate text-[11px] leading-tight text-quill-muted">{planLabel}</p>
-              </div>
-              <button
-                onClick={() => setSettingsOpen(true)}
-                title="Settings"
-                className="shrink-0 rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-quill-text"
-              >
-                <Cog6ToothIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button
-                onClick={async () => {
-                  await authClient.signOut();
-                  router.push("/login");
-                }}
-                title="Sign out"
-                className="shrink-0 rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-[#f87171]"
-              >
-                <ArrowRightStartOnRectangleIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="space-y-1.5 px-2 pb-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-quill-muted">{messagesUsedToday}/{recommendedDailyLimit} today</span>
-                <span className="text-[11px] text-quill-muted">{planLabel}</span>
-              </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-quill-border">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${usagePercent}%`, background: "linear-gradient(to right, #EF4444, #F87171)" }}
-                />
-              </div>
-              {planLabel === "Free" && (
-                <button
-                  onClick={() => navigateTo("/pricing")}
-                  className="text-[11px] text-quill-muted transition-colors hover:text-quill-text"
-                >
-                  Upgrade
-                </button>
-              )}
-            </div>
-          </>
-        ) : null}
+        {/* Account and usage moved to header account dropdown to reduce duplicate controls. */}
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />

@@ -23,6 +23,10 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
   const router = useRouter();
   const [session, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const [planLabel, setPlanLabel] = useState("Free");
+  const [messagesUsedToday, setMessagesUsedToday] = useState<number>(0);
+  const [recommendedDailyLimit, setRecommendedDailyLimit] = useState<number>(60);
+  const [usagePercent, setUsagePercent] = useState<number>(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -35,6 +39,22 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
         if (data?.user) {
           setSession({ user: data.user });
           setSessionStatus("authenticated");
+          fetch("/api/me/entitlements", { cache: "no-store" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((entitlements: { planLabel?: string } | null) => {
+              if (entitlements?.planLabel) setPlanLabel(entitlements.planLabel);
+            })
+            .catch(() => {});
+
+          fetch("/api/me/usage", { cache: "no-store" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((usage: { messagesUsedToday?: number; recommendedDailyLimit?: number; usagePercent?: number } | null) => {
+              if (!usage) return;
+              setMessagesUsedToday(usage.messagesUsedToday ?? 0);
+              setRecommendedDailyLimit(usage.recommendedDailyLimit ?? 60);
+              setUsagePercent(usage.usagePercent ?? 0);
+            })
+            .catch(() => {});
         } else {
           setSession(null);
           setSessionStatus("unauthenticated");
@@ -86,6 +106,31 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
                   {session.user.name ?? session.user.email?.split("@")[0] ?? "User"}
                 </p>
                 <p className="text-[11px] text-quill-muted truncate">{session.user.email}</p>
+              </div>
+
+              {/* Usage summary */}
+              <div className="px-3 py-2.5 border-b border-quill-border">
+                <div className="flex items-center justify-between text-[11px] text-quill-muted">
+                  <span>{messagesUsedToday}/{recommendedDailyLimit} today</span>
+                  <span>{planLabel}</span>
+                </div>
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-quill-border">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${usagePercent}%`, background: "linear-gradient(to right, #EF4444, #F87171)" }}
+                  />
+                </div>
+                {planLabel === "Free" && (
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      router.push("/pricing");
+                    }}
+                    className="mt-2 text-[11px] text-quill-muted transition-colors hover:text-quill-text"
+                  >
+                    Upgrade
+                  </button>
+                )}
               </div>
 
               {/* Actions */}

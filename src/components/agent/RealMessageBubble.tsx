@@ -276,6 +276,8 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
   const isAssistant = !isUser && message.role === "assistant";
   const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
   const canReact = isAssistant && hasRenderableTextValue(assistantPlainText);
+  const actionButtonBaseClass = "flex h-11 w-11 items-center justify-center rounded-lg border border-transparent transition-all sm:h-9 sm:w-9";
+  const actionIconClass = "h-4.5 w-4.5 sm:h-5 sm:w-5";
 
   const handleCopy = async () => {
     if (!assistantPlainText) return;
@@ -493,68 +495,64 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
       >
         {renderedParts}
         {canReact && (
-          <div className="relative flex items-center mt-0.5">
-            <div className="flex items-center gap-0.5 rounded-full border border-quill-border/70 bg-quill-surface/80 px-1 py-0.5 backdrop-blur-sm">
-              {/* Copy */}
+          <div className="relative mt-1 flex items-center gap-1 sm:gap-1">
+            {/* Like */}
+            <button
+              onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
+              className={`${actionButtonBaseClass} ${
+                reaction === "like"
+                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-[#34d399]"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title="Good response"
+              aria-label="Like assistant message"
+            >
+              <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
+            </button>
+            {/* Dislike */}
+            <button
+              onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
+              className={`${actionButtonBaseClass} ${
+                reaction === "dislike"
+                  ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title="Bad response"
+              aria-label="Dislike assistant message"
+            >
+              <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
+            </button>
+            {/* Regenerate */}
+            {onRegenerate && (
               <button
-                onClick={handleCopy}
-                className={`p-1.5 rounded-full transition-all ${
-                  copied
-                    ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]"
-                    : "text-quill-muted hover:text-quill-text hover:bg-white/5"
-                }`}
-                title={copied ? "Copied!" : "Copy"}
-                aria-label="Copy assistant message"
+                onClick={onRegenerate}
+                className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
+                title="Regenerate response"
+                aria-label="Regenerate response"
               >
-                {copied ? (
-                  <CheckIcon className="h-[14px] w-[14px]" aria-hidden="true" />
-                ) : (
-                  <ClipboardDocumentIcon className="h-[14px] w-[14px]" aria-hidden="true" />
-                )}
+                <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
               </button>
-              {/* Regenerate */}
-              {onRegenerate && (
-                <button
-                  onClick={onRegenerate}
-                  className="p-1.5 rounded-full text-quill-muted hover:text-quill-text hover:bg-white/5 transition-all"
-                  title="Regenerate response"
-                  aria-label="Regenerate response"
-                >
-                  <ArrowPathIcon className="h-[14px] w-[14px]" aria-hidden="true" />
-                </button>
+            )}
+            {/* Copy */}
+            <button
+              onClick={handleCopy}
+              className={`${actionButtonBaseClass} ${
+                copied
+                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-[#34d399]"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title={copied ? "Copied!" : "Copy"}
+              aria-label="Copy assistant message"
+            >
+              {copied ? (
+                <CheckIcon className={actionIconClass} aria-hidden="true" />
+              ) : (
+                <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
               )}
-              {/* Divider */}
-              <div className="w-px h-3 bg-quill-border/60 mx-0.5" aria-hidden="true" />
-              {/* Like */}
-              <button
-                onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
-                className={`p-1.5 rounded-full transition-all ${
-                  reaction === "like"
-                    ? "text-[#34d399] bg-[rgba(52,211,153,0.12)]"
-                    : "text-quill-muted hover:text-quill-text hover:bg-white/5"
-                }`}
-                title="Good response"
-                aria-label="Like assistant message"
-              >
-                <HandThumbUpIcon className="h-[14px] w-[14px]" aria-hidden="true" />
-              </button>
-              {/* Dislike */}
-              <button
-                onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
-                className={`p-1.5 rounded-full transition-all ${
-                  reaction === "dislike"
-                    ? "text-[#f87171] bg-[rgba(248,113,113,0.12)]"
-                    : "text-quill-muted hover:text-quill-text hover:bg-white/5"
-                }`}
-                title="Bad response"
-                aria-label="Dislike assistant message"
-              >
-                <HandThumbDownIcon className="h-[14px] w-[14px]" aria-hidden="true" />
-              </button>
-            </div>
+            </button>
             {copied && (
               <span
-                className="absolute -top-7 left-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-[#34d399] whitespace-nowrap pointer-events-none"
+                className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-[#34d399] whitespace-nowrap pointer-events-none"
                 aria-live="polite"
               >
                 Copied!
