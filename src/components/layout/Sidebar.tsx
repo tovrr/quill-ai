@@ -98,6 +98,13 @@ const COMMAND_CENTER_LINKS: CommandLink[] = [
     icon: Squares2X2Icon,
   },
   {
+    id: "autopilot",
+    label: "Autopilot",
+    subtitle: "Run recurring workflows",
+    href: "/autopilot",
+    icon: ClockIcon,
+  },
+  {
     id: "docs",
     label: "Docs",
     subtitle: "Patterns, canvas rules, and builder guides",

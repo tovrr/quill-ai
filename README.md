@@ -37,7 +37,10 @@ Recommended validation before opening PRs:
 npm run typecheck
 npm run lint
 npm run build
+npm run test:execution   # Verify code execution is working
 ```
+
+For full testing guide, see [TESTING_EXECUTION_SERVICE.md](./TESTING_EXECUTION_SERVICE.md)
 
 ## Use Cases
 

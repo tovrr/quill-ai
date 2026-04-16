@@ -30,13 +30,11 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
   - Acceptance: User can sign up and log in via Google accounts. Email/password still works as fallback.
   - Verification: Create test Google project, test sign-up flow, verify session created, test subsequent login.
 
-- [ ] **Remove sandbox false claims OR implement real code executor**
-  - Decision point: Either (A) remove `sandbox: required` + executor hints from Code Wizard, downgrade autonomy to `propose`, update system prompt to remove execution language; OR (B) implement a working code-execution backend (Docker container or VM executor stub).
-  - If A: Scope is UI/prompt updates only (~2 hours). Update Code Wizard killer definition + system prompt to drop container language.
-  - If B: Scope is building executor adapter, sandboxing, and error handling (~3-5 days). Start with local container validation, move to remote executor post-MVP.
-  - Acceptance (A): Code Wizard personality updated to propose/review code, not execute. System prompt never claims execution capability.
-  - Acceptance (B): `/api/sandbox/execute` endpoint works locally; Coder killer can request code runs and get real output (or structured error).
-  - Verification (A): Audit system prompt for false claims. (B): Coder killer generates a test function, requests execution, receives output.
+- [x] **Remove sandbox false claims OR implement real code executor**
+  - Decision: Option A chosen. Scope: Update Code Wizard killer definition + system prompt to remove execution language when sandbox is disabled.
+  - Acceptance: Code Wizard personality updated to propose/review code with honest local-testing instructions when `QUILL_SANDBOX_CONTAINER_ENABLED` is not set.
+  - Verification: System prompt conditionally removes execution claims based on `isSandboxEnabled()`. Commit: April 12, 2026.
+  - Impact: Eliminates false-claim liability; maintains full code generation/review capability; provides clear user guidance for local verification.
 
 - [x] **Distribute rate limiting from in-memory to Redis (Upstash recommended)** — `src/lib/rate-limit.ts` now uses Upstash Redis pipeline (INCR/EXPIRE/PTTL) with 1500ms timeout and in-memory fallback on Redis errors. All callers (`/api/chat`, `/api/generate-image`, `/api/preview`, `/api/validate-bundle`) updated to `await checkRateLimit()`.
 
@@ -77,6 +75,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 - [x] Security Sprint 1: ship CSP report-only + violation collection. — commit `77408d8`.
 - [x] Security Sprint 2: enforce CSP after fixing violations. — commit `77408d8`, enforcing header live.
 - [x] Reliability Sprint: implement readiness checks with dependency probes. — commit `124be4c`; external uptime/alerting still pending.
+- [x] **Multi-Agent Integration**: abstract code execution into service layer (local Docker, E2B, Modal, custom). — Created `src/lib/execution-service.ts`, updated chat route + policy runtime, documented in `MULTI_AGENT_INTEGRATION.md`. Supports: dev (local), staging (E2B free), production (E2B paid / Modal / self-hosted).
 - [ ] Observability Sprint: uptime checks + alert routing to on-call channel.
 - [ ] Performance Sprint: bundle analyzer + baseline budgets.
 - [ ] PWA Sprint: service worker + offline shell.

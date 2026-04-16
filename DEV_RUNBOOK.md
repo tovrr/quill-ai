@@ -98,6 +98,50 @@ powershell -ExecutionPolicy Bypass -File scripts/dev-reset.ps1
 ## Acceptance Criteria
 
 - [ ] `npm run dev` starts without error after running the recovery script
+
+---
+
+## Testing Execution Service
+
+After dev server is running, verify code execution is working:
+
+### Quick Test (30s)
+
+```bash
+npm run test:execution
+```
+
+If it says `✅ Test PASSED`, code execution is enabled and working.
+
+### Full Integration Test (5m)
+
+1. Open http://localhost:3000
+2. Sign in
+3. Click **Agent** → **Code** (Code Wizard)
+4. Paste this prompt:
+
+```
+Write a Python script that calculates 2 + 2, then execute it.
+```
+
+**Expected:** You see the Code Wizard execute the code and show the result (4).
+
+### If execution says "disabled"
+
+Set one of these in `.env.local`:
+
+```bash
+# Option 1: Local Docker (requires Docker running)
+QUILL_SANDBOX_CONTAINER_ENABLED=true
+
+# Option 2: E2B (no Docker needed, free tier available)
+EXECUTION_SERVICE_PROVIDER=e2b
+E2B_API_KEY=your_api_key
+```
+
+Then restart: `npm run dev`
+
+See [TESTING_EXECUTION_SERVICE.md](./TESTING_EXECUTION_SERVICE.md) for full details and troubleshooting.
 - [ ] `localhost:3000` opens and responds
 - [ ] `/agent` route loads without 404
 - [ ] `/api/health` returns `{ "status": "ok" }`

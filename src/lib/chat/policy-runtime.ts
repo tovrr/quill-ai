@@ -1,4 +1,4 @@
-import { isSandboxEnabled } from "@/lib/docker-executor";
+import { isExecutionAvailable, getExecutionBackend } from "@/lib/execution-service";
 import { evaluatePermissionDecision } from "@/lib/killer-autonomy";
 import { getKillerById, type Killer } from "@/lib/killers";
 import { getSandboxProviderStatus, type SandboxProviderStatus } from "@/lib/sandbox-providers";
@@ -73,7 +73,7 @@ export async function evaluatePolicyRuntime(input: PolicyRuntimeInput): Promise<
 
   const canRunCode =
     sandboxExecutionPermission.allowed &&
-    isSandboxEnabled() &&
+    isExecutionAvailable() &&
     !canvasBuildIntent;
 
   if (sandboxStatus?.reason) {

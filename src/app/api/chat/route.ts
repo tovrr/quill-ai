@@ -5,7 +5,7 @@ import {
   type UIMessage,
 } from "ai";
 import { tool, jsonSchema } from "ai";
-import { executeCode } from "@/lib/docker-executor";
+import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution-service";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {

@@ -96,7 +96,7 @@ export async function executeCode(request: ExecuteCodeRequest): Promise<ExecuteC
           "--network=none",
           "--memory=128m",
           "--cpus=0.5",
-          "--no-new-privileges",
+          "--security-opt=no-new-privileges",
           "-i",
           config.image,
           ...config.cmd,

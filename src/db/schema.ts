@@ -180,3 +180,55 @@ export const modelUsageEvents = pgTable(
     index("model_usage_event_created_at_idx").on(table.createdAt),
   ]
 );
+
+export const autopilotWorkflows = pgTable(
+  "autopilot_workflow",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name").notNull(),
+    prompt: text("prompt").notNull(),
+    cronExpression: varchar("cronExpression").notNull(),
+    timezone: varchar("timezone").notNull().default("UTC"),
+    status: varchar("status", { enum: ["active", "paused"] }).notNull().default("active"),
+    lastRunAt: timestamp("lastRunAt", { mode: "date" }),
+    nextRunAt: timestamp("nextRunAt", { mode: "date" }),
+    lastRunStatus: varchar("lastRunStatus", { enum: ["success", "failed"] }),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("autopilot_workflow_user_id_idx").on(table.userId),
+    index("autopilot_workflow_status_idx").on(table.status),
+    index("autopilot_workflow_next_run_idx").on(table.nextRunAt),
+  ]
+);
+
+export const autopilotRuns = pgTable(
+  "autopilot_run",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    workflowId: text("workflowId")
+      .notNull()
+      .references(() => autopilotWorkflows.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: varchar("status", { enum: ["success", "failed"] }).notNull(),
+    summary: text("summary"),
+    errorMessage: text("errorMessage"),
+    startedAt: timestamp("startedAt").default(sql`CURRENT_TIMESTAMP`),
+    completedAt: timestamp("completedAt"),
+  },
+  (table) => [
+    index("autopilot_run_workflow_id_idx").on(table.workflowId),
+    index("autopilot_run_user_id_idx").on(table.userId),
+    index("autopilot_run_started_at_idx").on(table.startedAt),
+  ]
+);

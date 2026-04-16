@@ -1,5 +1,13 @@
 import { db } from "@/db";
-import { chats, messageFiles, messages, modelUsageEvents, userEntitlements } from "@/db/schema";
+import {
+  autopilotRuns,
+  autopilotWorkflows,
+  chats,
+  messageFiles,
+  messages,
+  modelUsageEvents,
+  userEntitlements,
+} from "@/db/schema";
 import { sanitizeStoredMessage } from "@/lib/assistant-message-utils";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 
@@ -244,6 +252,102 @@ export async function updateUserEntitlement(
     .update(userEntitlements)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(userEntitlements.userId, userId))
+    .returning();
+
+  return row;
+}
+
+export async function getAutopilotWorkflowsByUserId(userId: string) {
+  return db.query.autopilotWorkflows.findMany({
+    where: eq(autopilotWorkflows.userId, userId),
+    orderBy: [desc(autopilotWorkflows.updatedAt)],
+  });
+}
+
+export async function getAutopilotWorkflowById(workflowId: string) {
+  return db.query.autopilotWorkflows.findFirst({
+    where: eq(autopilotWorkflows.id, workflowId),
+  });
+}
+
+export async function createAutopilotWorkflow(input: {
+  userId: string;
+  name: string;
+  prompt: string;
+  cronExpression: string;
+  timezone: string;
+}) {
+  const [row] = await db
+    .insert(autopilotWorkflows)
+    .values({
+      userId: input.userId,
+      name: input.name,
+      prompt: input.prompt,
+      cronExpression: input.cronExpression,
+      timezone: input.timezone,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function updateAutopilotWorkflowByUserId(
+  workflowId: string,
+  userId: string,
+  updates: Partial<{
+    name: string;
+    prompt: string;
+    cronExpression: string;
+    timezone: string;
+    status: "active" | "paused";
+    lastRunAt: Date | null;
+    nextRunAt: Date | null;
+    lastRunStatus: "success" | "failed" | null;
+  }>
+) {
+  const [row] = await db
+    .update(autopilotWorkflows)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(and(eq(autopilotWorkflows.id, workflowId), eq(autopilotWorkflows.userId, userId)))
+    .returning();
+
+  return row ?? null;
+}
+
+export async function deleteAutopilotWorkflowByUserId(workflowId: string, userId: string) {
+  const rows = await db
+    .delete(autopilotWorkflows)
+    .where(and(eq(autopilotWorkflows.id, workflowId), eq(autopilotWorkflows.userId, userId)))
+    .returning({ id: autopilotWorkflows.id });
+
+  return rows.length > 0;
+}
+
+export async function getRecentAutopilotRunsByUserId(userId: string, limit = 20) {
+  return db.query.autopilotRuns.findMany({
+    where: eq(autopilotRuns.userId, userId),
+    orderBy: [desc(autopilotRuns.startedAt)],
+    limit,
+  });
+}
+
+export async function createAutopilotRun(input: {
+  workflowId: string;
+  userId: string;
+  status: "success" | "failed";
+  summary?: string;
+  errorMessage?: string;
+}) {
+  const [row] = await db
+    .insert(autopilotRuns)
+    .values({
+      workflowId: input.workflowId,
+      userId: input.userId,
+      status: input.status,
+      summary: input.summary,
+      errorMessage: input.errorMessage,
+      completedAt: new Date(),
+    })
     .returning();
 
   return row;
