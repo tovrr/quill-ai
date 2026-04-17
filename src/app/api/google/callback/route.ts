@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { upsertGoogleConnection } from "@/lib/db-helpers";
+import { upsertGoogleConnection } from "@/lib/data/db-helpers";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { logAuditEvent } from "@/lib/audit-log";
+import { logAuditEvent } from "@/lib/data/audit-log";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
 
 export const dynamic = "force-dynamic";

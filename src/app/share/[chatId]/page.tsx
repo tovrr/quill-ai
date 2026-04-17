@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRightIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { getChatById, getMessagesByChatId } from "@/lib/db-helpers";
+import { getChatById, getMessagesByChatId } from "@/lib/data/db-helpers";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";

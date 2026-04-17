@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { getChatById, getMessagesByChatId } from "@/lib/db-helpers";
+import { getChatById, getMessagesByChatId } from "@/lib/data/db-helpers";
 import {
   extractTextFromMessageParts,
   getMessagePartTypes,

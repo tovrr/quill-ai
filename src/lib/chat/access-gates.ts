@@ -1,4 +1,4 @@
-import { countUserMessagesToday } from "@/lib/db-helpers";
+import { countUserMessagesToday } from "@/lib/data/db-helpers";
 import { resolveUserEntitlements } from "@/lib/entitlements";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isWebSearchConfigured } from "@/lib/web-search";

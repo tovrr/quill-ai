@@ -5,8 +5,8 @@ import {
   getGoogleConnectionByUserId,
   getGoogleWorkspaceSnapshotById,
   createGoogleWorkspaceSnapshot,
-} from "@/lib/db-helpers";
-import { logAuditEvent } from "@/lib/audit-log";
+} from "@/lib/data/db-helpers";
+import { logAuditEvent } from "@/lib/data/audit-log";
 import { googleFetch } from "@/lib/google-api";
 import { readSafeErrorMessage } from "@/lib/api-security";
 import {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { getChatsByUserId } from "@/lib/db-helpers";
+import { getChatsByUserId } from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";
 

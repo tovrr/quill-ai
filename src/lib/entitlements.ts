@@ -2,7 +2,7 @@ import {
   createUserEntitlement,
   getUserEntitlementByUserId,
   updateUserEntitlement,
-} from "@/lib/db-helpers";
+} from "@/lib/data/db-helpers";
 
 type ResolvedEntitlement = {
   canUsePaidModes: boolean;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { createAutopilotWorkflow, getAutopilotWorkflowsByUserId } from "@/lib/db-helpers";
+import { createAutopilotWorkflow, getAutopilotWorkflowsByUserId } from "@/lib/data/db-helpers";
 import {
   estimateNextRunAt,
   normalizeCronExpression,

@@ -17,7 +17,7 @@ import {
   saveMessage,
   updateChatTitle,
   getChatById,
-} from "@/lib/db-helpers";
+} from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/model-usage";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildWebSearchContext, searchWeb } from "@/lib/web-search";

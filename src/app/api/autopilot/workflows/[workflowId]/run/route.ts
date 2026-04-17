@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { createAutopilotRun, getAutopilotWorkflowById, updateAutopilotWorkflowByUserId } from "@/lib/db-helpers";
+import { createAutopilotRun, getAutopilotWorkflowById, updateAutopilotWorkflowByUserId } from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";
 

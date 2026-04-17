@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { countUserMessagesToday } from "@/lib/db-helpers";
+import { countUserMessagesToday } from "@/lib/data/db-helpers";
 import { isWebSearchConfigured } from "@/lib/web-search";
 import { resolveUserEntitlements } from "@/lib/entitlements";
 

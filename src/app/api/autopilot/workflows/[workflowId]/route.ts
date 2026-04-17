@@ -5,7 +5,7 @@ import {
   deleteAutopilotWorkflowByUserId,
   getAutopilotWorkflowById,
   updateAutopilotWorkflowByUserId,
-} from "@/lib/db-helpers";
+} from "@/lib/data/db-helpers";
 import {
   normalizeCronExpression,
   normalizeTimezone,

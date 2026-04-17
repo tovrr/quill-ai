@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { logAuditEvent } from "@/lib/audit-log";
+import { logAuditEvent } from "@/lib/data/audit-log";
 import {
   createApiRequestContext,
   logApiCompletion,
@@ -13,7 +13,7 @@ import {
   getMcpToolsByServerId,
   updateMcpServerByUserId,
   deleteMcpServerByUserId,
-} from "@/lib/db-helpers";
+} from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";
 

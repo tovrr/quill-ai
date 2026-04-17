@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { getGoogleConnectionByUserId, createGoogleWorkspaceSnapshot } from "@/lib/db-helpers";
-import { logAuditEvent } from "@/lib/audit-log";
+import { getGoogleConnectionByUserId, createGoogleWorkspaceSnapshot } from "@/lib/data/db-helpers";
+import { logAuditEvent } from "@/lib/data/audit-log";
 import { googleFetch } from "@/lib/google-api";
 import { readSafeErrorMessage } from "@/lib/api-security";
 import {

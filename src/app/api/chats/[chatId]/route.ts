@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { deleteChatByUserId, getChatById, getMessagesByChatId, updateChatTitle } from "@/lib/db-helpers";
+import { deleteChatByUserId, getChatById, getMessagesByChatId, updateChatTitle } from "@/lib/data/db-helpers";
 
 interface Params {
   params: Promise<{ chatId: string }>;

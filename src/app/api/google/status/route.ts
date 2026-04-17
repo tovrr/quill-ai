@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { getGoogleConnectionByUserId } from "@/lib/db-helpers";
+import { getGoogleConnectionByUserId } from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";
 

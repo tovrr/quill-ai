@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { getGoogleConnectionByUserId, deleteGoogleConnectionByUserId } from "@/lib/db-helpers";
+import { getGoogleConnectionByUserId, deleteGoogleConnectionByUserId } from "@/lib/data/db-helpers";
 import { parseBoundedInt, readSafeErrorMessage, sanitizeGoogleNameQuery } from "@/lib/api-security";
-import { logAuditEvent } from "@/lib/audit-log";
+import { logAuditEvent } from "@/lib/data/audit-log";
 import { googleFetch } from "@/lib/google-api";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
 

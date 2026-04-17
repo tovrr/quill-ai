@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers as nextHeaders } from "next/headers";
 import { auth } from "@/lib/auth/server";
-import { createChat, getChatById, saveMessage, updateChatTitle } from "@/lib/db-helpers";
+import { createChat, getChatById, saveMessage, updateChatTitle } from "@/lib/data/db-helpers";
 import {
   createApiRequestContext,
   logApiCompletion,
