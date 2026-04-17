@@ -150,7 +150,7 @@ export function Button({ children }: { children: React.ReactNode }) {
 
 ### To add a database
 
-Follow `.agents/memory-bank/recipes/add-database.md` (see `.kilocode/recipes/add-database.md` for current template)
+Follow `.kilocode/recipes/add-database.md`
 
 ### To add API routes
 
