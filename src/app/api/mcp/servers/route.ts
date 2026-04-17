@@ -7,7 +7,7 @@ import {
   logApiCompletion,
   logApiStart,
   withRequestHeaders,
-} from "@/lib/observability";
+} from "@/lib/observability/logging";
 import { getMcpServersByUserId, createMcpServer } from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";

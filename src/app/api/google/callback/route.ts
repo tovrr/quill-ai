@@ -3,7 +3,7 @@ import { upsertGoogleConnection } from "@/lib/data/db-helpers";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { logAuditEvent } from "@/lib/data/audit-log";
-import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
+import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability/logging";
 
 export const dynamic = "force-dynamic";
 

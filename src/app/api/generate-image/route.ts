@@ -2,14 +2,14 @@ import { google } from "@ai-sdk/google";
 import { experimental_generateImage as generateImage } from "ai";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/observability/rate-limit";
 import {
   buildRateLimitHeaders,
   createApiRequestContext,
   logApiCompletion,
   logApiStart,
-} from "@/lib/observability";
-import { recordModelUsage } from "@/lib/model-usage";
+} from "@/lib/observability/logging";
+import { recordModelUsage } from "@/lib/observability/metrics";
 
 export const maxDuration = 60;
 

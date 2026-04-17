@@ -5,7 +5,7 @@ import {
   type UIMessage,
 } from "ai";
 import { saveMessage, createArtifactVersion } from "@/lib/data/db-helpers";
-import { recordModelUsage } from "@/lib/model-usage";
+import { recordModelUsage } from "@/lib/observability/metrics";
 import { recordBuilderMetric } from "@/lib/api-metrics";
 import {
   analyzeArtifactQuality,

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import { headers as nextHeaders } from "next/headers";
 import { auth } from "@/lib/auth/server";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/observability/rate-limit";
 
 export const runtime = "nodejs";
 

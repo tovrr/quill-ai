@@ -4,7 +4,7 @@ import { headers as nextHeaders } from "next/headers";
 import { getUserSkills, installUserSkill } from "@/lib/data/db-helpers";
 import { getSkillById, SKILLS_REGISTRY } from "@/lib/extensions/skills";
 import { logAuditEvent } from "@/lib/data/audit-log";
-import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
+import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability/logging";
 
 export const dynamic = "force-dynamic";
 

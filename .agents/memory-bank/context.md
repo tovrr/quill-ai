@@ -8,6 +8,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Continued Phase 2 code reorganization (batch 6): moved observability modules into `src/lib/observability/` (`metrics.ts`, `logging.ts`, `rate-limit.ts`) and rewired imports across chat/health/admin/artifacts/skills/google/mcp routes with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 5): moved extensions modules into `src/lib/extensions/` (`mcp-registry.ts`, `skills.ts`, `autopilot.ts`, `customization.ts`) and rewired imports across agent/chat/autopilot/mcp/skills/settings callers with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 4): moved integration modules into `src/lib/integrations/` (`google-api.ts`, `web-search.ts`) and rewired imports across chat/google/me/lib callers with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 3): moved data modules into `src/lib/data/` (`db-helpers.ts`, `audit-log.ts`) and rewired imports across API routes/share page/lib with passing typecheck and build
@@ -182,6 +183,8 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Continued Phase 2 with observability-domain migration (batch 6): moved `src/lib/model-usage.ts`, `src/lib/observability.ts`, and `src/lib/rate-limit.ts` to `src/lib/observability/` as `metrics.ts`, `logging.ts`, and `rate-limit.ts` using history-preserving moves, rewired all affected imports across API/chat/lib modules, corrected one nested import rewrite edge-case, and revalidated with passing `npm run typecheck` and `npm run build`.
 
 - 2026-04-17: Continued Phase 2 with extensions-domain migration (batch 5): moved `src/lib/mcp-registry.ts`, `src/lib/skills-registry.ts`, `src/lib/autopilot-utils.ts`, and `src/lib/user-customization.ts` to `src/lib/extensions/` using history-preserving moves, rewired all affected imports in agent/chat/autopilot/mcp/skills/settings callers, and revalidated with passing `npm run typecheck` and `npm run build`.
 

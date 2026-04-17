@@ -6,7 +6,7 @@ import {
   logApiCompletion,
   logApiStart,
   withRequestHeaders,
-} from "@/lib/observability";
+} from "@/lib/observability/logging";
 
 type CheckStatus = "ok" | "degraded" | "down";
 

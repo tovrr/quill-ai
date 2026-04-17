@@ -7,7 +7,7 @@ import {
   logApiCompletion,
   logApiStart,
   withRequestHeaders,
-} from "@/lib/observability";
+} from "@/lib/observability/logging";
 
 type GuestMessage = {
   role: "user" | "assistant" | "system" | "tool";

@@ -4,7 +4,7 @@ import {
   logApiCompletion,
   logApiStart,
   withRequestHeaders,
-} from "@/lib/observability";
+} from "@/lib/observability/logging";
 
 export const dynamic = "force-dynamic";
 

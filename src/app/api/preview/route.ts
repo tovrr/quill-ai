@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { generatePreviewHtml } from "@/lib/react-preview-html";
 import { headers as nextHeaders } from "next/headers";
 import { auth } from "@/lib/auth/server";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/observability/rate-limit";
 
 const MAX_FILES = 50;
 const MAX_FILE_BYTES = 200_000; // 200 KB per file

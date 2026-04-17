@@ -18,8 +18,8 @@ import {
   updateChatTitle,
   getChatById,
 } from "@/lib/data/db-helpers";
-import { recordModelUsage } from "@/lib/model-usage";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { recordModelUsage } from "@/lib/observability/metrics";
+import { checkRateLimit } from "@/lib/observability/rate-limit";
 import { buildWebSearchContext, searchWeb } from "@/lib/integrations/web-search";
 import {
   buildRateLimitHeaders,
@@ -27,7 +27,7 @@ import {
   logApiCompletion,
   logApiStart,
   withRequestHeaders,
-} from "@/lib/observability";
+} from "@/lib/observability/logging";
 import { parseBuilderArtifact } from "@/lib/builder-artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { getRecentModelUsageEvents } from "@/lib/model-usage";
+import { getRecentModelUsageEvents } from "@/lib/observability/metrics";
 
 export const dynamic = "force-dynamic";
 

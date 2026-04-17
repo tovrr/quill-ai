@@ -5,7 +5,7 @@ import { getGoogleConnectionByUserId, deleteGoogleConnectionByUserId } from "@/l
 import { parseBoundedInt, readSafeErrorMessage, sanitizeGoogleNameQuery } from "@/lib/api-security";
 import { logAuditEvent } from "@/lib/data/audit-log";
 import { googleFetch } from "@/lib/integrations/google-api";
-import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
+import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability/logging";
 
 export const dynamic = "force-dynamic";
 
