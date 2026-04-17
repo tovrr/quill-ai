@@ -15,8 +15,287 @@ type MessageLike = {
   metadata?: unknown;
 };
 
+type AssistantTextSplit = {
+  reasoningText: string;
+  finalText: string;
+};
+
+const REASONING_SIGNAL_PATTERNS = [
+  /^okay(?:[,.!\s]|$)/i,
+  /^ok(?:[,.!\s]|$)/i,
+  /^no need (?:for|to)\b/i,
+  /^so the assistant should\b/i,
+  /^the assistant should\b/i,
+  /^the user /i,
+  /^let me /i,
+  /^i need to /i,
+  /^i should\b/i,
+  /^first[,.!\s]/i,
+  /^looking back/i,
+  /^wait[,.!\s]/i,
+  /^so i need to /i,
+  /^the previous /i,
+  /\buser asks\b/i,
+  /\bextra information\b/i,
+  /\bprevious response\b/i,
+];
+
+const REASONING_SENTENCE_PATTERNS = [
+  ...REASONING_SIGNAL_PATTERNS,
+  /^alright[,.!\s]*/i,
+  /^check\b/i,
+  /^avoid\b/i,
+  /^yes[,.!\s]/i,
+  /^that'?s\b/i,
+  /^just the sentence\b/i,
+  /\b(grammar|markdown|respond appropriately|simple sentence|final answer|check for)\b/i,
+];
+
+const DIRECT_ANSWER_STARTS = [
+  "certainly",
+  "of course",
+  "absolutely",
+  "sure",
+  "hello",
+  "hi",
+  "bonjour",
+  "salut",
+  "hey",
+  "je suis",
+  "l'objectif",
+  "objectif atteint",
+  "quill,",
+  "voici",
+];
+
+const STREAMING_REASONING_GUARD_REGEX = /\b(let me|i need to|the user|assistant should|check for|final answer|respond appropriately|previous response|extra information|user asks)\b/i;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function splitIntoSentences(value: string): string[] {
+  return value.match(/[^.!?]+(?:[.!?]+|$)/g)?.map((item) => item.trim()).filter(Boolean) ?? [];
+}
+
+function normalizeSentenceForDetection(sentence: string): string {
+  return normalizeVisibleText(sentence).replace(/^[\s"'`)*_\]]+/, "");
+}
+
+function looksLikeReasoningSignal(value: string): boolean {
+  return REASONING_SIGNAL_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+function looksLikeReasoningSentence(value: string): boolean {
+  return REASONING_SENTENCE_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+function looksLikeDirectAnswerStart(value: string): boolean {
+  return DIRECT_ANSWER_STARTS.some((start) => value.startsWith(start));
+}
+
+function extractTrailingFinalLine(value: string): string | null {
+  const lines = value
+    .split("\n")
+    .map((line) => normalizeVisibleText(line))
+    .filter(Boolean);
+
+  if (lines.length < 2) return null;
+
+  const lastLine = lines.at(-1) ?? "";
+  const leadingLines = lines.slice(0, -1).join(" ").trim();
+  if (!hasRenderableTextValue(lastLine) || !hasRenderableTextValue(leadingLines)) {
+    return null;
+  }
+
+  if (!looksLikeReasoningSentence(normalizeSentenceForDetection(leadingLines))) {
+    return null;
+  }
+
+  const cleanedLastLine = normalizeVisibleText(lastLine.replace(/^\*\*([\s\S]*?)\*\*(.*)$/u, "$1$2"));
+  if (!hasRenderableTextValue(cleanedLastLine)) {
+    return null;
+  }
+
+  const normalizedCandidate = normalizeSentenceForDetection(cleanedLastLine).toLowerCase();
+  if (looksLikeReasoningSentence(normalizedCandidate)) {
+    return null;
+  }
+
+  if (!looksLikeDirectAnswerStart(normalizedCandidate)) {
+    return null;
+  }
+
+  return cleanedLastLine;
+}
+
+function maybeSplitAssistantReasoningLeak(value: string): AssistantTextSplit | null {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return null;
+
+  const paragraphs = normalized
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length < 2) return null;
+
+  const firstParagraph = paragraphs[0] ?? "";
+  if (!looksLikeReasoningSignal(firstParagraph)) {
+    return null;
+  }
+
+  const lastParagraph = paragraphs.at(-1) ?? "";
+  const boldOnlyMatch = lastParagraph.match(/^\*\*([\s\S]*)\*\*$/);
+  const finalText = normalizeVisibleText(boldOnlyMatch ? boldOnlyMatch[1] : lastParagraph);
+  if (!hasRenderableTextValue(finalText)) return null;
+
+  const finalLooksLikeReasoning = looksLikeReasoningSignal(finalText);
+  if (finalLooksLikeReasoning) return null;
+
+  const reasoningText = normalizeVisibleText(paragraphs.slice(0, -1).join("\n\n"));
+  if (!hasRenderableTextValue(reasoningText)) return null;
+
+  return {
+    reasoningText,
+    finalText,
+  };
+}
+
+function maybeSplitSingleParagraphReasoningLeak(value: string): AssistantTextSplit | null {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return null;
+
+  const sentenceMatches = splitIntoSentences(normalized);
+  if (sentenceMatches.length < 2) return null;
+
+  const normalizedSentences = sentenceMatches.map(normalizeSentenceForDetection);
+
+  if (looksLikeReasoningSignal(normalized)) {
+    for (let index = 1; index < normalizedSentences.length; index += 1) {
+      const candidate = sentenceMatches.slice(index).join(" ").trim();
+      const reasoning = sentenceMatches.slice(0, index).join(" ").trim();
+      if (!hasRenderableTextValue(candidate) || !hasRenderableTextValue(reasoning)) continue;
+
+      const normalizedCandidate = normalizeSentenceForDetection(candidate).toLowerCase();
+      if (!looksLikeDirectAnswerStart(normalizedCandidate)) continue;
+      if (looksLikeReasoningSignal(normalizedCandidate)) continue;
+
+      return {
+        reasoningText: reasoning,
+        finalText: candidate,
+      };
+    }
+  }
+
+  const reasoningIndexes = normalizedSentences.reduce<number[]>((accumulator, sentence, index) => {
+    if (looksLikeReasoningSentence(sentence)) {
+      accumulator.push(index);
+    }
+    return accumulator;
+  }, []);
+
+  if (reasoningIndexes.length === 0) {
+    return null;
+  }
+
+  const lastReasoningIndex = reasoningIndexes[reasoningIndexes.length - 1] ?? -1;
+  const answerStartIndex = normalizedSentences.findIndex(
+    (sentence, index) =>
+      index > lastReasoningIndex &&
+      hasRenderableTextValue(sentence) &&
+      !looksLikeReasoningSentence(sentence),
+  );
+
+  if (answerStartIndex <= lastReasoningIndex) {
+    return null;
+  }
+
+  const candidateSentences = normalizedSentences.slice(answerStartIndex);
+  const hasDirectAnswerLead = candidateSentences.some((sentence) => looksLikeDirectAnswerStart(sentence.toLowerCase()));
+  if (!hasDirectAnswerLead) {
+    return null;
+  }
+
+  const finalText = sentenceMatches.slice(answerStartIndex).join(" ").trim();
+  const reasoningText = sentenceMatches.slice(0, answerStartIndex).join(" ").trim();
+  if (!hasRenderableTextValue(finalText) || !hasRenderableTextValue(reasoningText)) {
+    return null;
+  }
+
+  if (looksLikeReasoningSentence(normalizeSentenceForDetection(finalText))) {
+    return null;
+  }
+
+  return {
+    reasoningText,
+    finalText,
+  };
+}
+
+export function splitAssistantReasoningLeak(value: string): AssistantTextSplit | null {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return null;
+
+  return maybeSplitAssistantReasoningLeak(normalized) ?? maybeSplitSingleParagraphReasoningLeak(normalized);
+}
+
+export function sanitizeAssistantOutputText(value: string): string {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return "";
+
+  const split = splitAssistantReasoningLeak(normalized);
+  if (split) return split.finalText;
+
+  const trailingLine = extractTrailingFinalLine(normalized);
+  return trailingLine ?? normalized;
+}
+
+export function sanitizeAssistantOutputTextForStreaming(value: string): string {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return "";
+
+  const split = splitAssistantReasoningLeak(normalized);
+  if (split) return split.finalText;
+
+  const trailingLine = extractTrailingFinalLine(normalized);
+  if (trailingLine) return trailingLine;
+
+  if (looksLikeReasoningSignal(normalized)) return "";
+  if (STREAMING_REASONING_GUARD_REGEX.test(normalized.toLowerCase())) return "";
+
+  const normalizedLeading = normalizeSentenceForDetection(normalized).toLowerCase();
+  if (!looksLikeDirectAnswerStart(normalizedLeading)) return "";
+
+  return normalized;
+}
+
+function normalizeAssistantParts(parts: UIMessage["parts"]): UIMessage["parts"] {
+  const output: UIMessage["parts"] = [];
+
+  for (const part of parts) {
+    if (!isRecord(part) || typeof part.type !== "string") {
+      output.push(part as UIMessage["parts"][number]);
+      continue;
+    }
+
+    if (part.type !== "text") {
+      output.push(part as UIMessage["parts"][number]);
+      continue;
+    }
+
+    const text = normalizeVisibleText(part.text);
+    const split = splitAssistantReasoningLeak(text);
+    if (!split) {
+      output.push(part as UIMessage["parts"][number]);
+      continue;
+    }
+
+    output.push({ type: "reasoning", text: split.reasoningText } as UIMessage["parts"][number]);
+    output.push({ ...part, text: split.finalText } as UIMessage["parts"][number]);
+  }
+
+  return output;
 }
 
 export function getMessageParts(message: MessageLike | null | undefined): UIMessage["parts"] {
@@ -37,16 +316,18 @@ export function getMessageParts(message: MessageLike | null | undefined): UIMess
 
   if (rawParts.length === 0) {
     if (contentText.length > 0) {
-      return [{ type: "text", text: contentText }] as UIMessage["parts"];
+      const parts = [{ type: "text", text: contentText }] as UIMessage["parts"];
+      return message.role === "assistant" ? normalizeAssistantParts(parts) : parts;
     }
     return [];
   }
 
   if (!hasTextLikePart && contentText.length > 0) {
-    return [...rawParts, { type: "text", text: contentText }] as UIMessage["parts"];
+    const parts = [...rawParts, { type: "text", text: contentText }] as UIMessage["parts"];
+    return message.role === "assistant" ? normalizeAssistantParts(parts) : parts;
   }
 
-  return rawParts;
+  return message.role === "assistant" ? normalizeAssistantParts(rawParts) : rawParts;
 }
 
 export function getMessagePartTypes(parts: unknown[]): string[] {

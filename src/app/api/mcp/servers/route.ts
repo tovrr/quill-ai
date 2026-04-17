@@ -9,6 +9,7 @@ import {
   withRequestHeaders,
 } from "@/lib/observability/logging";
 import { getMcpServersByUserId, createMcpServer } from "@/lib/data/db-helpers";
+import { encryptSecret } from "@/lib/auth/secret-box";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,66 @@ export async function POST(req: NextRequest) {
       ? b.authType
       : "none") as "none" | "bearer" | "basic";
 
+    const oauthProvider = typeof b.oauthProvider === "string" ? b.oauthProvider.trim().slice(0, 80) : undefined;
+    const oauthAuthorizeUrlRaw = typeof b.oauthAuthorizeUrl === "string" ? b.oauthAuthorizeUrl.trim() : "";
+    const oauthTokenUrlRaw = typeof b.oauthTokenUrl === "string" ? b.oauthTokenUrl.trim() : "";
+    const oauthClientId = typeof b.oauthClientId === "string" ? b.oauthClientId.trim().slice(0, 500) : undefined;
+    const oauthScopes = typeof b.oauthScopes === "string" ? b.oauthScopes.trim().slice(0, 500) : undefined;
+    const oauthRedirectUriRaw = typeof b.oauthRedirectUri === "string" ? b.oauthRedirectUri.trim() : "";
+
+    let oauthAuthorizeUrl: string | undefined;
+    if (oauthAuthorizeUrlRaw) {
+      let u: URL;
+      try {
+        u = new URL(oauthAuthorizeUrlRaw);
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_authorize_url_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthAuthorizeUrl is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_authorize_url_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthAuthorizeUrl must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      oauthAuthorizeUrl = u.toString().slice(0, 500);
+    }
+
+    let oauthTokenUrl: string | undefined;
+    if (oauthTokenUrlRaw) {
+      let u: URL;
+      try {
+        u = new URL(oauthTokenUrlRaw);
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_token_url_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthTokenUrl is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_token_url_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthTokenUrl must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      oauthTokenUrl = u.toString().slice(0, 500);
+    }
+
+    let oauthRedirectUri: string | undefined;
+    if (oauthRedirectUriRaw) {
+      let u: URL;
+      try {
+        u = new URL(oauthRedirectUriRaw);
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_redirect_uri_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthRedirectUri is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_redirect_uri_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthRedirectUri must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      oauthRedirectUri = u.toString().slice(0, 500);
+    }
+
+    const oauthClientSecretEnc =
+      typeof b.oauthClientSecret === "string" && b.oauthClientSecret.trim()
+        ? encryptSecret(b.oauthClientSecret.trim().slice(0, 2000))
+        : undefined;
+
     const server = await createMcpServer({
       userId: session.user.id,
       name: String(b.name).trim().slice(0, 80),
@@ -91,6 +152,13 @@ export async function POST(req: NextRequest) {
       description: typeof b.description === "string" ? b.description.trim().slice(0, 500) : undefined,
       authType,
       authToken: typeof b.authToken === "string" ? b.authToken.slice(0, 500) : undefined,
+      oauthProvider,
+      oauthAuthorizeUrl,
+      oauthTokenUrl,
+      oauthClientId,
+      oauthClientSecretEnc,
+      oauthScopes,
+      oauthRedirectUri,
     });
 
     logAuditEvent({

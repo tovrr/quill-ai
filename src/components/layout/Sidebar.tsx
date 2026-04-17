@@ -81,6 +81,7 @@ const PINNED_KEY = "quill-pinned-chats";
 
 interface SidebarProps {
   onClose?: () => void;
+  mobileCompact?: boolean;
 }
 
 const COMMAND_CENTER_LINKS: CommandLink[] = [
@@ -327,18 +328,18 @@ function matchesQuery(query: string, ...values: Array<string | undefined>) {
   return values.some((value) => value?.toLowerCase().includes(query));
 }
 
-export function Sidebar({ onClose }: SidebarProps = {}) {
+export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
   const [session, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
   const [recentChats, setRecentChats] = useState<Chat[]>([]);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [pendingDeleteChat, setPendingDeleteChat] = useState<Chat | null>(null);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [agentsOpen, setAgentsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(!mobileCompact);
+  const [agentsOpen, setAgentsOpen] = useState(true);
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [engineStatus, setEngineStatus] = useState<"loading" | "ok" | "degraded" | "down">("loading");
@@ -475,6 +476,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
     ...recentChats.filter((c) => !pinned.includes(c.id)),
   ];
   const filteredCommandLinks = COMMAND_CENTER_LINKS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
+  const compactCommandLinks = filteredCommandLinks.filter((item) => item.id === "overview" || item.id === "workspace");
   const filteredAgents = KILLERS.filter((killer) => matchesQuery(normalizedQuery, killer.name, killer.shortName, killer.tagline, killer.description));
   const filteredMemoryShortcuts = MEMORY_SHORTCUTS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
   const filteredSkillShortcuts = SKILL_SHORTCUTS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
@@ -483,12 +485,13 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
     items: group.items.filter((item) => matchesQuery(normalizedQuery, group.label, group.subtitle, item.label, item.subtitle)),
   })).filter((group) => group.items.length > 0 || matchesQuery(normalizedQuery, group.label, group.subtitle));
   const filteredChats = sortedChats.filter((chat) => matchesQuery(normalizedQuery, chat.title));
+  const visibleCommandLinks = mobileCompact ? compactCommandLinks : filteredCommandLinks;
   const hasMatches =
-    filteredCommandLinks.length > 0 ||
+    visibleCommandLinks.length > 0 ||
     filteredAgents.length > 0 ||
-    filteredMemoryShortcuts.length > 0 ||
-    filteredSkillShortcuts.length > 0 ||
-    filteredArtifactGroups.length > 0 ||
+    (!mobileCompact && filteredMemoryShortcuts.length > 0) ||
+    (!mobileCompact && filteredSkillShortcuts.length > 0) ||
+    (!mobileCompact && filteredArtifactGroups.length > 0) ||
     filteredChats.length > 0;
 
   const engineTone =
@@ -583,7 +586,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
             style={{ maxHeight: commandOpen ? "420px" : "0px", opacity: commandOpen ? 1 : 0 }}
           >
             <div className="flex flex-col gap-1 pb-2 pt-1">
-              {filteredCommandLinks.map((item) => {
+              {visibleCommandLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -641,6 +644,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
           </div>
         </div>
 
+        {!mobileCompact && (
         <div className="space-y-1 pt-1">
           <button
             onClick={() => setMemoryOpen((value) => !value)}
@@ -707,7 +711,9 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
             </div>
           </div>
         </div>
+        )}
 
+        {!mobileCompact && (
         <div className="space-y-1 pt-1">
           <button
             onClick={() => setStudioOpen((value) => !value)}
@@ -761,6 +767,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
             </div>
           </div>
         </div>
+        )}
 
         <div className="mx-4 my-2 border-t border-quill-border" />
 

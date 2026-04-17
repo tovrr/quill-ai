@@ -5,52 +5,37 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 
 export const metadata: Metadata = {
   title: "Pricing — Quill AI",
-  description: "Simple, honest pricing. Start free, upgrade when you need more. No hidden fees.",
+  description: "Transparent pricing for Quill's secure agent control plane. Start free, upgrade for advanced policy, routing, and governance.",
 };
 
 const FREE_FEATURES = [
-  "Fast mode",
-  "Quick start (guest access)",
-  "Specialist agents",
-  "Builder target selector (Auto/Page/React/Next.js)",
-  "Page artifact generation + canvas preview",
-  "Share + delete controls",
-  "Limited web search (account required)",
-  "Sign in to unlock Think + Pro",
-  "No image generation",
+  "Up to 2 connected providers",
+  "Cloud + local routing support",
+  "Basic policy templates",
+  "Personal workspace",
+  "Fast + Balanced route profiles",
+  "Daily usage quotas",
+  "Community support",
 ];
 
 const THINK_FEATURES = [
-  "Fast + Think modes",
-  "Deeper reasoning quality",
-  "Higher daily usage limits",
-  "React app artifact generation",
-  "Live React preview sandbox in Canvas",
-  "Builder iteration locks + quick refine actions",
-  "Section-level regenerate actions for page artifacts",
-  "Builder quality score banner with guided retries",
-  "Customization presets + personal style instructions",
-  "Saved history (account required)",
-  "Web search included",
-  "Image generation",
-  "File uploads",
-  "Canvas mode",
+  "Unlimited providers and environments",
+  "Advanced boundary and policy rules",
+  "Key isolation + project-level quotas",
+  "Fast + Balanced + Reasoning profiles",
+  "Budget caps and route overrides",
+  "90-day audit timeline",
+  "Priority email support",
 ];
 
 const PRO_FEATURES = [
-  "Fast + Think + Pro models",
-  "Highest quality responses",
-  "Highest daily usage limits",
-  "Next.js bundle generation (export-first)",
-  "Bundle export-readiness diagnostics",
-  "Optional local bundle validation runner (workspace-enabled)",
-  "One-click setup script export for local run/build",
-  "Saved history + sharing",
-  "Web search included",
-  "Image generation",
-  "File uploads",
-  "Canvas mode",
-  "Priority processing",
+  "Everything in Pro Control",
+  "Multi-user workspace + role controls",
+  "Shared policy packs",
+  "Team analytics by provider and route",
+  "1-year audit retention + exports",
+  "Onboarding guidance for small teams",
+  "Priority support SLA",
 ];
 
 function Check({ color }: { color: string }) {
@@ -82,13 +67,13 @@ export default function PricingPage() {
       {/* Header */}
       <div className="px-4 sm:px-6 pt-14 sm:pt-20 pb-12 text-center" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.07) 0%, transparent 65%)" }}>
         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
-          Simple, honest pricing
+          Pricing for trusted agent operations
         </h1>
         <p className="text-quill-muted text-base sm:text-lg max-w-lg mx-auto">
-          Start free. Upgrade when you need deeper models and stronger builder workflows.
+          Keep the familiar AI workflow. Upgrade when you need stronger policy, routing, and governance controls.
         </p>
         <p className="mt-3 text-xs text-[#EF4444] font-medium">
-          Plan details evolve as quotas and provider costs are tuned.
+          No hidden fees. Transparent limits and predictable control upgrades.
         </p>
       </div>
 
@@ -117,19 +102,19 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          {/* Think */}
+          {/* Pro */}
           <div className="flex flex-col p-6 rounded-2xl border-2 border-[#EF4444] bg-[#0d0d15] relative">
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#EF4444] text-white text-[11px] font-bold tracking-wide whitespace-nowrap">
               MOST POPULAR
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Think</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Pro Control</p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="text-4xl font-black text-quill-text">$12</span>
+              <span className="text-4xl font-black text-quill-text">$29</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
             <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all mb-6">
-              Start Think
+              Start Pro
             </Link>
             <ul className="space-y-3">
               {THINK_FEATURES.map((f) => (
@@ -141,16 +126,16 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          {/* Pro */}
+          {/* Team */}
           <div className="flex flex-col p-6 rounded-2xl border border-[rgba(245,158,11,0.3)] bg-[#0d0d15]" style={{ boxShadow: "0 0 40px rgba(245,158,11,0.04)" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Pro</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Team Ops</p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="text-4xl font-black text-quill-text">$29</span>
+              <span className="text-4xl font-black text-quill-text">$99</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
             <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
             <Link href="/login" className="flex items-center justify-center h-10 rounded-xl border border-[rgba(245,158,11,0.4)] text-[#f59e0b] text-sm font-semibold hover:bg-[rgba(245,158,11,0.08)] transition-all mb-6">
-              Start Pro
+              Start Team
             </Link>
             <ul className="space-y-3">
               {PRO_FEATURES.map((f) => (
@@ -163,6 +148,36 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* Objections */}
+        <div className="mt-16 sm:mt-20 max-w-4xl mx-auto">
+          <h2 className="text-xl font-bold text-center mb-8">Common objections, answered</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              {
+                q: "We already use provider dashboards",
+                a: "Dashboards show usage per vendor. Quill gives one control plane across vendors with enforceable policy and routing decisions.",
+              },
+              {
+                q: "Switching providers usually means rewrites",
+                a: "Quill abstracts model providers so apps and workflows can switch endpoints without a full integration rewrite.",
+              },
+              {
+                q: "Governance sounds enterprise-heavy",
+                a: "Quill starts simple: templates, profile-based routing, and clear defaults. Advanced controls are there only when you need them.",
+              },
+              {
+                q: "We worry about runaway AI costs",
+                a: "Apex route profiles, budget caps, and per-key quotas give predictable spend boundaries before costs spike.",
+              },
+            ].map(({ q, a }) => (
+              <div key={q} className="rounded-2xl border border-quill-border bg-quill-surface-2 p-5">
+                <p className="text-sm font-semibold text-quill-text mb-2">{q}</p>
+                <p className="text-sm text-quill-muted leading-relaxed">{a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* FAQ */}
         <div className="mt-16 sm:mt-20 max-w-2xl mx-auto">
           <h2 className="text-xl font-bold text-center mb-8">Frequently asked questions</h2>
@@ -170,11 +185,11 @@ export default function PricingPage() {
             {[
               { q: "Can I cancel anytime?", a: "Yes. Cancel from Settings → Billing at any time. Your plan stays active until the end of the current billing period — no partial refunds." },
               { q: "What happens when I hit my message limit?", a: "Requests are paused until your next billing cycle resets. You can upgrade at any time to get more immediately." },
-              { q: "Is there an annual discount?", a: "Annual billing (2 months free) is coming soon. Sign up free and we'll notify you when it's available." },
-              { q: "Do you store my conversations?", a: "If you are signed in, conversations are stored in your account history and can be deleted from the sidebar. Guest sessions are not persisted." },
-              { q: "What AI models does Quill use?", a: "Fast uses Gemini 2.5 Flash Lite by default (or optional OpenRouter free-model routing when configured). Think uses Gemini 2.5 Flash. Pro uses Gemini 2.5 Pro." },
-              { q: "Does every plan include app builder?", a: "Yes. Free includes page artifacts. Think unlocks stronger React app iteration workflows. Pro is best for high-quality Next.js bundle output and export diagnostics." },
-              { q: "Can I customize Quill's output style?", a: "Yes. In Settings, you can choose a preset profile (for example SaaS Marketer or Full-stack Engineer) and add your own instructions. Quill applies these preferences in builder and chat responses." },
+              { q: "Can I run cloud and local models together?", a: "Yes. Quill is built for hybrid workflows where cloud and local providers can be governed in one place." },
+              { q: "How does Quill differ from model provider UIs?", a: "Quill is not another model UI. It is a control plane with policy, routing, identity, and auditability across providers." },
+              { q: "Do you provide auditability?", a: "Yes. Pro and Team plans include audit timelines, and Team includes extended retention and export support." },
+              { q: "Is there an annual discount?", a: "Annual billing with savings is on the roadmap. Join now and we will notify you when annual plans launch." },
+              { q: "Can I customize output behavior?", a: "Yes. You can configure style instructions, route profiles, and policy defaults to align with your workflow." },
             ].map(({ q, a }) => (
               <div key={q} className="border-b border-quill-border pb-5">
                 <p className="text-sm font-semibold text-quill-text mb-2">{q}</p>

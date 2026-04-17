@@ -7,6 +7,7 @@ interface AgentStatusBarProps {
   taskTitle?: string;
   stepCount?: number;
   totalSteps?: number;
+  compact?: boolean;
 }
 
 const statusMessages: Record<AgentStatus, string> = {
@@ -30,6 +31,7 @@ export function AgentStatusBar({
   taskTitle,
   stepCount,
   totalSteps,
+  compact = false,
 }: AgentStatusBarProps) {
   const color = statusColors[status];
   const message = statusMessages[status];
@@ -40,7 +42,7 @@ export function AgentStatusBar({
   const progress = hasStepData ? Math.round((stepCount / totalSteps) * 100) : null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0d0d15] border-b border-quill-border">
+    <div className={`flex items-center gap-3 bg-[#0d0d15] border-b border-quill-border ${compact ? "px-3 py-1.5" : "px-4 py-2.5"}`}>
       {/* Status dot */}
       <div className="flex items-center gap-2">
         <span
@@ -49,13 +51,13 @@ export function AgentStatusBar({
           }`}
           style={{ background: color }}
         />
-        <span className="text-xs font-medium" style={{ color }}>
+        <span className={`${compact ? "text-[11px]" : "text-xs"} font-medium`} style={{ color }}>
           {message}
         </span>
       </div>
 
       {/* Task title */}
-      {taskTitle && (
+      {!compact && taskTitle && (
         <>
           <span className="text-quill-border-2">·</span>
           <span className="text-xs text-quill-muted truncate max-w-xs">
@@ -65,14 +67,14 @@ export function AgentStatusBar({
       )}
 
       {/* Step counter */}
-      {stepCount !== undefined && totalSteps !== undefined && (
+      {!compact && stepCount !== undefined && totalSteps !== undefined && (
         <span className="ml-auto text-xs text-quill-muted shrink-0">
           Step {stepCount}/{totalSteps}
         </span>
       )}
 
       {/* Progress bar */}
-      {progress !== null && (
+      {!compact && progress !== null && (
         <div className="w-20 h-1 bg-quill-border rounded-full overflow-hidden shrink-0">
           <div
             className="h-full rounded-full transition-all duration-500"

@@ -22,7 +22,7 @@ type TwoPassBuilderParams = {
   requestedBuilderTarget: BuilderTarget;
   model: Parameters<typeof streamText>[0]["model"];
   modelId: string;
-  provider: "google" | "openrouter";
+  provider: "google" | "openrouter" | "apex";
   modelMessages: ModelMessage[];
   systemPrompt: string;
   qualityRetryThreshold: number;

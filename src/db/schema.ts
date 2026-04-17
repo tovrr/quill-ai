@@ -278,6 +278,18 @@ export const mcpServers = pgTable(
       .notNull()
       .default("none"),
     authToken: text("authToken"),
+    oauthProvider: varchar("oauthProvider"),
+    oauthAuthorizeUrl: text("oauthAuthorizeUrl"),
+    oauthTokenUrl: text("oauthTokenUrl"),
+    oauthClientId: text("oauthClientId"),
+    oauthClientSecretEnc: text("oauthClientSecretEnc"),
+    oauthScopes: text("oauthScopes"),
+    oauthRedirectUri: text("oauthRedirectUri"),
+    oauthAccessTokenEnc: text("oauthAccessTokenEnc"),
+    oauthRefreshTokenEnc: text("oauthRefreshTokenEnc"),
+    oauthAccessTokenExpiresAt: timestamp("oauthAccessTokenExpiresAt", { mode: "date" }),
+    oauthState: text("oauthState"),
+    oauthConnectedAt: timestamp("oauthConnectedAt", { mode: "date" }),
     status: varchar("status", { enum: ["connected", "error", "disconnected"] })
       .notNull()
       .default("disconnected"),

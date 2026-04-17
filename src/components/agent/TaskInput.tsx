@@ -202,6 +202,11 @@ export function TaskInput({
   const isActiveComposer = isFocused || hasTypedContent || imageMode;
   const showWorkingGlow = Boolean(isWorking) || Boolean(isGeneratingImage);
   const canStop = Boolean(isWorking && onStop);
+  const mobileExpanded =
+    isActiveComposer ||
+    Boolean(attachedFiles && attachedFiles.length > 0) ||
+    Boolean(isWorking) ||
+    Boolean(isGeneratingImage);
 
   return (
     <div className="flex flex-col gap-2">
@@ -265,12 +270,16 @@ export function TaskInput({
           disabled={isDisabled}
           placeholder={currentPlaceholder}
           rows={1}
-          className="w-full bg-transparent resize-none px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-quill-text placeholder-quill-muted outline-none leading-relaxed min-h-16 sm:min-h-13"
+          className={`w-full bg-transparent resize-none px-3 sm:px-5 text-sm text-quill-text placeholder-quill-muted outline-none leading-relaxed transition-all ${
+            mobileExpanded
+              ? "py-2.5 sm:py-4 min-h-12 sm:min-h-13"
+              : "py-2 sm:py-4 min-h-10 sm:min-h-13"
+          }`}
           style={{ maxHeight: "160px" }}
         />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 pb-2.5 pt-1.5">
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
@@ -282,7 +291,7 @@ export function TaskInput({
           />
 
           {/* Left: attach + search + image */}
-          <div className="flex items-center gap-1 overflow-x-auto pr-1">
+          <div className="flex min-w-0 items-center gap-1 pr-1">
             <button
               onClick={() => {
                 fileInputRef.current?.click();
@@ -291,7 +300,7 @@ export function TaskInput({
               }}
               disabled={isDisabled}
               title="Attach file"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 attachedFiles && attachedFiles.length > 0
                   ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
                   : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -334,7 +343,7 @@ export function TaskInput({
                     ? "Sign in to use web search"
                     : "Web search coming soon"
               }
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:cursor-not-allowed ${
+              className={`${mobileExpanded ? "flex" : "hidden md:flex"} items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all disabled:cursor-not-allowed ${
                 webSearchState === "available"
                   ? webSearchEnabled
                     ? "text-quill-green bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
@@ -366,7 +375,7 @@ export function TaskInput({
               }}
               disabled={isDisabled}
               title={imageGenerationEnabled ? (imageMode ? "Image generation on - click to disable" : "Enable image generation") : "Sign in to generate images"}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`${mobileExpanded ? "flex" : "hidden md:flex"} items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                 !imageGenerationEnabled
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                   : imageMode
@@ -382,7 +391,7 @@ export function TaskInput({
           </div>{/* end left group */}
 
           {/* Right: mode selector + send */}
-          <div className="flex items-center gap-1.5 shrink-0 border-l border-quill-border pl-2" ref={dropdownRef}>
+          <div className="flex shrink-0 items-center gap-1 border-l border-quill-border pl-1.5" ref={dropdownRef}>
             <div className="relative">
               <button
                 onClick={() => {
@@ -391,7 +400,7 @@ export function TaskInput({
                 }}
                 disabled={isDisabled}
                 title="Builder options"
-                className={`flex min-w-17 items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                className={`${mobileExpanded ? "flex" : "hidden md:flex"} min-w-0 items-center justify-between gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed sm:min-w-17 ${
                   builderDropdownOpen || builderTarget !== "auto" || canvasMode
                     ? "bg-quill-border text-quill-text"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -399,7 +408,7 @@ export function TaskInput({
               >
                 <RectangleGroupIcon className="h-3 w-3" aria-hidden="true" />
                 {(builderTarget !== "auto" || canvasMode) && (
-                  <span className="hidden md:inline">{BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}</span>
+                  <span className="hidden sm:inline">{BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}</span>
                 )}
                 {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
@@ -464,13 +473,13 @@ export function TaskInput({
                 }}
                 disabled={isDisabled}
                 title="Model mode"
-                className={`flex min-w-15 items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                className={`flex min-w-0 items-center justify-between gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed sm:min-w-15 ${
                   modeDropdownOpen
                     ? "bg-quill-border text-quill-text"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                 }`}
               >
-                <span>{currentModeLabel}</span>
+                <span className="hidden sm:inline">{currentModeLabel}</span>
                 <ChevronDownIcon
                   className="h-2.5 w-2.5 transition-transform duration-150"
                   aria-hidden="true"
@@ -544,7 +553,7 @@ export function TaskInput({
                 onClick={onStop}
                 type="button"
                 title="Stop generation"
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
+                className="w-9 h-9 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
               >
                   <StopIcon className="h-3 w-3 text-white" aria-hidden="true" />
               </button>
@@ -552,7 +561,7 @@ export function TaskInput({
               <button
                 onClick={handleSend}
                 disabled={!value.trim() || isDisabled}
-                className={`w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
+                className={`w-9 h-9 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-md ${
                   imageMode
                     ? "bg-[#F87171] hover:bg-[#9370f0] shadow-[rgba(248,113,113,0.3)]"
                     : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
@@ -572,7 +581,7 @@ export function TaskInput({
       </div>
 
       {/* Hint */}
-      <p className="keyboard-hint text-center text-[11px] text-quill-muted">
+      <p className="keyboard-hint hidden text-center text-[11px] text-quill-muted sm:block">
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Enter</kbd>{" "}
         send &middot;{" "}
         <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Shift+Enter</kbd>{" "}

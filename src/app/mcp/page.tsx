@@ -37,6 +37,10 @@ interface McpServer {
   status: "connected" | "error" | "disconnected";
   toolCount: number;
   lastConnectedAt: string | null;
+  oauthAuthorizeUrl: string | null;
+  oauthTokenUrl: string | null;
+  oauthClientId: string | null;
+  oauthConnectedAt: string | null;
   createdAt: string;
   tools?: McpTool[];
 }
@@ -88,6 +92,7 @@ export default function McpPage() {
     authToken: "",
   });
   const [adding, setAdding] = useState(false);
+  const [oauthPendingId, setOauthPendingId] = useState<string | null>(null);
   const [registryItems, setRegistryItems] = useState<RegistryItem[]>([]);
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryQuery, setRegistryQuery] = useState("");
@@ -222,6 +227,36 @@ export default function McpPage() {
       setServers((prev) =>
         prev.map((s) => (s.id === id ? { ...s, tools: json.tools ?? [] } : s))
       );
+    }
+  }
+
+  function handleOAuthStart(id: string) {
+    setOauthPendingId(id);
+    window.location.assign(`/api/mcp/servers/${id}/oauth/start`);
+  }
+
+  async function handleOAuthRevoke(id: string) {
+    setOauthPendingId(id);
+    try {
+      const res = await fetch(`/api/mcp/servers/${id}/oauth/revoke`, { method: "POST" });
+      if (res.ok) {
+        setServers((prev) =>
+          prev.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  oauthConnectedAt: null,
+                  status: "disconnected",
+                }
+              : s
+          )
+        );
+        showToast("OAuth revoked");
+      } else {
+        showToast("Failed to revoke OAuth");
+      }
+    } finally {
+      setOauthPendingId(null);
     }
   }
 
@@ -486,6 +521,25 @@ export default function McpPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {server.authType === "bearer" && server.oauthAuthorizeUrl && server.oauthTokenUrl && server.oauthClientId && (
+                        server.oauthConnectedAt ? (
+                          <button
+                            onClick={() => handleOAuthRevoke(server.id)}
+                            disabled={oauthPendingId === server.id}
+                            className="text-xs px-2.5 py-1.5 rounded-lg border border-quill-border hover:bg-quill-surface-2 transition-colors disabled:opacity-50"
+                          >
+                            {oauthPendingId === server.id ? "Working..." : "Revoke OAuth"}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleOAuthStart(server.id)}
+                            disabled={oauthPendingId === server.id}
+                            className="text-xs px-2.5 py-1.5 rounded-lg border border-quill-border hover:bg-quill-surface-2 transition-colors disabled:opacity-50"
+                          >
+                            {oauthPendingId === server.id ? "Redirecting..." : "Connect OAuth"}
+                          </button>
+                        )
+                      )}
                       <button
                         onClick={() => handleConnect(server.id)}
                         disabled={connecting === server.id}

@@ -19,9 +19,9 @@ import { KILLERS, type KillerIconKey } from "@/lib/ai/killers";
 import { HeroInput } from "@/components/HeroInput";
 
 export const metadata: Metadata = {
-  title: "Quill AI — Your Personal AI Agent That Gets Things Done",
+  title: "Quill AI — Familiar AI Agents, Trusted by Design",
   description:
-    "Quill is your personal AI agent and no-code/low-code app builder. Research, write, code, generate pages, preview React apps, export Next.js bundles, and iterate with quality scoring and section-level regenerate controls.",
+    "Quill gives teams a familiar AI agent workflow with a secure control plane. Run cloud and local models with policy, routing, identity, and cost controls in one place.",
   keywords: [
     "AI agent",
     "personal AI assistant",
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
     "AI task automation",
   ],
   openGraph: {
-    title: "Quill AI — Your Personal AI Agent",
+    title: "Quill AI — Secure Control Plane for AI Agents",
     description:
-      "Research, write, code, and execute complex tasks autonomously. Give Quill a goal — it figures out the rest.",
+      "Familiar AI agent UX with policy-first control, smart routing, and auditability across cloud and local models.",
     type: "website",
     url: "https://quill.ai",
     images: [
@@ -48,8 +48,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Quill AI — Your Personal AI Agent",
-    description: "Research, write, code, and execute complex tasks autonomously.",
+    title: "Quill AI — Familiar AI Agents, Trusted by Design",
+    description: "Run cloud and local agents with policy, routing, and cost controls.",
     images: ["/twitter-image"],
   },
   alternates: {
@@ -63,7 +63,7 @@ const capabilities = [
       <MagnifyingGlassIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Deep Research",
-    description: "Quill searches the web, reads pages, and synthesizes intelligence from dozens of sources — in seconds.",
+    description: "Run web research workflows with visibility into each step, source, and model decision.",
     color: "#F87171",
   },
   {
@@ -71,7 +71,7 @@ const capabilities = [
       <CodeBracketIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "App Builder",
-    description: "Generate page/React/Next.js artifacts with quality scoring, section-level regenerate actions, and export-readiness checks.",
+    description: "Generate page/React/Next.js artifacts with quality scoring, iteration locks, and export-readiness diagnostics.",
     color: "#F87171",
   },
   {
@@ -79,7 +79,7 @@ const capabilities = [
       <PencilSquareIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Write & Create",
-    description: "Blog posts, emails, reports, presentations, and more — written in your voice with expert-level quality.",
+    description: "Create polished deliverables with reusable style controls across prompts, chats, and generated assets.",
     color: "#34d399",
   },
   {
@@ -87,7 +87,7 @@ const capabilities = [
       <ChartBarIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Analyze Data",
-    description: "Upload spreadsheets, CSVs, or PDFs and get instant insights, charts, and actionable recommendations.",
+    description: "Turn files into actionable decisions with transparent analysis steps and reproducible outputs.",
     color: "#fbbf24",
   },
   {
@@ -95,7 +95,7 @@ const capabilities = [
       <PhotoIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Generate Images",
-    description: "Create stunning visuals, illustrations, and graphics from simple text prompts using Imagen.",
+    description: "Generate visuals with configurable quality/cost trade-offs and the same control layer as text workflows.",
     color: "#f87171",
   },
   {
@@ -103,7 +103,7 @@ const capabilities = [
       <SparklesIcon className="h-5.5 w-5.5" aria-hidden="true" />
     ),
     title: "Specialist Agents",
-    description: "Switch between expert modes — Code Wizard, Deep Dive researcher, Pen Master writer, and more.",
+    description: "Use specialist coworkers for coding, research, and writing while staying inside one governed workspace.",
     color: "#FCA5A5",
   },
 ];
@@ -127,9 +127,9 @@ const exampleTasks = [
 ];
 
 const stats = [
-  { value: "6+", label: "Specialist Agents" },
-  { value: "4", label: "Builder Targets" },
-  { value: "3", label: "AI Model Modes" },
+  { value: "6+", label: "Specialist Coworkers" },
+  { value: "Cloud + Local", label: "Unified Providers" },
+  { value: "Policy-First", label: "Control Layer" },
 ];
 
 export default function HomePage() {
@@ -176,18 +176,18 @@ export default function HomePage() {
         {/* Badge */}
         <div className="relative flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] text-[#F87171] text-xs font-medium mb-4 sm:mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] motion-safe:animate-pulse" />
-          Now available · No credit card required
+          Familiar UX. Trusted control plane.
         </div>
 
         <h1 className="relative text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.08] max-w-4xl">
-          Your{" "}<span className="gradient-text">AI Agent</span>
+          Familiar <span className="gradient-text">AI Agents</span>
           <br />
-          That Gets Things Done
+          Trusted by Design
         </h1>
 
         <p className="relative mt-4 sm:mt-6 text-base sm:text-xl text-quill-muted max-w-2xl leading-relaxed px-2">
-          Quill researches, writes, codes, and now builds no-code/low-code app artifacts.
-          Give it a goal and choose a target: page, react app, or next.js bundle.
+          Keep the workflow users already know from modern agent products.
+          Add Quill&apos;s secure control plane for policy, routing, identity, and cost guardrails.
         </p>
 
         <div className="relative flex flex-col items-center gap-3 sm:gap-4 mt-5 sm:mt-10 w-full px-4 sm:px-0">
@@ -228,7 +228,7 @@ export default function HomePage() {
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex justify-end">
               <div className="max-w-xs sm:max-w-lg px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed">
-                Research the top 10 AI agent companies in 2026 and create a competitive analysis report
+                Connect Claude, Gemini, and local models, then enforce policy and budget limits for this project
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -237,9 +237,9 @@ export default function HomePage() {
               </div>
               <div className="flex-1 flex flex-col gap-2 min-w-0">
                 {[
-                  { tool: "Web Search", desc: 'Searching "top AI agent companies 2026"', status: "done", color: "#34d399" },
-                  { tool: "Browser", desc: "Reading TechCrunch, Forbes, Crunchbase...", status: "done", color: "#34d399" },
-                  { tool: "Analyze", desc: "Synthesizing competitive data", status: "running", color: "#EF4444" },
+                  { tool: "Provider Switchboard", desc: "Connected Gemini + Claude + Local", status: "done", color: "#34d399" },
+                  { tool: "Boundary Guard", desc: "Applied local-boundary data rules", status: "done", color: "#34d399" },
+                  { tool: "Apex Routing", desc: "Selecting best route under budget cap", status: "running", color: "#EF4444" },
                 ].map((t) => (
                   <div key={t.tool} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-quill-border bg-quill-surface text-xs min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.color }} />
@@ -261,9 +261,9 @@ export default function HomePage() {
       {/* Features */}
       <section id="features" className="px-4 sm:px-6 py-16 sm:py-24 max-w-6xl mx-auto">
         <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Everything your AI agent needs</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Everything needed to run trusted agents</h2>
           <p className="mt-4 text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
-            Quill is equipped with a powerful toolkit to handle any task you throw at it.
+            Keep familiar interaction patterns while adding enforceable trust, routing, and governance controls.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -289,7 +289,7 @@ export default function HomePage() {
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Switch to the right expert instantly</h2>
             <p className="mt-4 text-quill-muted text-base sm:text-lg max-w-xl mx-auto">
-              Each agent is fine-tuned for a specific domain — no prompt engineering required.
+              Each coworker is tuned for a specific domain with shared policy and routing controls.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -323,7 +323,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">How Quill works</h2>
-            <p className="mt-4 text-quill-muted text-base sm:text-lg">From idea to done — in three steps.</p>
+            <p className="mt-4 text-quill-muted text-base sm:text-lg">From familiar prompt to governed execution in three steps.</p>
           </div>
 
           {/* Steps — vertical on mobile, horizontal on desktop */}
@@ -331,23 +331,23 @@ export default function HomePage() {
             {[
               {
                 step: "1",
-                title: "Describe your goal",
-                desc: "Type anything in plain English. No special prompts, no setup — just tell Quill what you need.",
-                example: '"Research competitors and write a strategy doc"',
+                title: "Connect your providers",
+                desc: "Bring cloud and local models into one workspace with a single integration layer.",
+                example: '"Gemini + Claude + local Llama connected"',
                 color: "#EF4444",
               },
               {
                 step: "2",
-                title: "Quill plans & executes",
-                desc: "Quill breaks your goal into steps, picks the right tools, and autonomously works through each one.",
-                example: "Searching → Reading → Analyzing → Writing…",
+                title: "Set policy and budget guardrails",
+                desc: "Define what data can leave boundaries, enforce quotas, and apply role-aware access controls.",
+                example: "Boundary rules → key isolation → budget caps",
                 color: "#f59e0b",
               },
               {
                 step: "3",
-                title: "Review & refine",
-                desc: "See every action taken, review the result, ask follow-up questions, or kick off the next task.",
-                example: '"Make it shorter and more aggressive in tone"',
+                title: "Run with Apex",
+                desc: "Apex routes each request by latency, quality target, and cost so operations stay reliable.",
+                example: "Fast / Balanced / Reasoning profiles",
                 color: "#10b981",
               },
             ].map((item, i) => (
@@ -406,7 +406,7 @@ export default function HomePage() {
               href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl border border-quill-border hover:border-quill-border-2 text-quill-text-2 hover:text-quill-text font-medium text-base transition-all"
             >
-              See Pricings
+              See Pricing
               <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
@@ -419,7 +419,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">What can you ask Quill?</h2>
-            <p className="mt-4 text-quill-muted text-base sm:text-lg">Real tasks real people are running right now.</p>
+            <p className="mt-4 text-quill-muted text-base sm:text-lg">Familiar requests, now with policy and routing intelligence.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {exampleTasks.map((task) => (
@@ -443,17 +443,17 @@ export default function HomePage() {
         <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.8) 0%, transparent 70%)" }} />
         <div className="relative max-w-2xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
-            Start your first task <span className="gradient-text">now</span>
+            Ship agents people can <span className="gradient-text">trust</span>
           </h2>
           <p className="text-quill-muted text-base sm:text-lg mb-8 sm:mb-10">
-            No setup. No credit card. Just describe what you need and let Quill handle the rest.
+            Start with a familiar workflow and scale into secure, governed AI operations without rebuilding your stack.
           </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-2.5 px-7 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold text-base sm:text-lg transition-all shadow-2xl shadow-[rgba(239,68,68,0.4)] active:scale-95"
           >
             <QuillLogo size={20} />
-            Launch Quill AI — It&apos;s free
+            Start Free
           </Link>
         </div>
       </section>
@@ -465,7 +465,7 @@ export default function HomePage() {
             <QuillLogo size={18} />
             <span className="text-sm font-semibold gradient-text">Quill AI</span>
           </div>
-          <p className="text-xs text-quill-muted text-center">© 2026 Quill AI. Your personal AI agent.</p>
+          <p className="text-xs text-quill-muted text-center">© 2026 Quill AI. Familiar AI agents, trusted by design.</p>
           <div className="flex gap-5 text-xs text-quill-muted">
             <Link href="/pricing" className="hover:text-quill-text transition-colors">Pricing</Link>
             <Link href="/docs" className="hover:text-quill-text transition-colors">Docs</Link>

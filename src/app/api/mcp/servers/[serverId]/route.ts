@@ -14,6 +14,7 @@ import {
   updateMcpServerByUserId,
   deleteMcpServerByUserId,
 } from "@/lib/data/db-helpers";
+import { encryptSecret } from "@/lib/auth/secret-box";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +109,71 @@ export async function PATCH(
     }
     if (b.authToken === null) updates.authToken = null;
     else if (typeof b.authToken === "string") updates.authToken = b.authToken.slice(0, 500);
+
+    if (b.oauthProvider === null) updates.oauthProvider = null;
+    else if (typeof b.oauthProvider === "string") updates.oauthProvider = b.oauthProvider.trim().slice(0, 80);
+
+    if (b.oauthAuthorizeUrl === null) {
+      updates.oauthAuthorizeUrl = null;
+    } else if (typeof b.oauthAuthorizeUrl === "string") {
+      let u: URL;
+      try {
+        u = new URL(b.oauthAuthorizeUrl.trim());
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_authorize_url_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthAuthorizeUrl is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_authorize_url_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthAuthorizeUrl must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      updates.oauthAuthorizeUrl = u.toString().slice(0, 500);
+    }
+
+    if (b.oauthTokenUrl === null) {
+      updates.oauthTokenUrl = null;
+    } else if (typeof b.oauthTokenUrl === "string") {
+      let u: URL;
+      try {
+        u = new URL(b.oauthTokenUrl.trim());
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_token_url_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthTokenUrl is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_token_url_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthTokenUrl must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      updates.oauthTokenUrl = u.toString().slice(0, 500);
+    }
+
+    if (b.oauthClientId === null) updates.oauthClientId = null;
+    else if (typeof b.oauthClientId === "string") updates.oauthClientId = b.oauthClientId.trim().slice(0, 500);
+
+    if (b.oauthClientSecret === null) updates.oauthClientSecretEnc = null;
+    else if (typeof b.oauthClientSecret === "string" && b.oauthClientSecret.trim()) {
+      updates.oauthClientSecretEnc = encryptSecret(b.oauthClientSecret.trim().slice(0, 2000));
+    }
+
+    if (b.oauthScopes === null) updates.oauthScopes = null;
+    else if (typeof b.oauthScopes === "string") updates.oauthScopes = b.oauthScopes.trim().slice(0, 500);
+
+    if (b.oauthRedirectUri === null) {
+      updates.oauthRedirectUri = null;
+    } else if (typeof b.oauthRedirectUri === "string") {
+      let u: URL;
+      try {
+        u = new URL(b.oauthRedirectUri.trim());
+      } catch {
+        logApiCompletion(context, { status: 400, error: "oauth_redirect_uri_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthRedirectUri is invalid" }, { status: 400 }), context.requestId);
+      }
+      if (u.protocol !== "https:" && u.protocol !== "http:") {
+        logApiCompletion(context, { status: 400, error: "oauth_redirect_uri_protocol_invalid" });
+        return withRequestHeaders(NextResponse.json({ error: "oauthRedirectUri must be http(s)" }, { status: 400 }), context.requestId);
+      }
+      updates.oauthRedirectUri = u.toString().slice(0, 500);
+    }
 
     const updated = await updateMcpServerByUserId(serverId, session.user.id, updates);
     logAuditEvent({

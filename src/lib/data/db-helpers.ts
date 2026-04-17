@@ -427,6 +427,13 @@ export async function createMcpServer(input: {
   description?: string;
   authType: "none" | "bearer" | "basic";
   authToken?: string;
+  oauthProvider?: string;
+  oauthAuthorizeUrl?: string;
+  oauthTokenUrl?: string;
+  oauthClientId?: string;
+  oauthClientSecretEnc?: string;
+  oauthScopes?: string;
+  oauthRedirectUri?: string;
 }) {
   const [row] = await db
     .insert(mcpServers)
@@ -437,6 +444,13 @@ export async function createMcpServer(input: {
       description: input.description,
       authType: input.authType,
       authToken: input.authToken,
+      oauthProvider: input.oauthProvider,
+      oauthAuthorizeUrl: input.oauthAuthorizeUrl,
+      oauthTokenUrl: input.oauthTokenUrl,
+      oauthClientId: input.oauthClientId,
+      oauthClientSecretEnc: input.oauthClientSecretEnc,
+      oauthScopes: input.oauthScopes,
+      oauthRedirectUri: input.oauthRedirectUri,
     })
     .returning();
 
@@ -452,6 +466,18 @@ export async function updateMcpServerByUserId(
     description: string;
     authType: "none" | "bearer" | "basic";
     authToken: string | null;
+    oauthProvider: string | null;
+    oauthAuthorizeUrl: string | null;
+    oauthTokenUrl: string | null;
+    oauthClientId: string | null;
+    oauthClientSecretEnc: string | null;
+    oauthScopes: string | null;
+    oauthRedirectUri: string | null;
+    oauthAccessTokenEnc: string | null;
+    oauthRefreshTokenEnc: string | null;
+    oauthAccessTokenExpiresAt: Date | null;
+    oauthState: string | null;
+    oauthConnectedAt: Date | null;
     status: "connected" | "error" | "disconnected";
     toolCount: number;
     lastConnectedAt: Date | null;

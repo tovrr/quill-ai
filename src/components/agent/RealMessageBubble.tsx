@@ -278,6 +278,13 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
   const parts = getMessageParts(message);
   const isAssistant = !isUser && message.role === "assistant";
   const assistantPlainText = isAssistant ? extractTextFromMessageParts(parts as unknown[]) : "";
+  const reasoningSummaryText = isAssistant
+    ? parts
+        .filter((part) => part.type === "reasoning")
+        .map((part) => normalizeVisibleText(part.text))
+        .filter((text) => hasRenderableTextValue(text))
+        .join("\n\n")
+    : "";
   const canReact = isAssistant && hasRenderableTextValue(assistantPlainText);
   const actionButtonBaseClass = "flex h-[30px] w-[30px] items-center justify-center rounded-full border border-transparent transition-all sm:h-8 sm:w-8";
   const actionIconClass = "h-[15px] w-[15px] sm:h-4 sm:w-4";
@@ -328,25 +335,7 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
       }
 
       if (part.type === "reasoning") {
-        const text = normalizeVisibleText(part.text);
-        if (!hasRenderableTextValue(text)) return { kind: "reasoning" as const, node: null };
-
-        return {
-          kind: "reasoning" as const,
-          node: (
-          <details
-            key={i}
-            className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6]"
-          >
-            <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-quill-muted">
-              Reasoning summary
-            </summary>
-            <div className="border-t border-quill-border px-4 py-3">
-              <MarkdownText text={text} />
-            </div>
-          </details>
-          ),
-        };
+        return { kind: "reasoning" as const, node: null };
       }
 
       // File part (user attachments + generated images)
@@ -421,9 +410,28 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
       return { kind: "other" as const, node: null };
     });
 
-  const renderedParts = renderedPartEntries
+  const reasoningParts = hasRenderableTextValue(reasoningSummaryText)
+    ? [
+        <details
+          key="reasoning-summary"
+          className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border text-[#b9b9d6]"
+        >
+          <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-quill-muted">
+            Reasoning summary
+          </summary>
+          <div className="border-t border-quill-border px-4 py-3">
+            <MarkdownText text={reasoningSummaryText} />
+          </div>
+        </details>,
+      ]
+    : [];
+
+  const primaryParts = renderedPartEntries
+    .filter((entry) => entry.kind !== "reasoning" && Boolean(entry.node))
     .map((entry) => entry.node)
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+  const renderedParts = [...reasoningParts, ...primaryParts];
 
   const hasPrimaryAssistantContent = renderedPartEntries.some(
     (entry) =>
@@ -496,7 +504,8 @@ export function RealMessageBubble({ message, onOpenCanvasFromMessage, onRegenera
           isUser ? "items-end" : "items-start"
         }`}
       >
-        {renderedParts}
+        {reasoningParts}
+        {primaryParts}
         {canReact && (
           <div className="relative mt-1 flex items-center gap-px sm:gap-0.5">
               {/* Like */}

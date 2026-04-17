@@ -8,6 +8,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Hardened assistant leak containment for mixed single-paragraph answer/reasoning/answer Apex outputs with progressive-safe Apex stream sanitization (no full-response buffer), and tightened mobile chrome (compact status/header/composer + simplified drawer) to increase chat viewport space
 - [x] Completed remaining Phase 2 domain migrations (batch 7): moved builder/auth/models files to `src/lib/builder/*`, `src/lib/auth/*`, and `src/lib/models/openrouter.ts` with full import rewiring and no stale legacy import paths
 - [x] Started and executed Phase 4 validation pass: `npm run typecheck` + `npm run build` + `npm run test:agent-remediation` passed; `npm run test:execution` import path was fixed for moved execution module and now fails only when local Docker daemon is unavailable
 - [x] Continued Phase 2 code reorganization (batch 6): moved observability modules into `src/lib/observability/` (`metrics.ts`, `logging.ts`, `rate-limit.ts`) and rewired imports across chat/health/admin/artifacts/skills/google/mcp routes with passing typecheck and build
@@ -185,6 +186,14 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Executed full 14-day launch content package: added publish-ready X post pack (`launch/GTM_14_DAY_X_POSTS.md`), LinkedIn post pack (`launch/GTM_14_DAY_LINKEDIN_POSTS.md`), and day-by-day visual creative briefs (`launch/GTM_14_DAY_VISUAL_BRIEFS.md`) aligned with `launch/GTM_14_DAY_CALENDAR.md` and the trust-first control-plane positioning.
+
+- 2026-04-17: Executed GTM content pass for launch messaging and packaging: rewrote homepage marketing narrative in `src/app/page.tsx` around "familiar AI agents, trusted by design" with control-plane positioning, updated pricing structure in `src/app/pricing/page.tsx` to Free / Pro Control / Team Ops including objection-handling cards and trust-focused FAQ, and added a publish-ready 14-day launch execution plan at `launch/GTM_14_DAY_CALENDAR.md`. Validation: `get_errors` reports no issues in updated page files.
+
+- 2026-04-17: Continued execution with MCP OAuth lifecycle foundation (M2): extended `mcp_server` schema with OAuth config/state/token columns, added encrypted secret utility (`src/lib/auth/secret-box.ts` using AES-256-GCM with `MCP_OAUTH_ENCRYPTION_KEY` fallback to `BETTER_AUTH_SECRET`), added OAuth helper module (`src/lib/extensions/mcp-oauth.ts`), shipped OAuth endpoints (`/api/mcp/servers/[serverId]/oauth/start`, `/oauth/callback`, `/oauth/revoke`), wired MCP connect flow to use OAuth bearer tokens, and added MCP UI connect/revoke controls for OAuth-configured bearer servers. Validation: `npm run typecheck` pass, `npm run build` pass.
+
+- 2026-04-17: Practical-next pass: verified MCP registry backend endpoint (`GET /api/mcp/registry`) and MCP UI registry install flow are already implemented; ran `npm run typecheck` successfully; prioritized immediate secret hygiene (rotate any exposed local/provider credentials and keep using `.env.example` placeholders only).
 
 - 2026-04-17: Completed remaining Phase 2 migrations and started Phase 4 validation closure: moved `src/lib/builder-artifacts.ts`, `src/lib/api-metrics.ts`, `src/lib/api-security.ts`, `src/lib/entitlements.ts`, and `src/lib/openrouter-models.ts` into `src/lib/builder/`, `src/lib/auth/`, and `src/lib/models/` with history-preserving renames and import rewiring; verified no stale legacy import paths remain. Validation results: `npm run typecheck` pass, `npm run build` pass, `npm run test:agent-remediation` pass, and `npm run test:execution` now executes with corrected import path but reports local Docker daemon unavailable.
 

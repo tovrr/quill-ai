@@ -6,7 +6,7 @@ export type ChatMode = "fast" | "thinking" | "advanced";
 
 export type ResolvedModel = {
   model: ReturnType<typeof google> | ReturnType<typeof openrouter>;
-  provider: "google" | "openrouter";
+  provider: "google" | "openrouter" | "apex";
   modelId: string;
 };
 
@@ -17,10 +17,19 @@ const AI_GATEWAY_MODEL_PREFIX = process.env.AI_GATEWAY_MODEL_PREFIX ?? "";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY;
 const AI_GATEWAY_ENABLED = Boolean(AI_GATEWAY_API_KEY);
+const APEX_CHAT_ENABLED = process.env.APEX_CHAT_ENABLED === "true";
+const APEX_BASE_URL = process.env.APEX_BASE_URL?.replace(/\/$/, "") ?? "";
+const APEX_API_KEY = (process.env.APEX_API_KEY ?? process.env.APEX_SECRET_KEY)?.trim() ?? "";
+const APEX_MODEL_ID = process.env.APEX_MODEL ?? "apex:fast";
 
 const openrouter = createOpenAI({
   apiKey: AI_GATEWAY_ENABLED ? AI_GATEWAY_API_KEY : OPENROUTER_API_KEY,
   baseURL: AI_GATEWAY_ENABLED ? AI_GATEWAY_BASE_URL : OPENROUTER_DEFAULT_BASE_URL,
+});
+
+const apex = createOpenAI({
+  apiKey: APEX_API_KEY || "missing-apex-api-key",
+  baseURL: APEX_BASE_URL ? `${APEX_BASE_URL}/v1` : "https://invalid.local/v1",
 });
 
 // Tier IDs can be overridden per tier via env vars without redeploying.
@@ -67,6 +76,18 @@ export function getDailyLimitForMode(mode: ChatMode): number {
 }
 
 export async function resolveModelForMode(mode: ChatMode, preferVision: boolean): Promise<ResolvedModel> {
+  if (APEX_CHAT_ENABLED) {
+    if (!APEX_BASE_URL || !APEX_API_KEY) {
+      throw new Error("APEX_CHAT_ENABLED=true requires APEX_BASE_URL and APEX_API_KEY (or APEX_SECRET_KEY)");
+    }
+
+    return {
+      model: apex.chat(APEX_MODEL_ID as never),
+      provider: "apex",
+      modelId: APEX_MODEL_ID,
+    };
+  }
+
   const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
   // Reliability-first strategy:

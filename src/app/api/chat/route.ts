@@ -1,4 +1,5 @@
 import {
+  createUIMessageStream,
   createUIMessageStreamResponse,
   streamText,
   stepCountIs,
@@ -32,7 +33,11 @@ import { parseBuilderArtifact } from "@/lib/builder/artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder/artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder/artifacts";
 import { recordBuilderMetric } from "@/lib/builder/metrics";
-import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
+import {
+  NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
+  sanitizeAssistantOutputText,
+  sanitizeAssistantOutputTextForStreaming,
+} from "@/lib/ai/assistant-message-utils";
 import { buildExecutionPolicyGuidance } from "@/lib/ai/killer-autonomy";
 import { buildSandboxProviderRuntimeNote } from "@/lib/execution/providers";
 import { buildTwoPassBuilderStream } from "@/lib/chat/two-pass-builder";
@@ -105,9 +110,14 @@ const SYSTEM_PROMPT = `You are Quill, a highly capable personal AI agent.
 
 Your personality:
 - Direct, confident, and action-oriented
-- You think step-by-step and explain your reasoning clearly
+- You think step-by-step internally and provide concise conclusions
 - You proactively break complex goals into clear subtasks
 - You are thorough but concise
+
+Safety and response rules:
+- Never reveal hidden reasoning, internal deliberation, or scratchpad text.
+- Do not output analysis such as "Okay, the user said..." or similar planning traces.
+- Return only the final helpful answer for the user.
 
 Always be helpful, direct, and get things done.`;
 
@@ -575,12 +585,84 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = streamText({
+    const streamParams = {
       model: resolvedModel.model,
       system: systemPrompt,
       messages: modelMessages,
       ...(canRunCode ? { tools: { run_code: buildRunCodeTool() } } : {}),
       stopWhen: stepCountIs(canRunCode ? 10 : 5),
+    };
+
+    if (resolvedModel.provider === "apex" && !canRunCode) {
+      const result = streamText(streamParams);
+      const stream = createUIMessageStream({
+        originalMessages,
+        execute: async ({ writer }) => {
+          writer.write({ type: "start" });
+          writer.write({ type: "start-step" });
+          writer.write({ type: "text-start", id: "0" });
+
+          let rawText = "";
+          let emittedText = "";
+          for await (const chunk of result.textStream) {
+            rawText += chunk;
+
+            const streamingText = sanitizeAssistantOutputTextForStreaming(rawText);
+            if (!streamingText || !streamingText.startsWith(emittedText)) {
+              continue;
+            }
+
+            const delta = streamingText.slice(emittedText.length);
+            if (delta.length > 0) {
+              writer.write({ type: "text-delta", id: "0", delta });
+              emittedText = streamingText;
+            }
+          }
+
+          const sanitizedText = sanitizeAssistantOutputText(rawText) || NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+          if (sanitizedText.startsWith(emittedText)) {
+            const trailingDelta = sanitizedText.slice(emittedText.length);
+            if (trailingDelta.length > 0) {
+              writer.write({ type: "text-delta", id: "0", delta: trailingDelta });
+            }
+          } else if (!emittedText) {
+            writer.write({ type: "text-delta", id: "0", delta: sanitizedText });
+          }
+
+          writer.write({ type: "text-end", id: "0" });
+
+          if (shouldPersist) {
+            await saveMessage({
+              chatId: id,
+              role: "assistant",
+              content: sanitizedText,
+              parts: [{ type: "text", text: sanitizedText }],
+            });
+          }
+
+          await recordModelUsage({
+            userId: shouldPersist ? userId : undefined,
+            chatId: shouldPersist ? id : undefined,
+            route: "/api/chat",
+            feature: "chat",
+            mode: selectedMode,
+            provider: resolvedModel.provider,
+            model: resolvedModel.modelId,
+            usage: await result.usage,
+            providerMetadata: await result.providerMetadata,
+          });
+        },
+      });
+
+      logApiCompletion(requestContext, { status: 200 });
+      return withRequestHeaders(
+        createUIMessageStreamResponse({ stream }),
+        requestContext.requestId,
+      );
+    }
+
+    const result = streamText({
+      ...streamParams,
       onFinish: async ({ text, totalUsage, providerMetadata }) => {
         if (canvasBuildIntent) {
           const artifact = parseBuilderArtifact(text ?? "");

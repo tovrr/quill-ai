@@ -102,9 +102,9 @@ See `EXECUTION_PLAN_QUILL_PARITY.md` for full roadmap.
   - Outcome: Users can discover and install curated MCP servers in one click from MCP page
 
 - [ ] **M2: MCP OAuth Lifecycle** (Weeks 3-4)
-  - [ ] Extend MCP server model with OAuth state + encrypted token storage
-  - [ ] Add OAuth start/callback/revoke endpoints
-  - [ ] Add MCP UI connect/reconnect/revoke actions with token lifecycle management
+  - [x] Extend MCP server model with OAuth state + encrypted token storage
+  - [x] Add OAuth start/callback/revoke endpoints
+  - [x] Add MCP UI connect/reconnect/revoke actions with token lifecycle management
 
 - [ ] **M3: Scheduled Autopilot Execution** (Weeks 5-6)
   - [ ] Wire real cron/scheduler trigger (Inngest or platform-native)

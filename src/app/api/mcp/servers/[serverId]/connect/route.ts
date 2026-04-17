@@ -13,6 +13,7 @@ import {
   replaceMcpToolsForServer,
   updateMcpServerByUserId,
 } from "@/lib/data/db-helpers";
+import { resolveMcpBearerToken } from "@/lib/extensions/mcp-oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -48,8 +49,11 @@ export async function POST(
       Accept: "application/json",
     };
 
-    if (server.authType === "bearer" && server.authToken) {
-      requestHeaders["Authorization"] = `Bearer ${server.authToken}`;
+    if (server.authType === "bearer") {
+      const token = resolveMcpBearerToken(server);
+      if (token) {
+        requestHeaders["Authorization"] = `Bearer ${token}`;
+      }
     } else if (server.authType === "basic" && server.authToken) {
       requestHeaders["Authorization"] = `Basic ${Buffer.from(server.authToken).toString("base64")}`;
     }
