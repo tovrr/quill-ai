@@ -11,7 +11,7 @@ import { headers as nextHeaders } from "next/headers";
 import {
   buildUserCustomizationPrompt,
   normalizeUserProfile,
-} from "@/lib/user-customization";
+} from "@/lib/extensions/customization";
 import {
   createChat,
   saveMessage,

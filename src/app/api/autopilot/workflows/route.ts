@@ -8,7 +8,7 @@ import {
   normalizeTimezone,
   normalizeWorkflowName,
   normalizeWorkflowPrompt,
-} from "@/lib/autopilot-utils";
+} from "@/lib/extensions/autopilot";
 
 export const dynamic = "force-dynamic";
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { getUserSkillById, uninstallUserSkill, updateUserSkillConfig } from "@/lib/data/db-helpers";
-import { getSkillById } from "@/lib/skills-registry";
+import { getSkillById } from "@/lib/extensions/skills";
 import { logAuditEvent } from "@/lib/data/audit-log";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
 

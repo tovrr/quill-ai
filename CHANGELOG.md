@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 - Phase 2 batch 2 migration: execution modules moved to `src/lib/execution/` (`service.ts`, `docker.ts`, `providers.ts`) with import rewiring across chat/runtime/sandbox routes
 - Phase 2 batch 3 migration: data modules moved to `src/lib/data/` (`db-helpers.ts`, `audit-log.ts`) with import rewiring across API routes, share page, and lib callers
 - Phase 2 batch 4 migration: integration modules moved to `src/lib/integrations/` (`google-api.ts`, `web-search.ts`) with import rewiring across chat/google/me routes and lib access gates
+- Phase 2 batch 5 migration: extensions modules moved to `src/lib/extensions/` (`mcp-registry.ts`, `skills.ts`, `autopilot.ts`, `customization.ts`) with import rewiring across agent/chat/autopilot/mcp/skills/settings callers
 
 ### Validated
 - `npm run typecheck`

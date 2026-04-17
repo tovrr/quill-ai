@@ -14,7 +14,7 @@ import {
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { authClient } from "@/lib/auth/client";
-import type { Skill, SkillConfigField } from "@/lib/skills-registry";
+import type { Skill, SkillConfigField } from "@/lib/extensions/skills";
 
 export const dynamic = "force-dynamic";
 

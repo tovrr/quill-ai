@@ -38,7 +38,7 @@ import {
   DEFAULT_USER_PROFILE,
   normalizeUserProfile,
   type UserInstructionProfile,
-} from "@/lib/user-customization";
+} from "@/lib/extensions/customization";
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;

@@ -15,7 +15,7 @@ import {
   DEFAULT_USER_PROFILE,
   USER_PRESET_TEMPLATES,
   type UserInstructionProfile,
-} from "@/lib/user-customization";
+} from "@/lib/extensions/customization";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
