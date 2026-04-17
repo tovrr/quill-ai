@@ -5,7 +5,7 @@ import {
   type UIMessage,
 } from "ai";
 import { tool, jsonSchema } from "ai";
-import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution-service";
+import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution/service";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import {
@@ -34,7 +34,7 @@ import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
 import { recordBuilderMetric } from "@/lib/api-metrics";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
 import { buildExecutionPolicyGuidance } from "@/lib/ai/killer-autonomy";
-import { buildSandboxProviderRuntimeNote } from "@/lib/sandbox-providers";
+import { buildSandboxProviderRuntimeNote } from "@/lib/execution/providers";
 import { buildTwoPassBuilderStream } from "@/lib/chat/two-pass-builder";
 import {
   extractTextMessages,

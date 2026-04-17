@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { executeCode, isSandboxEnabled, SUPPORTED_LANGUAGES } from "@/lib/docker-executor";
+import { executeCode, isSandboxEnabled, SUPPORTED_LANGUAGES } from "@/lib/execution/docker";
 
 export const maxDuration = 35;
 

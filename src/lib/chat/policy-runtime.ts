@@ -1,7 +1,7 @@
-import { isExecutionAvailable, getExecutionBackend } from "@/lib/execution-service";
+import { isExecutionAvailable, getExecutionBackend } from "@/lib/execution/service";
 import { evaluatePermissionDecision } from "@/lib/ai/killer-autonomy";
 import { getKillerById, type Killer } from "@/lib/ai/killers";
-import { getSandboxProviderStatus, type SandboxProviderStatus } from "@/lib/sandbox-providers";
+import { getSandboxProviderStatus, type SandboxProviderStatus } from "@/lib/execution/providers";
 
 export type PolicyRuntimeInput = {
   killerId?: string;

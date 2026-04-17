@@ -11,7 +11,7 @@
  *   // Works the same whether local or remote
  */
 
-import { isSandboxEnabled, executeCode as executeLocal } from "./docker-executor";
+import { isSandboxEnabled, executeCode as executeLocal } from "./docker";
 
 export type ExecuteCodeRequest = {
   code: string;

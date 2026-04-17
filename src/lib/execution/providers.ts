@@ -1,5 +1,5 @@
 import type { KillerExecutionPolicy, SandboxExecutionRequest, SandboxExecutionResult, SandboxProviderHook } from "@/lib/ai/killer-autonomy";
-import { executeCode } from "@/lib/docker-executor";
+import { executeCode } from "@/lib/execution/docker";
 
 export type SandboxProviderStatus = {
   provider: SandboxProviderHook | null;

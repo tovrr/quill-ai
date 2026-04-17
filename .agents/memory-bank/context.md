@@ -8,6 +8,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Continued Phase 2 code reorganization (batch 2): moved execution modules into `src/lib/execution/` (`service.ts`, `docker.ts`, `providers.ts`) and rewired imports across chat/runtime/sandbox entry points with passing typecheck and build
 - [x] Started Phase 2 code reorganization (batch 1): moved AI domain modules into `src/lib/ai/` (`assistant-message-utils.ts`, `killer-autonomy.ts`, `killers.ts`) and rewired imports across route/UI/lib callers with passing typecheck and build
 - [x] Executed Phase 1 documentation rollout for repository structure: created `CHANGELOG.md`, added API governance docs (`docs/api/DESIGN_GUIDE.md`, `docs/api/TAXONOMY.md`), added modularity guide (`docs/patterns/MODULARITY.md`), and seeded ADR set (`docs/decisions/001`-`010` + template)
 - [x] Standardized architecture decision tracking under `docs/decisions/` to reduce decision drift and make major technical choices reviewable
@@ -178,6 +179,8 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Continued Phase 2 with execution-domain migration (batch 2): moved `src/lib/execution-service.ts`, `src/lib/docker-executor.ts`, and `src/lib/sandbox-providers.ts` into `src/lib/execution/` as `service.ts`, `docker.ts`, and `providers.ts` using history-preserving moves, rewired all impacted imports, and revalidated with passing `npm run typecheck` and `npm run build`.
 
 - 2026-04-17: Began Phase 2 implementation with the first low-risk migration batch: moved `src/lib/assistant-message-utils.ts`, `src/lib/killer-autonomy.ts`, and `src/lib/killers.ts` to `src/lib/ai/` using history-preserving moves, rewired all impacted imports in app/components/lib, and revalidated with passing `npm run typecheck` and `npm run build`.
 
