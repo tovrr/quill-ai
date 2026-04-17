@@ -1,5 +1,14 @@
 # Quill AI TODOs
 
+## Recent Infrastructure Updates (2026-04-17)
+
+- [x] **Memory Bank Reorganization** — Moved all agent-focused documentation from `.kilocode/rules/` to `.agents/` folder
+  - Migrated memory-bank/ with all 5 files (brief.md, product.md, architecture.md, tech.md, context.md)
+  - Moved development.md and memory-bank-instructions.md to `.agents/`
+  - Updated all references across AGENTS.md, recipes, and documentation
+  - Cleaned up old locations to prevent confusion
+  - Impact: Agent context is now cleanly consolidated in `.agents/`; recipes remain in `.kilocode/recipes/`
+
 ## Execution Rules (Keep This Doc Effective)
 
 - Every new task should include: scope, acceptance criteria, and where it will be verified (local, CI, production).
@@ -80,6 +89,37 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 - [ ] Performance Sprint: bundle analyzer + baseline budgets.
 - [ ] PWA Sprint: service worker + offline shell.
 - [ ] Mobile Distribution Prep: maskable icons + assetlinks + store packaging checklist.
+
+## Quill Parity Execution Plan (M1-M5 Catch-Up vs Coworker)
+
+See `EXECUTION_PLAN_QUILL_PARITY.md` for full roadmap.
+
+- [x] **M1: MCP Registry V1** (Weeks 1-2, 2026-04-17)
+  - [x] Add curated MCP registry source (`src/lib/mcp-registry.ts`) with trust metadata and categories
+  - [x] Ship auth-gated search/list endpoint (`GET /api/mcp/registry`) with pagination and filtering
+  - [x] Integrate one-click registry install flow in MCP UI (`src/app/mcp/page.tsx`)
+  - [x] Revalidated with passing `npm run typecheck` and `npm run build`
+  - Outcome: Users can discover and install curated MCP servers in one click from MCP page
+
+- [ ] **M2: MCP OAuth Lifecycle** (Weeks 3-4)
+  - [ ] Extend MCP server model with OAuth state + encrypted token storage
+  - [ ] Add OAuth start/callback/revoke endpoints
+  - [ ] Add MCP UI connect/reconnect/revoke actions with token lifecycle management
+
+- [ ] **M3: Scheduled Autopilot Execution** (Weeks 5-6)
+  - [ ] Wire real cron/scheduler trigger (Inngest or platform-native)
+  - [ ] Implement retries and run status telemetry
+  - [ ] Move from manual `POST /api/autopilot/workflows/[id]/run` to time-triggered execution
+
+- [ ] **M4: A2A MVP** (Weeks 7-8)
+  - [ ] Define agent card contract (metadata, capabilities, rate limits)
+  - [ ] Implement minimal task execution interface with auth + allowlist
+  - [ ] Add usage metrics and policy enforcement
+
+- [ ] **M5: Skills Marketplace Adapters** (Weeks 7-8, parallel with M4)
+  - [ ] Design external skills adapter interface
+  - [ ] Implement at least one external provider (e.g., OpenRegistry)
+  - [ ] Add UI for install/version management and rollback
 
 ## Builder Roadmap (2026-04)
 
