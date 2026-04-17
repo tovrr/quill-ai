@@ -12,9 +12,21 @@ import {
   parseBuilderArtifact,
   type BuilderTarget,
 } from "@/lib/builder/artifacts";
-import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
+import {
+  NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
+  sanitizeAssistantOutputText,
+} from "@/lib/ai/assistant-message-utils";
 
 type ChatMode = "fast" | "thinking" | "advanced";
+
+type LanguageUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  reasoningTokens?: number;
+  cachedInputTokens?: number;
+  [key: string]: unknown;
+};
 
 type TwoPassBuilderParams = {
   originalMessages?: UIMessage[];
@@ -78,6 +90,74 @@ function buildBuilderRewritePrompt(input: string | null, critic: string, draft: 
   ].join("\n");
 }
 
+function buildArtifactRepairPrompt(
+  input: string | null,
+  requestedTarget: BuilderTarget,
+  candidateOutput: string,
+): string {
+  return [
+    "You must output exactly one valid Quill artifact envelope and nothing else.",
+    "Required format: <quill-artifact>{...}</quill-artifact> with valid JSON.",
+    `Requested target: ${requestedTarget}`,
+    "Allowed artifact.type values only: page, document, react-app, nextjs-bundle.",
+    "Do not include analysis, preface text, markdown fences, or commentary.",
+    "If the candidate already contains useful content, convert it into the best valid artifact envelope.",
+    "",
+    "User request:",
+    input ?? "(not provided)",
+    "",
+    "Candidate output to repair:",
+    candidateOutput,
+  ].join("\n");
+}
+
+function mergeUsage(
+  current: LanguageUsage | undefined,
+  next: LanguageUsage | undefined,
+): LanguageUsage | undefined {
+  if (!current) return next;
+  if (!next) return current;
+
+  const merged: LanguageUsage = { ...current };
+  for (const [key, value] of Object.entries(next)) {
+    const currentValue = merged[key];
+    if (typeof value === "number" && typeof currentValue === "number") {
+      merged[key] = currentValue + value;
+      continue;
+    }
+
+    if (typeof value === "number" && currentValue === undefined) {
+      merged[key] = value;
+      continue;
+    }
+
+    if (merged[key] === undefined) {
+      merged[key] = value;
+    }
+  }
+
+  return merged;
+}
+
+function toArtifactEnvelopeText(artifact: {
+  type: "page" | "document" | "react-app" | "nextjs-bundle";
+  title?: string;
+  payload: unknown;
+  metadata?: Record<string, unknown>;
+}): string {
+  const envelope = {
+    artifactVersion: 1,
+    artifact: {
+      type: artifact.type,
+      ...(artifact.title ? { title: artifact.title } : {}),
+      ...(artifact.metadata ? { metadata: artifact.metadata } : {}),
+      payload: artifact.payload,
+    },
+  };
+
+  return `<quill-artifact>\n${JSON.stringify(envelope, null, 2)}\n</quill-artifact>`;
+}
+
 export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
   const {
     originalMessages,
@@ -101,7 +181,6 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       writer.write({ type: "start" });
       writer.write({ type: "start-step" });
 
-      writer.write({ type: "text-start", id: "draft" });
       const draftResult = streamText({
         model,
         system: systemPrompt,
@@ -111,11 +190,9 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       let draftText = "";
       for await (const chunk of draftResult.textStream) {
         draftText += chunk;
-        writer.write({ type: "text-delta", id: "draft", delta: chunk });
       }
-      writer.write({ type: "text-end", id: "draft" });
+      let aggregatedUsage = mergeUsage(undefined, await draftResult.usage);
 
-      writer.write({ type: "reasoning-start", id: "critic" });
       const criticResult = streamText({
         model,
         prompt: buildBuilderCriticPrompt(userInput, requestedBuilderTarget, draftText),
@@ -124,11 +201,9 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       let criticText = "";
       for await (const chunk of criticResult.textStream) {
         criticText += chunk;
-        writer.write({ type: "reasoning-delta", id: "critic", delta: chunk });
       }
-      writer.write({ type: "reasoning-end", id: "critic" });
+      aggregatedUsage = mergeUsage(aggregatedUsage, await criticResult.usage);
 
-      writer.write({ type: "text-start", id: "final" });
       const rewriteResult = streamText({
         model,
         system: systemPrompt,
@@ -138,26 +213,37 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       let finalText = "";
       for await (const chunk of rewriteResult.textStream) {
         finalText += chunk;
-        writer.write({ type: "text-delta", id: "final", delta: chunk });
       }
-      writer.write({ type: "text-end", id: "final" });
+      aggregatedUsage = mergeUsage(aggregatedUsage, await rewriteResult.usage);
 
-      let finalUsage = await rewriteResult.usage;
       let finalMetadata = await rewriteResult.providerMetadata;
       let artifact = parseBuilderArtifact(finalText);
+
+      if (!artifact) {
+        const repairResult = streamText({
+          model,
+          system: systemPrompt,
+          prompt: buildArtifactRepairPrompt(userInput, requestedBuilderTarget, finalText),
+        });
+
+        let repairedText = "";
+        for await (const chunk of repairResult.textStream) {
+          repairedText += chunk;
+        }
+
+        aggregatedUsage = mergeUsage(aggregatedUsage, await repairResult.usage);
+
+        const repairedArtifact = parseBuilderArtifact(repairedText);
+        if (repairedArtifact) {
+          finalText = repairedText;
+          artifact = repairedArtifact;
+          finalMetadata = await repairResult.providerMetadata;
+        }
+      }
 
       if (artifact) {
         const quality = analyzeArtifactQuality(artifact);
         if (quality.score < qualityRetryThreshold) {
-          writer.write({ type: "reasoning-start", id: "retry-critic" });
-          writer.write({
-            type: "reasoning-delta",
-            id: "retry-critic",
-            delta: `Quality check failed (Score: ${quality.score}). Retrying for production quality...\n`,
-          });
-          writer.write({ type: "reasoning-end", id: "retry-critic" });
-
-          writer.write({ type: "text-start", id: "retry" });
           const qualityRetryPrompt = [
             "Improve this artifact to meet production quality.",
             `Current score: ${quality.score}/100. Target: >= ${qualityRetryThreshold}.`,
@@ -181,17 +267,15 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
           let retriedText = "";
           for await (const chunk of retryResult.textStream) {
             retriedText += chunk;
-            writer.write({ type: "text-delta", id: "retry", delta: chunk });
           }
-          writer.write({ type: "text-end", id: "retry" });
+          aggregatedUsage = mergeUsage(aggregatedUsage, await retryResult.usage);
 
           const retriedArtifact = parseBuilderArtifact(retriedText);
           if (retriedArtifact) {
             const retriedQuality = analyzeArtifactQuality(retriedArtifact);
-            if (retriedQuality.score >= quality.score) {
+            if (retriedQuality.score >= qualityRetryThreshold) {
               finalText = retriedText;
               artifact = retriedArtifact;
-              finalUsage = await retryResult.usage;
               finalMetadata = await retryResult.providerMetadata;
             }
           }
@@ -204,9 +288,26 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         requestedTarget: requestedBuilderTarget,
       });
 
+      if (artifact) {
+        finalText = toArtifactEnvelopeText(artifact);
+      }
+
+      if (!artifact) {
+        const artifactStart = finalText.indexOf("<quill-artifact>");
+        if (artifactStart >= 0) {
+          finalText = finalText.slice(artifactStart).trim();
+        } else {
+          finalText = sanitizeAssistantOutputText(finalText) || NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+        }
+      }
+
       if (!finalText.trim()) {
         finalText = NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
       }
+
+      writer.write({ type: "text-start", id: "final" });
+      writer.write({ type: "text-delta", id: "final", delta: finalText });
+      writer.write({ type: "text-end", id: "final" });
 
       if (finalText.trim() && shouldPersist && chatId) {
         await saveMessage({
@@ -238,7 +339,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         mode: selectedMode,
         provider,
         model: modelId,
-        usage: finalUsage,
+        usage: aggregatedUsage,
         providerMetadata: {
           ...finalMetadata,
           builderTwoPass: true,

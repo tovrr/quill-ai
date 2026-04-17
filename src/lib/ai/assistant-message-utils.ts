@@ -94,6 +94,65 @@ function looksLikeDirectAnswerStart(value: string): boolean {
   return DIRECT_ANSWER_STARTS.some((start) => value.startsWith(start));
 }
 
+function looksLikeLikelyFinalSentence(value: string): boolean {
+  const normalized = normalizeSentenceForDetection(value).toLowerCase();
+  if (!hasRenderableTextValue(normalized)) return false;
+  if (normalized.length < 12) return false;
+  if (looksLikeReasoningSentence(normalized)) return false;
+  if (STREAMING_REASONING_GUARD_REGEX.test(normalized)) return false;
+  return /[a-zA-Z\u00C0-\u017F]/.test(normalized);
+}
+
+function trimTrailingReasoningFragments(value: string): string {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return "";
+
+  const sentences = splitIntoSentences(normalized);
+  if (sentences.length <= 1) return normalized;
+
+  while (sentences.length > 1) {
+    const tail = normalizeSentenceForDetection(sentences[sentences.length - 1] ?? "").toLowerCase();
+    if (
+      !hasRenderableTextValue(tail) ||
+      tail.length < 6 ||
+      looksLikeReasoningSentence(tail) ||
+      STREAMING_REASONING_GUARD_REGEX.test(tail) ||
+      /^i need(?:\s|$)/i.test(tail) ||
+      /^so i need(?:\s|$)/i.test(tail) ||
+      /^so i(?:\s|$)/i.test(tail) ||
+      /^i$/i.test(tail) ||
+      /^let me(?:\s|$)/i.test(tail) ||
+      /^i should(?:\s|$)/i.test(tail)
+    ) {
+      sentences.pop();
+      continue;
+    }
+
+    break;
+  }
+
+  return sentences.join(" ").trim();
+}
+
+function recoverCleanAnswerSentences(value: string): string | null {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return null;
+
+  const sentences = splitIntoSentences(normalized);
+  if (sentences.length < 2) return null;
+
+  const clean = sentences.filter((sentence) => {
+    const probe = normalizeSentenceForDetection(sentence).toLowerCase();
+    if (!hasRenderableTextValue(probe)) return false;
+    if (looksLikeReasoningSentence(probe)) return false;
+    if (STREAMING_REASONING_GUARD_REGEX.test(probe)) return false;
+    return true;
+  });
+
+  if (clean.length === 0) return null;
+  return clean.slice(0, 2).join(" ").trim();
+}
+
 function extractTrailingFinalLine(value: string): string | null {
   const lines = value
     .split("\n")
@@ -186,6 +245,22 @@ function maybeSplitSingleParagraphReasoningLeak(value: string): AssistantTextSpl
         finalText: candidate,
       };
     }
+
+    // Fallback: if the answer doesn't start with a known greeting/prefix,
+    // still split at the first likely non-reasoning sentence.
+    for (let index = 1; index < normalizedSentences.length; index += 1) {
+      const currentSentence = sentenceMatches[index] ?? "";
+      if (!looksLikeLikelyFinalSentence(currentSentence)) continue;
+
+      const candidate = sentenceMatches.slice(index).join(" ").trim();
+      const reasoning = sentenceMatches.slice(0, index).join(" ").trim();
+      if (!hasRenderableTextValue(candidate) || !hasRenderableTextValue(reasoning)) continue;
+
+      return {
+        reasoningText: reasoning,
+        finalText: candidate,
+      };
+    }
   }
 
   const reasoningIndexes = normalizedSentences.reduce<number[]>((accumulator, sentence, index) => {
@@ -213,7 +288,7 @@ function maybeSplitSingleParagraphReasoningLeak(value: string): AssistantTextSpl
 
   const candidateSentences = normalizedSentences.slice(answerStartIndex);
   const hasDirectAnswerLead = candidateSentences.some((sentence) => looksLikeDirectAnswerStart(sentence.toLowerCase()));
-  if (!hasDirectAnswerLead) {
+  if (!hasDirectAnswerLead && !looksLikeReasoningSignal(normalized)) {
     return null;
   }
 
@@ -245,10 +320,35 @@ export function sanitizeAssistantOutputText(value: string): string {
   if (!normalized) return "";
 
   const split = splitAssistantReasoningLeak(normalized);
-  if (split) return split.finalText;
+  if (split) {
+    const finalCandidate = normalizeSentenceForDetection(split.finalText).toLowerCase();
+    if (
+      finalCandidate.length >= 12 &&
+      !looksLikeReasoningSentence(finalCandidate) &&
+      !STREAMING_REASONING_GUARD_REGEX.test(finalCandidate)
+    ) {
+      return trimTrailingReasoningFragments(split.finalText);
+    }
+  }
 
   const trailingLine = extractTrailingFinalLine(normalized);
-  return trailingLine ?? normalized;
+  if (trailingLine) {
+    const trailingCandidate = normalizeSentenceForDetection(trailingLine).toLowerCase();
+    if (
+      trailingCandidate.length >= 12 &&
+      !looksLikeReasoningSentence(trailingCandidate) &&
+      !STREAMING_REASONING_GUARD_REGEX.test(trailingCandidate)
+    ) {
+      return trimTrailingReasoningFragments(trailingLine);
+    }
+  }
+
+  const trimmed = trimTrailingReasoningFragments(normalized);
+  if (splitIntoSentences(trimmed).length <= 1) {
+    return recoverCleanAnswerSentences(normalized) ?? trimmed;
+  }
+
+  return trimmed;
 }
 
 export function sanitizeAssistantOutputTextForStreaming(value: string): string {
@@ -256,10 +356,28 @@ export function sanitizeAssistantOutputTextForStreaming(value: string): string {
   if (!normalized) return "";
 
   const split = splitAssistantReasoningLeak(normalized);
-  if (split) return split.finalText;
+  if (split) {
+    const finalCandidate = normalizeSentenceForDetection(split.finalText).toLowerCase();
+    if (
+      finalCandidate.length >= 12 &&
+      !looksLikeReasoningSentence(finalCandidate) &&
+      !STREAMING_REASONING_GUARD_REGEX.test(finalCandidate)
+    ) {
+      return trimTrailingReasoningFragments(split.finalText);
+    }
+  }
 
   const trailingLine = extractTrailingFinalLine(normalized);
-  if (trailingLine) return trailingLine;
+  if (trailingLine) {
+    const trailingCandidate = normalizeSentenceForDetection(trailingLine).toLowerCase();
+    if (
+      trailingCandidate.length >= 12 &&
+      !looksLikeReasoningSentence(trailingCandidate) &&
+      !STREAMING_REASONING_GUARD_REGEX.test(trailingCandidate)
+    ) {
+      return trimTrailingReasoningFragments(trailingLine);
+    }
+  }
 
   if (looksLikeReasoningSignal(normalized)) return "";
   if (STREAMING_REASONING_GUARD_REGEX.test(normalized.toLowerCase())) return "";
@@ -267,7 +385,12 @@ export function sanitizeAssistantOutputTextForStreaming(value: string): string {
   const normalizedLeading = normalizeSentenceForDetection(normalized).toLowerCase();
   if (!looksLikeDirectAnswerStart(normalizedLeading)) return "";
 
-  return normalized;
+  const trimmed = trimTrailingReasoningFragments(normalized);
+  if (splitIntoSentences(trimmed).length <= 1) {
+    return recoverCleanAnswerSentences(normalized) ?? trimmed;
+  }
+
+  return trimmed;
 }
 
 function normalizeAssistantParts(parts: UIMessage["parts"]): UIMessage["parts"] {

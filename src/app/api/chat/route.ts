@@ -603,31 +603,12 @@ export async function POST(req: Request) {
           writer.write({ type: "text-start", id: "0" });
 
           let rawText = "";
-          let emittedText = "";
           for await (const chunk of result.textStream) {
             rawText += chunk;
-
-            const streamingText = sanitizeAssistantOutputTextForStreaming(rawText);
-            if (!streamingText || !streamingText.startsWith(emittedText)) {
-              continue;
-            }
-
-            const delta = streamingText.slice(emittedText.length);
-            if (delta.length > 0) {
-              writer.write({ type: "text-delta", id: "0", delta });
-              emittedText = streamingText;
-            }
           }
 
           const sanitizedText = sanitizeAssistantOutputText(rawText) || NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
-          if (sanitizedText.startsWith(emittedText)) {
-            const trailingDelta = sanitizedText.slice(emittedText.length);
-            if (trailingDelta.length > 0) {
-              writer.write({ type: "text-delta", id: "0", delta: trailingDelta });
-            }
-          } else if (!emittedText) {
-            writer.write({ type: "text-delta", id: "0", delta: sanitizedText });
-          }
+          writer.write({ type: "text-delta", id: "0", delta: sanitizedText });
 
           writer.write({ type: "text-end", id: "0" });
 
