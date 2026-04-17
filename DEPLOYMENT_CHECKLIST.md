@@ -13,6 +13,11 @@ Optional (feature flags/cost control):
 
 - `OPENROUTER_API_KEY`
 - `OPENROUTER_FREE_MODEL`
+- `AI_GATEWAY_API_KEY`
+- `AI_GATEWAY_BASE_URL` (default: `https://ai-gateway.vercel.sh/v1`)
+- `AI_GATEWAY_MODEL_PREFIX` (optional; use when gateway expects provider-prefixed model ids)
+- `ALLOW_INMEMORY_RATELIMIT_FALLBACK` (keep unset/false in production to fail closed if Upstash is unavailable)
+- `ENABLE_IN_MEMORY_METRICS` (leave unset/false in production unless explicitly debugging)
 - `ALLOW_ALL_AUTH_MODES`
 - `PAID_USER_EMAILS`
 - `PAID_USER_IDS`

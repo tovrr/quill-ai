@@ -131,13 +131,13 @@ await db.delete(users).where(eq(users.id, 1));
 
 ## Memory Bank Updates
 
-After implementing, update `.kilocode/rules/memory-bank/context.md`:
+After implementing, update `.agents/memory-bank/context.md`:
 
 - Add database to "Recently Completed" section
 - Document the schema tables created
 - Note any API routes or server actions added
 
-Also update `.kilocode/rules/memory-bank/tech.md`:
+Also update `.agents/memory-bank/tech.md`:
 
 - Add Drizzle ORM to dependencies
 - Document database file structure

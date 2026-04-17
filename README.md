@@ -91,6 +91,18 @@ Required keys:
 - `BETTER_AUTH_URL`
 - `GOOGLE_GENERATIVE_AI_API_KEY`
 
+Optional AI routing keys:
+
+- `OPENROUTER_API_KEY` (fast-mode OpenRouter selection)
+- `AI_GATEWAY_API_KEY` (route OpenAI-compatible calls through Vercel AI Gateway)
+- `AI_GATEWAY_BASE_URL` (default: `https://ai-gateway.vercel.sh/v1`)
+- `AI_GATEWAY_MODEL_PREFIX` (optional prefix for gateway model ids, for example `openrouter/`)
+
+Operational safety keys:
+
+- `ALLOW_INMEMORY_RATELIMIT_FALLBACK` (defaults to enabled outside production; keep disabled in production)
+- `ENABLE_IN_MEMORY_METRICS` (disabled in production by default; enable only for temporary diagnostics)
+
 ### 3) Run app
 
 ```bash

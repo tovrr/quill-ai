@@ -1,15 +1,21 @@
 import { db } from "@/db";
 import {
+  artifactVersions,
   autopilotRuns,
   autopilotWorkflows,
   chats,
+  googleConnections,
+  googleWorkspaceSnapshots,
+  mcpServerTools,
+  mcpServers,
   messageFiles,
   messages,
   modelUsageEvents,
   userEntitlements,
+  userSkills,
 } from "@/db/schema";
 import { sanitizeStoredMessage } from "@/lib/assistant-message-utils";
-import { eq, desc, and, gte, count } from "drizzle-orm";
+import { eq, desc, and, gte, count, sql } from "drizzle-orm";
 
 const MAX_DB_FILE_BYTES = Number(process.env.MAX_DB_FILE_BYTES ?? "5242880");
 
@@ -350,5 +356,287 @@ export async function createAutopilotRun(input: {
     })
     .returning();
 
+  return row;
+}
+
+// ─── Artifact version history ────────────────────────────────────────────────
+
+export async function getArtifactVersionsByUserId(userId: string, limit = 50) {
+  return db.query.artifactVersions.findMany({
+    where: eq(artifactVersions.userId, userId),
+    orderBy: [desc(artifactVersions.createdAt)],
+    limit,
+  });
+}
+
+export async function getArtifactVersionById(versionId: string) {
+  return db.query.artifactVersions.findFirst({
+    where: eq(artifactVersions.id, versionId),
+  });
+}
+
+export async function createArtifactVersion(input: {
+  userId: string;
+  chatId?: string;
+  title: string;
+  artifactType: "page" | "react-app" | "nextjs-bundle" | "document";
+  payload: unknown;
+}) {
+  const [row] = await db
+    .insert(artifactVersions)
+    .values({
+      userId: input.userId,
+      chatId: input.chatId ?? null,
+      title: input.title,
+      artifactType: input.artifactType,
+      payload: input.payload as Record<string, unknown>,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function deleteArtifactVersionByUserId(versionId: string, userId: string) {
+  const rows = await db
+    .delete(artifactVersions)
+    .where(and(eq(artifactVersions.id, versionId), eq(artifactVersions.userId, userId)))
+    .returning({ id: artifactVersions.id });
+
+  return rows.length > 0;
+}
+
+// ─── MCP server catalog ──────────────────────────────────────────────────────
+
+export async function getMcpServersByUserId(userId: string) {
+  return db.query.mcpServers.findMany({
+    where: eq(mcpServers.userId, userId),
+    orderBy: [desc(mcpServers.updatedAt)],
+  });
+}
+
+export async function getMcpServerById(serverId: string) {
+  return db.query.mcpServers.findFirst({
+    where: eq(mcpServers.id, serverId),
+  });
+}
+
+export async function createMcpServer(input: {
+  userId: string;
+  name: string;
+  url: string;
+  description?: string;
+  authType: "none" | "bearer" | "basic";
+  authToken?: string;
+}) {
+  const [row] = await db
+    .insert(mcpServers)
+    .values({
+      userId: input.userId,
+      name: input.name,
+      url: input.url,
+      description: input.description,
+      authType: input.authType,
+      authToken: input.authToken,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function updateMcpServerByUserId(
+  serverId: string,
+  userId: string,
+  updates: Partial<{
+    name: string;
+    url: string;
+    description: string;
+    authType: "none" | "bearer" | "basic";
+    authToken: string | null;
+    status: "connected" | "error" | "disconnected";
+    toolCount: number;
+    lastConnectedAt: Date | null;
+  }>
+) {
+  const [row] = await db
+    .update(mcpServers)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(and(eq(mcpServers.id, serverId), eq(mcpServers.userId, userId)))
+    .returning();
+
+  return row ?? null;
+}
+
+export async function deleteMcpServerByUserId(serverId: string, userId: string) {
+  const rows = await db
+    .delete(mcpServers)
+    .where(and(eq(mcpServers.id, serverId), eq(mcpServers.userId, userId)))
+    .returning({ id: mcpServers.id });
+
+  return rows.length > 0;
+}
+
+export async function getMcpToolsByServerId(serverId: string) {
+  return db.query.mcpServerTools.findMany({
+    where: eq(mcpServerTools.serverId, serverId),
+    orderBy: [mcpServerTools.toolName],
+  });
+}
+
+export async function replaceMcpToolsForServer(
+  serverId: string,
+  userId: string,
+  tools: { toolName: string; toolDescription?: string; inputSchema?: unknown }[]
+) {
+  await db.delete(mcpServerTools).where(eq(mcpServerTools.serverId, serverId));
+  if (tools.length === 0) return [];
+  const rows = await db
+    .insert(mcpServerTools)
+    .values(
+      tools.map((t) => ({
+        serverId,
+        userId,
+        toolName: t.toolName,
+        toolDescription: t.toolDescription,
+        inputSchema: t.inputSchema as Record<string, unknown> | null,
+      }))
+    )
+    .returning();
+  return rows;
+}
+
+// ─── Google Workspace connection ─────────────────────────────────────────────
+
+export async function getGoogleConnectionByUserId(userId: string) {
+  return db.query.googleConnections.findFirst({
+    where: eq(googleConnections.userId, userId),
+  });
+}
+
+export async function upsertGoogleConnection(input: {
+  userId: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+  email?: string;
+  displayName?: string;
+  scopes?: string;
+}) {
+  const existing = await getGoogleConnectionByUserId(input.userId);
+  if (existing) {
+    const [row] = await db
+      .update(googleConnections)
+      .set({
+        accessToken: input.accessToken,
+        refreshToken: input.refreshToken ?? existing.refreshToken,
+        expiresAt: input.expiresAt ?? existing.expiresAt,
+        email: input.email ?? existing.email,
+        displayName: input.displayName ?? existing.displayName,
+        scopes: input.scopes ?? existing.scopes,
+        updatedAt: new Date(),
+      })
+      .where(eq(googleConnections.userId, input.userId))
+      .returning();
+    return row;
+  }
+  const [row] = await db
+    .insert(googleConnections)
+    .values({
+      userId: input.userId,
+      accessToken: input.accessToken,
+      refreshToken: input.refreshToken,
+      expiresAt: input.expiresAt,
+      email: input.email,
+      displayName: input.displayName,
+      scopes: input.scopes,
+    })
+    .returning();
+  return row;
+}
+
+export async function deleteGoogleConnectionByUserId(userId: string) {
+  await db.delete(googleConnections).where(eq(googleConnections.userId, userId));
+}
+
+export async function createGoogleWorkspaceSnapshot(input: {
+  userId: string;
+  resourceType: "drive-file" | "google-doc";
+  operation: "create" | "update" | "rename" | "move" | "delete";
+  resourceId?: string;
+  beforePayload?: unknown;
+  afterPayload?: unknown;
+}) {
+  const [row] = await db
+    .insert(googleWorkspaceSnapshots)
+    .values({
+      userId: input.userId,
+      resourceType: input.resourceType,
+      operation: input.operation,
+      resourceId: input.resourceId,
+      beforePayload: input.beforePayload as Record<string, unknown> | null,
+      afterPayload: input.afterPayload as Record<string, unknown> | null,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function getGoogleWorkspaceSnapshotById(snapshotId: string) {
+  return db.query.googleWorkspaceSnapshots.findFirst({
+    where: eq(googleWorkspaceSnapshots.id, snapshotId),
+  });
+}
+
+export async function getGoogleWorkspaceSnapshotsByUserId(userId: string, limit = 30) {
+  return db.query.googleWorkspaceSnapshots.findMany({
+    where: eq(googleWorkspaceSnapshots.userId, userId),
+    orderBy: [desc(googleWorkspaceSnapshots.createdAt)],
+    limit,
+  });
+}
+
+// ─── Skills helpers ───────────────────────────────────────────────────────────
+
+export async function getUserSkills(userId: string) {
+  return db.query.userSkills.findMany({
+    where: eq(userSkills.userId, userId),
+    orderBy: [desc(userSkills.installedAt)],
+  });
+}
+
+export async function getUserSkillById(userId: string, skillId: string) {
+  return db.query.userSkills.findFirst({
+    where: and(eq(userSkills.userId, userId), eq(userSkills.skillId, skillId)),
+  });
+}
+
+export async function installUserSkill(userId: string, skillId: string, config?: unknown) {
+  const [row] = await db
+    .insert(userSkills)
+    .values({
+      userId,
+      skillId,
+      enabled: true,
+      config: (config ?? null) as Record<string, unknown> | null,
+    })
+    .onConflictDoUpdate({
+      target: [userSkills.userId, userSkills.skillId],
+      set: { enabled: true, config: (config ?? null) as Record<string, unknown> | null, updatedAt: sql`CURRENT_TIMESTAMP` },
+    })
+    .returning();
+  return row;
+}
+
+export async function uninstallUserSkill(userId: string, skillId: string) {
+  await db
+    .delete(userSkills)
+    .where(and(eq(userSkills.userId, userId), eq(userSkills.skillId, skillId)));
+}
+
+export async function updateUserSkillConfig(userId: string, skillId: string, config: unknown) {
+  const [row] = await db
+    .update(userSkills)
+    .set({ config: config as Record<string, unknown>, updatedAt: sql`CURRENT_TIMESTAMP` })
+    .where(and(eq(userSkills.userId, userId), eq(userSkills.skillId, skillId)))
+    .returning();
   return row;
 }

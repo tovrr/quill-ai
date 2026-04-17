@@ -23,6 +23,7 @@ import {
   StarIcon as StarIconOutline,
   TrashIcon,
   UserCircleIcon,
+  ArchiveBoxIcon,
   WrenchScrewdriverIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -105,6 +106,34 @@ const COMMAND_CENTER_LINKS: CommandLink[] = [
     icon: ClockIcon,
   },
   {
+    id: "artifacts",
+    label: "Artifact History",
+    subtitle: "Browse every builder version",
+    href: "/artifacts",
+    icon: ArchiveBoxIcon,
+  },
+  {
+    id: "mcp",
+    label: "MCP Catalog",
+    subtitle: "Connect MCP servers and tools",
+    href: "/mcp",
+    icon: WrenchScrewdriverIcon,
+  },
+  {
+    id: "google-workspace",
+    label: "Google Workspace",
+    subtitle: "Docs, Drive, and Calendar",
+    href: "/workspace",
+    icon: GlobeAltIcon,
+  },
+    {
+      id: "skills",
+      label: "Skills",
+      subtitle: "Install and manage agent skills",
+      href: "/skills",
+      icon: CpuChipIcon,
+    },
+    {
     id: "docs",
     label: "Docs",
     subtitle: "Patterns, canvas rules, and builder guides",

@@ -4,7 +4,7 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import { saveMessage } from "@/lib/db-helpers";
+import { saveMessage, createArtifactVersion } from "@/lib/db-helpers";
 import { recordModelUsage } from "@/lib/model-usage";
 import { recordBuilderMetric } from "@/lib/api-metrics";
 import {
@@ -217,6 +217,19 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         });
       }
 
+      if (artifact && shouldPersist && userId) {
+        try {
+          await createArtifactVersion({
+            userId,
+            chatId: chatId ?? undefined,
+            title: artifact.title ?? requestedBuilderTarget,
+            artifactType: artifact.type,
+            payload: artifact.payload,
+          });
+        } catch (err) {
+          console.warn('[two-pass-builder] artifact version save failed:', err instanceof Error ? err.message : err);
+        }
+      }
       await recordModelUsage({
         userId: shouldPersist ? userId : undefined,
         chatId: shouldPersist ? chatId : undefined,

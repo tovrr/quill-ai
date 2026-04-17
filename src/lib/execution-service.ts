@@ -37,6 +37,23 @@ type RemoteExecutionConfig = {
   sandboxId?: string;
 };
 
+function isRemoteExecutionReady(config: RemoteExecutionConfig): boolean {
+  if (config.provider === "e2b") {
+    // E2B is intentionally disabled until SDK-backed execution is implemented.
+    return false;
+  }
+
+  if (config.provider === "modal") {
+    return Boolean(config.apiKey && config.baseUrl);
+  }
+
+  if (config.provider === "custom") {
+    return Boolean(config.baseUrl);
+  }
+
+  return false;
+}
+
 function getRemoteExecutionConfig(): RemoteExecutionConfig | null {
   const provider = process.env.EXECUTION_SERVICE_PROVIDER;
   if (!provider) return null;
@@ -84,61 +101,15 @@ async function executeRemote(
 
   // E2B integration point
   if (config.provider === "e2b") {
-    if (!config.apiKey) {
-      return {
-        ok: false,
-        stdout: "",
-        stderr: "",
-        exitCode: 1,
-        durationMs: 0,
-        error: "E2B_API_KEY is not set. See .env.example for setup.",
-      };
-    }
-
-    try {
-      // Placeholder: E2B Python execution
-      // When ready: import { Sandbox } from "@e2b/code-interpreter";
-      // and use config.apiKey to initialize the sandbox
-      const response = await fetch("https://api.e2b.dev/v1/sandboxes", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ template: request.language }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          ok: false,
-          stdout: "",
-          stderr: errorText,
-          exitCode: 1,
-          durationMs: 0,
-          error: `E2B API error: ${response.status}`,
-        };
-      }
-
-      // Execute code in sandbox and return result
-      // This is a simplified stub — full E2B integration requires the SDK
-      return {
-        ok: true,
-        stdout: "(E2B execution not yet fully integrated)",
-        stderr: "",
-        exitCode: 0,
-        durationMs: 0,
-      };
-    } catch (err) {
-      return {
-        ok: false,
-        stdout: "",
-        stderr: err instanceof Error ? err.message : String(err),
-        exitCode: 1,
-        durationMs: 0,
-        error: "E2B execution failed",
-      };
-    }
+    return {
+      ok: false,
+      stdout: "",
+      stderr: "",
+      exitCode: 1,
+      durationMs: 0,
+      error:
+        "E2B provider is configured but not enabled in this build. Use EXECUTION_SERVICE_PROVIDER=custom/modal or local sandbox until SDK integration ships.",
+    };
   }
 
   // Modal integration point
@@ -269,6 +240,16 @@ export async function executeCode(request: ExecuteCodeRequest): Promise<ExecuteC
   const remoteConfig = getRemoteExecutionConfig();
 
   if (remoteConfig) {
+    if (!isRemoteExecutionReady(remoteConfig)) {
+      return {
+        ok: false,
+        stdout: "",
+        stderr: "",
+        exitCode: 1,
+        durationMs: 0,
+        error: `Execution provider '${remoteConfig.provider}' is configured but not ready.`,
+      };
+    }
     return executeRemote(request, remoteConfig);
   }
 
@@ -291,7 +272,9 @@ export async function executeCode(request: ExecuteCodeRequest): Promise<ExecuteC
  * Check if code execution is available in the current environment.
  */
 export function isExecutionAvailable(): boolean {
-  return Boolean(getRemoteExecutionConfig()) || isSandboxEnabled();
+  const remoteConfig = getRemoteExecutionConfig();
+  if (remoteConfig && isRemoteExecutionReady(remoteConfig)) return true;
+  return isSandboxEnabled();
 }
 
 /**
@@ -299,7 +282,7 @@ export function isExecutionAvailable(): boolean {
  */
 export function getExecutionBackend(): "local" | "e2b" | "modal" | "custom" | "disabled" {
   const remoteConfig = getRemoteExecutionConfig();
-  if (remoteConfig) {
+  if (remoteConfig && isRemoteExecutionReady(remoteConfig)) {
     return remoteConfig.provider as "e2b" | "modal" | "custom";
   }
   if (isSandboxEnabled()) {

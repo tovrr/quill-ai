@@ -2,7 +2,7 @@
 
 ## Location
 
-All memory bank files are in `.kilocode/rules/memory-bank/`:
+All memory bank files are in `.agents/memory-bank/`:
 
 - `brief.md` - Project goals, requirements, constraints
 - `product.md` - Why this exists, user flows, UX goals

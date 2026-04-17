@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/Providers";
 import { DeviceAwareness } from "@/components/DeviceAwareness";
 import "./globals.css";
@@ -9,6 +11,33 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
 });
+
+function resolveMetadataBase(): URL {
+  const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (explicit) {
+    try {
+      return new URL(explicit);
+    } catch {
+      // fall through to Vercel/local defaults
+    }
+  }
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    const withProtocol = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    try {
+      return new URL(withProtocol);
+    } catch {
+      // fall through to defaults
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return new URL("https://quill.ai");
+  }
+
+  return new URL("http://localhost:3000");
+}
 
 // ── Viewport (mobile-first) ───────────────────────────────────────────────────
 export const viewport: Viewport = {
@@ -26,7 +55,7 @@ export const metadata: Metadata = {
   description:
     "Quill AI is your personal AI agent. Research, write, code, build pages, and execute complex tasks autonomously.",
   keywords: ["AI agent", "personal assistant", "Quill AI", "autonomous AI"],
-  metadataBase: new URL("https://quill.ai"),
+  metadataBase: resolveMetadataBase(),
 
   // PWA / installable web app
   manifest: "/manifest.webmanifest",
@@ -89,6 +118,8 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased font-sans`}>
         <DeviceAwareness />
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

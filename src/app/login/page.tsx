@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { authClient } from "@/lib/auth/client";
@@ -22,7 +22,10 @@ function LoginContent() {
   const callbackUrl = (() => {
     const raw = searchParams.get("callbackUrl") ?? "/agent";
     // Only allow same-origin relative paths (no protocol-relative or external URLs)
-    return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/agent";
+    if (!raw.startsWith("/") || raw.startsWith("//") || raw === "/login") {
+      return "/agent";
+    }
+    return raw;
   })();
 
   const [tab, setTab] = useState<Tab>("signin");
@@ -32,6 +35,21 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    authClient.getSession().then((session) => {
+      if (cancelled) return;
+      if (session?.data?.user) {
+        router.replace(callbackUrl);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [callbackUrl, router]);
 
   const handleTabChange = (t: Tab) => {
     setTab(t);

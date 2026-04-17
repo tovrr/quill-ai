@@ -77,7 +77,7 @@ When users request features beyond the base template, check for available recipe
 
 ## Memory Bank Maintenance
 
-After completing the user's request, update the relevant memory bank files:
+After completing the user's request, update the relevant memory bank files in `.agents/memory-bank/`:
 
-- `.kilocode/rules/memory-bank/context.md` - Current state and recent changes
+- `.agents/memory-bank/context.md` - Current state and recent changes
 - Other memory bank files as needed when architecture, tech stack, or project goals change

@@ -43,6 +43,11 @@ npm run dev
 | `UPSTASH_REDIS_REST_URL` | Rate limiting (optional; falls back to in-memory) |
 | `UPSTASH_REDIS_REST_TOKEN` | Rate limiting token |
 | `OPENROUTER_API_KEY` | Free fast-model fallback (optional) |
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway key for OpenAI-compatible model routing (optional) |
+| `AI_GATEWAY_BASE_URL` | Gateway base URL (optional; defaults to `https://ai-gateway.vercel.sh/v1`) |
+| `AI_GATEWAY_MODEL_PREFIX` | Optional model-id prefix for gateway routing, e.g. `openrouter/` |
+| `ALLOW_INMEMORY_RATELIMIT_FALLBACK` | Allows local rate-limit fallback when Upstash is unavailable (`true` by default outside production) |
+| `ENABLE_IN_MEMORY_METRICS` | Enables `/api/metrics` in production (`false` by default in production) |
 
 ### Check
 

@@ -16,6 +16,10 @@ type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const ALLOW_IN_MEMORY_FALLBACK =
+  process.env.ALLOW_INMEMORY_RATELIMIT_FALLBACK === "true" || !IS_PRODUCTION;
+
 const globalStore = globalThis as typeof globalThis & {
   __quillRateLimitStore__?: Map<string, Bucket>;
 };
@@ -68,13 +72,23 @@ function getUpstashConfig(): { url: string; token: string } | null {
   return { url, token };
 }
 
+function failClosedRateLimit(input: CheckRateLimitInput): RateLimitResult {
+  return {
+    allowed: false,
+    limit: input.max,
+    remaining: 0,
+    retryAfterSeconds: Math.max(1, Math.ceil(input.windowMs / 1000)),
+  };
+}
+
 type UpstashPipelineResponse = {
   result?: Array<{ result?: number | string | null }>;
 };
 
-async function checkRateLimitUpstash(input: CheckRateLimitInput): Promise<RateLimitResult | null> {
-  const cfg = getUpstashConfig();
-  if (!cfg) return null;
+async function checkRateLimitUpstash(
+  input: CheckRateLimitInput,
+  cfg: { url: string; token: string }
+): Promise<RateLimitResult | null> {
 
   try {
     const ttlSeconds = Math.max(1, Math.ceil(input.windowMs / 1000));
@@ -124,7 +138,28 @@ async function checkRateLimitUpstash(input: CheckRateLimitInput): Promise<RateLi
 }
 
 export async function checkRateLimit(input: CheckRateLimitInput): Promise<RateLimitResult> {
-  const distributed = await checkRateLimitUpstash(input);
+  const cfg = getUpstashConfig();
+
+  if (!cfg) {
+    if (ALLOW_IN_MEMORY_FALLBACK) {
+      return checkRateLimitInMemory(input);
+    }
+
+    console.error(
+      "[rate-limit] Upstash is required in production but missing; failing closed.",
+    );
+    return failClosedRateLimit(input);
+  }
+
+  const distributed = await checkRateLimitUpstash(input, cfg);
   if (distributed) return distributed;
-  return checkRateLimitInMemory(input);
+
+  if (ALLOW_IN_MEMORY_FALLBACK) {
+    return checkRateLimitInMemory(input);
+  }
+
+  console.error(
+    "[rate-limit] Upstash is unavailable in production and in-memory fallback is disabled; failing closed.",
+  );
+  return failClosedRateLimit(input);
 }

@@ -4,6 +4,9 @@ import { getApiMetricsSnapshot } from "@/lib/api-metrics";
 
 export const dynamic = "force-dynamic";
 
+const IN_MEMORY_METRICS_ENABLED =
+  process.env.ENABLE_IN_MEMORY_METRICS === "true" || process.env.NODE_ENV !== "production";
+
 function safeEquals(candidate: string, expected: string): boolean {
   const a = Buffer.from(candidate);
   const b = Buffer.from(expected);
@@ -28,6 +31,16 @@ function isAuthorized(req: Request): boolean {
 }
 
 export async function GET(req: Request) {
+  if (!IN_MEMORY_METRICS_ENABLED) {
+    return NextResponse.json(
+      {
+        error: "Metrics backend not enabled",
+        hint: "Set ENABLE_IN_MEMORY_METRICS=true for temporary in-memory metrics or use external observability in production.",
+      },
+      { status: 503 },
+    );
+  }
+
   if (!process.env.API_METRICS_TOKEN) {
     // Fail closed when token is missing so the endpoint never reveals config state.
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

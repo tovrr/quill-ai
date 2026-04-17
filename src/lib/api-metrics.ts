@@ -28,6 +28,9 @@ type MetricsStore = {
   builder: BuilderMetric;
 };
 
+const IN_MEMORY_METRICS_ENABLED =
+  process.env.ENABLE_IN_MEMORY_METRICS === "true" || process.env.NODE_ENV !== "production";
+
 const globalStore = globalThis as typeof globalThis & {
   __quillApiMetrics__?: MetricsStore;
 };
@@ -135,6 +138,8 @@ export function recordApiMetric(input: {
   status: number;
   error?: string;
 }): void {
+  if (!IN_MEMORY_METRICS_ENABLED) return;
+
   store.totals.requests += 1;
 
   if (input.status >= 500) {
@@ -161,6 +166,8 @@ export function recordBuilderMetric(input: {
   artifactType?: BuilderArtifactType;
   requestedTarget?: BuilderTarget;
 }): void {
+  if (!IN_MEMORY_METRICS_ENABLED) return;
+
   store.builder.prompts += 1;
   const target = input.requestedTarget ?? "auto";
   store.builder.byRequestedTarget[target] += 1;
@@ -181,6 +188,7 @@ export function recordBuilderMetric(input: {
 
 export function getApiMetricsSnapshot() {
   return {
+    inMemoryMetricsEnabled: IN_MEMORY_METRICS_ENABLED,
     startedAt: store.startedAt,
     totals: { ...store.totals },
     routes: JSON.parse(JSON.stringify(store.routes)) as Record<string, RouteMetric>,

@@ -200,3 +200,20 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 - [ ] Verify CSP is enforced with no critical violations
 - [ ] Verify readiness endpoint reports dependency health (DB, auth, provider)
 - [ ] Verify external uptime checks and alert routing are active
+
+## Next.js / Vercel Architecture - Phase 2 Prep
+
+- [x] **Replace cookie-presence login redirect with session-validity redirect**
+  - Scope: move auth redirect logic from cookie check in `src/proxy.ts` to server-validated session checks in protected route/layout boundaries.
+  - Acceptance: stale or invalid cookies do not redirect users away from login.
+  - Verification: simulate invalid session cookie and confirm `/login` remains accessible until real auth is established.
+
+- [x] **Make metadata base URL environment-driven**
+  - Scope: remove hardcoded production origin in `src/app/layout.tsx`; resolve metadata base from `NEXT_PUBLIC_APP_URL`/`VERCEL_URL` with safe fallback.
+  - Acceptance: preview deployments generate correct OG/canonical host values.
+  - Verification: compare metadata output between local, preview, and production deployments.
+
+- [x] **Adopt Vercel-native frontend telemetry or tighten CSP if intentionally unused**
+  - Scope: either add `@vercel/analytics` + `@vercel/speed-insights` in root layout, or remove unused Vercel insights CSP allowances from `next.config.ts`.
+  - Acceptance: platform telemetry strategy is explicit and consistent with CSP connect-src.
+  - Verification: if enabled, telemetry events appear in Vercel dashboard; if disabled, CSP no longer includes unused insights endpoints.
