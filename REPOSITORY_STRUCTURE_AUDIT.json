@@ -1,0 +1,386 @@
+{
+  "audit_metadata": {
+    "audit_date": "2026-04-17",
+    "repository": "quill-ai",
+    "owner": "tovrr",
+    "repository_url": "https://github.com/tovrr/quill-ai",
+    "audit_type": "comprehensive_structure_hygiene",
+    "framework": "Next.js 16 (App Router) Monorepo",
+    "scope": "Full repository organization with focus on API routes and backend modules",
+    "constraints": ["preserve_git_history", "no_destructive_renaming"]
+  },
+  
+  "current_state_metrics": {
+    "api_routes": {
+      "total": 36,
+      "by_domain": {
+        "chat_core": 5,
+        "auth_identity": 2,
+        "artifacts_builder": 2,
+        "image_generation": 1,
+        "google_workspace": 8,
+        "mcp_protocol": 3,
+        "code_execution": 2,
+        "autopilot_workflows": 4,
+        "skills_extensibility": 2,
+        "admin_observability": 2,
+        "system_health": 3,
+        "file_storage": 1
+      },
+      "organization": "domain_based_without_versioning",
+      "versioning_strategy": "none"
+    },
+    "library_organization": {
+      "top_level_files": 28,
+      "organized_domains": 2,
+      "organized_domains_list": ["auth", "chat"],
+      "unorganized_files": 22,
+      "status": "sprawl_detected"
+    },
+    "components_organization": {
+      "status": "well_organized",
+      "domains": ["ui", "layout", "agent", "legal"],
+      "root_singletons": 3
+    },
+    "documentation": {
+      "root_markdown_files": 11,
+      "centralized_docs_folder": false,
+      "adr_directory": false,
+      "api_design_guide": false,
+      "changelog": false,
+      "memory_bank_location": ".agents/memory-bank/",
+      "governance_strength": "strong"
+    }
+  },
+  
+  "target_state_metrics": {
+    "api_routes": {
+      "total": 36,
+      "by_domain": {
+        "chat_core": 5,
+        "auth_identity": 2,
+        "artifacts_builder": 2,
+        "integrations": 8,
+        "extensions": 5,
+        "workflows": 4,
+        "developer_tools": 3,
+        "workspace": 2,
+        "system": 3,
+        "admin": 2
+      },
+      "organization": "domain_based_with_versioning_placeholder",
+      "versioning_strategy": "v1_namespace_optional",
+      "api_version_folder": "src/app/api/v1/ (optional)"
+    },
+    "library_organization": {
+      "top_level_files": 2,
+      "organized_domains": 10,
+      "organized_domains_list": [
+        "auth",
+        "chat",
+        "ai",
+        "builder",
+        "execution",
+        "data",
+        "models",
+        "integrations",
+        "extensions",
+        "observability"
+      ],
+      "files_reorganized": 26,
+      "status": "clean_domain_based_structure"
+    },
+    "components_organization": {
+      "status": "stable_no_changes",
+      "domains": ["ui", "layout", "agent", "legal"],
+      "root_singletons": 3
+    },
+    "documentation": {
+      "root_markdown_files": 11,
+      "centralized_docs_folder": true,
+      "centralized_docs_subfolders": ["decisions", "api", "patterns"],
+      "adr_directory": true,
+      "adr_count": 10,
+      "api_design_guide": true,
+      "changelog": true,
+      "changelog_file": "CHANGELOG.md",
+      "memory_bank_location": ".agents/memory-bank/",
+      "governance_strength": "very_strong"
+    }
+  },
+  
+  "file_migration_mapping": {
+    "domain_auth": {
+      "client.ts": {"current": "src/lib/auth/client.ts", "target": "src/lib/auth/client.ts", "action": "no_change"},
+      "server.ts": {"current": "src/lib/auth/server.ts", "target": "src/lib/auth/server.ts", "action": "no_change"},
+      "api-security.ts": {"current": "src/lib/api-security.ts", "target": "src/lib/auth/security.ts", "action": "move_and_consolidate"},
+      "entitlements.ts": {"current": "src/lib/entitlements.ts", "target": "src/lib/auth/security.ts", "action": "consolidate"}
+    },
+    "domain_ai": {
+      "killers.ts": {"current": "src/lib/killers.ts", "target": "src/lib/ai/killers.ts", "action": "move"},
+      "killer-autonomy.ts": {"current": "src/lib/killer-autonomy.ts", "target": "src/lib/ai/killer-autonomy.ts", "action": "move"},
+      "assistant-message-utils.ts": {"current": "src/lib/assistant-message-utils.ts", "target": "src/lib/ai/assistant-message-utils.ts", "action": "move"}
+    },
+    "domain_builder": {
+      "builder-artifacts.ts": {"current": "src/lib/builder-artifacts.ts", "target": "src/lib/builder/artifacts.ts", "action": "move_and_rename"},
+      "api-metrics.ts": {"current": "src/lib/api-metrics.ts", "target": "src/lib/builder/metrics.ts", "action": "move_and_rename"}
+    },
+    "domain_execution": {
+      "execution-service.ts": {"current": "src/lib/execution-service.ts", "target": "src/lib/execution/service.ts", "action": "move_and_rename"},
+      "docker-executor.ts": {"current": "src/lib/docker-executor.ts", "target": "src/lib/execution/docker.ts", "action": "move_and_rename"},
+      "sandbox-providers.ts": {"current": "src/lib/sandbox-providers.ts", "target": "src/lib/execution/providers.ts", "action": "move_and_rename"}
+    },
+    "domain_data": {
+      "db-helpers.ts": {"current": "src/lib/db-helpers.ts", "target": "src/lib/data/db-helpers.ts", "action": "move"},
+      "audit-log.ts": {"current": "src/lib/audit-log.ts", "target": "src/lib/data/audit-log.ts", "action": "move"}
+    },
+    "domain_models": {
+      "openrouter-models.ts": {"current": "src/lib/openrouter-models.ts", "target": "src/lib/models/openrouter.ts", "action": "move_and_rename"}
+    },
+    "domain_integrations": {
+      "google-api.ts": {"current": "src/lib/google-api.ts", "target": "src/lib/integrations/google-api.ts", "action": "move"},
+      "web-search.ts": {"current": "src/lib/web-search.ts", "target": "src/lib/integrations/web-search.ts", "action": "move"}
+    },
+    "domain_extensions": {
+      "mcp-registry.ts": {"current": "src/lib/mcp-registry.ts", "target": "src/lib/extensions/mcp-registry.ts", "action": "move"},
+      "skills-registry.ts": {"current": "src/lib/skills-registry.ts", "target": "src/lib/extensions/skills.ts", "action": "move_and_rename"},
+      "autopilot-utils.ts": {"current": "src/lib/autopilot-utils.ts", "target": "src/lib/extensions/autopilot.ts", "action": "move_and_rename"},
+      "user-customization.ts": {"current": "src/lib/user-customization.ts", "target": "src/lib/extensions/customization.ts", "action": "move_and_rename"}
+    },
+    "domain_observability": {
+      "model-usage.ts": {"current": "src/lib/model-usage.ts", "target": "src/lib/observability/metrics.ts", "action": "move_and_rename"},
+      "observability.ts": {"current": "src/lib/observability.ts", "target": "src/lib/observability/logging.ts", "action": "move_and_rename"},
+      "rate-limit.ts": {"current": "src/lib/rate-limit.ts", "target": "src/lib/observability/rate-limit.ts", "action": "move"}
+    },
+    "root_singletons": {
+      "utils.ts": {"current": "src/lib/utils.ts", "target": "src/lib/utils.ts", "action": "no_change"},
+      "react-preview-html.ts": {"current": "src/lib/react-preview-html.ts", "target": "src/lib/react-preview.ts", "action": "optional_rename"}
+    },
+    "audit_items": {
+      "chat-request.ts": {"current": "src/lib/chat-request.ts", "status": "audit_for_duplication", "note": "Compare with src/lib/chat/request-utils.ts"}
+    }
+  },
+  
+  "migration_phases": [
+    {
+      "phase": 0,
+      "name": "Preparation",
+      "description": "Create directory structure, no file moves yet",
+      "effort_hours": 1.5,
+      "breaking": false,
+      "steps": [
+        "Create domain-organized subdirectories in src/lib/",
+        "Create docs/decisions/, docs/api/, docs/patterns/",
+        "Commit structure only"
+      ]
+    },
+    {
+      "phase": 1,
+      "name": "Documentation",
+      "description": "Add ADRs, API design guide, patterns",
+      "effort_hours": 2.5,
+      "breaking": false,
+      "deliverables": [
+        "10 Architecture Decision Records in docs/decisions/",
+        "API Design Guide in docs/api/DESIGN_GUIDE.md",
+        "API Taxonomy in docs/api/TAXONOMY.md",
+        "Modularity patterns in docs/patterns/MODULARITY.md",
+        "CHANGELOG.md for version history"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Library Reorganization",
+      "description": "Move lib files into domain folders with import updates",
+      "effort_hours": 5,
+      "breaking": false,
+      "files_affected": 26,
+      "domains_created": 8
+    },
+    {
+      "phase": 3,
+      "name": "API Routes Reorganization",
+      "description": "Reorganize routes under v1/ namespace (optional, can defer)",
+      "effort_hours": 10,
+      "breaking": false,
+      "optional": true,
+      "note": "Provides long-term clarity; not critical for current scale"
+    },
+    {
+      "phase": 4,
+      "name": "Validation",
+      "description": "Typecheck, build, smoke tests, manual integration",
+      "effort_hours": 2.5,
+      "breaking": false,
+      "validation_steps": [
+        "npm run typecheck",
+        "npm run lint",
+        "npm run build",
+        "npm run test:smoke",
+        "Manual chat endpoint test"
+      ]
+    }
+  ],
+  
+  "effort_summary": {
+    "mandatory_phases": "0, 1, 2, 4",
+    "mandatory_effort_hours": 11,
+    "optional_phases": "3",
+    "optional_effort_hours": 10,
+    "total_effort_hours": "11-21",
+    "team_distribution": {
+      "tech_lead": "Phases 0, 1: 4h",
+      "engineer": "Phase 2, 4: 7.5h",
+      "additional_engineers": "Phase 3 if executed: 10h"
+    }
+  },
+  
+  "prioritized_backlog": {
+    "quick_wins": [
+      {"id": "Q1", "task": "Create ADR directory", "effort_h": 2, "impact": "high"},
+      {"id": "Q2", "task": "Create API design guide", "effort_h": 1, "impact": "high"},
+      {"id": "Q3", "task": "Add CHANGELOG.md", "effort_h": 0.5, "impact": "medium"}
+    ],
+    "medium_effort": [
+      {"id": "M1", "task": "Reorganize lib/ by domain", "effort_h": 5, "impact": "high"},
+      {"id": "M2", "task": "Extract builder quality checks", "effort_h": 2, "impact": "medium"},
+      {"id": "M3", "task": "Extract bundle validation", "effort_h": 1.5, "impact": "medium"}
+    ],
+    "longer_term": [
+      {"id": "L1", "task": "Reorganize API routes to v1/", "effort_h": 10, "impact": "medium", "optional": true},
+      {"id": "L2", "task": "Refactor chat route sub-tasks", "effort_h": 10, "impact": "medium"},
+      {"id": "L3", "task": "API versioning policy", "effort_h": 2, "impact": "medium"}
+    ]
+  },
+  
+  "success_metrics": {
+    "compilation": {
+      "npm_typecheck_passes": true,
+      "npm_build_passes": true,
+      "npm_lint_passes": true
+    },
+    "functionality": {
+      "smoke_tests_pass": true,
+      "chat_endpoint_works": true,
+      "all_features_functional": true
+    },
+    "developer_experience": {
+      "time_to_add_feature": "< 5 min to find right folder",
+      "onboarding_time": "< 30 min to understand lib layout",
+      "pr_review_cycles": "1-2 (improved from 2-3)"
+    },
+    "performance": {
+      "build_time_regression": "< 2%",
+      "bundle_size_regression": "< 1%"
+    }
+  },
+  
+  "risks_and_opportunities": {
+    "risks": [
+      {
+        "id": "R-01",
+        "risk": "New features land in wrong lib location",
+        "severity": "medium",
+        "mitigation": "Domain structure + placement guide"
+      },
+      {
+        "id": "R-02",
+        "risk": "Chat route continues to grow beyond 582 lines",
+        "severity": "medium",
+        "mitigation": "Refactor sub-tasks in Phase 3+"
+      },
+      {
+        "id": "R-03",
+        "risk": "Duplicate logic in chat modules",
+        "severity": "low",
+        "mitigation": "Audit chat-request.ts vs request-utils.ts"
+      }
+    ],
+    "opportunities": [
+      {
+        "id": "O-01",
+        "opportunity": "Organize lib/ by domain",
+        "impact": "high",
+        "effort_h": 5,
+        "roi": "high"
+      },
+      {
+        "id": "O-02",
+        "opportunity": "Create ADR registry",
+        "impact": "medium",
+        "effort_h": 2,
+        "roi": "high"
+      },
+      {
+        "id": "O-03",
+        "opportunity": "Document API design guide",
+        "impact": "medium",
+        "effort_h": 3,
+        "roi": "high"
+      }
+    ]
+  },
+  
+  "naming_conventions": {
+    "library_files": {
+      "domain_module": "{domain}/",
+      "core_concern": "{concern}.ts",
+      "utilities": "{concern}-utils.ts (not generic utils.ts)",
+      "types": "types.ts (in domain, optional)",
+      "top_level_singletons": "{concern}.ts (only if used across 3+ domains)"
+    },
+    "api_routes": {
+      "pattern": "/api/v1/{domain}/{resource}/{action}",
+      "versioning": "v1_placeholder_for_future",
+      "rest_verbs": "GET, POST, PATCH, DELETE via route.ts"
+    },
+    "components": {
+      "ui_primitive": "PascalCase (src/components/ui/)",
+      "layout_component": "PascalCase (src/components/layout/)",
+      "feature_component": "{Feature}{Type} (src/components/{feature}/)"
+    }
+  },
+  
+  "sign_off_checklist": {
+    "pre_migration": [
+      "Stakeholder review and approval",
+      "Team capacity confirmed",
+      "Risk assessment complete",
+      "Git history backup (GitHub)"
+    ],
+    "post_migration": [
+      "All code compiles",
+      "All tests pass",
+      "Documentation updated",
+      "No regressions",
+      "Performance stable",
+      "Developer feedback positive"
+    ]
+  },
+  
+  "recommendations": {
+    "immediate": [
+      "Review and approve audit (30 min)",
+      "Execute Phase 0 (1.5h)",
+      "Execute Phase 1 (2.5h)",
+      "Execute Phase 2 (4-6h over 2-3 days)"
+    ],
+    "deferred": [
+      "Phase 3 API routes (can wait 2-4 weeks)",
+      "Chat route sub-tasks refactoring"
+    ],
+    "ongoing": [
+      "Update memory bank with completion notes",
+      "Follow established patterns for new features",
+      "Quarterly audit to catch drift"
+    ]
+  },
+  
+  "key_improvements_summary": {
+    "lib_sprawl_reduction": "28 top-level files → 2 top-level files",
+    "domain_organization": "2 organized domains → 10 organized domains",
+    "new_features_placement": "unclear → confident (9 domains with clear ownership)",
+    "onboarding_impact": "easier discovery of where to place code",
+    "git_history_preservation": "full (no destructive moves, only file moves)"
+  }
+}
