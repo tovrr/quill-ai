@@ -92,7 +92,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 - [x] Continued chat-route decomposition by extracting mode limits + provider/model selection into `src/lib/chat/model-selection.ts` (`getDailyLimitForMode`, `resolveModelForMode`) and wiring `/api/chat` to consume it
 - [x] Continued chat-route decomposition by extracting entitlement and quota checks into `src/lib/chat/access-gates.ts` (`evaluateChatAccess`) and replacing in-route guard branches with a single orchestration call
 - [x] Continued chat-route decomposition by extracting killer permission + sandbox runtime derivation into `src/lib/chat/policy-runtime.ts` (`evaluatePolicyRuntime`) and replacing in-route branching with a single computed runtime payload
-- [x] Updated anti-hallucination documentation for the decomposed chat backend across `AGENTS.md`, `README.md`, `.kilocode/rules/development.md`, and `.kilocode/rules/memory-bank/architecture.md` with explicit module ownership and route orchestration rules
+- [x] Updated anti-hallucination documentation for the decomposed chat backend across `AGENTS.md`, `README.md`, `.agents/development.md`, and `.agents/memory-bank/architecture.md` with explicit module ownership and route orchestration rules
 - [x] Added reviewer-facing chat guardrails to `CONTRIBUTING.md` and `.github/pull_request_template.md` so PRs enforce module ownership for `/api/chat` changes
 
 ## Current Structure
