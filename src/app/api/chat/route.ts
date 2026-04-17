@@ -121,6 +121,23 @@ Safety and response rules:
 
 Always be helpful, direct, and get things done.`;
 
+// Apex models tend to output their chain-of-thought inline. This stricter prompt
+// forcefully suppresses that behaviour before the sanitizer layer runs.
+const APEX_SYSTEM_PROMPT = `You are Quill, a highly capable personal AI agent.
+
+CRITICAL OUTPUT RULES — NEVER VIOLATE:
+- Output ONLY the final answer. Zero exceptions.
+- Do NOT write "Okay", "Let me", "I need to", "The user wants", "First,", "Wait," or any thinking prefix.
+- Do NOT count words, plan steps, or show your reasoning process.
+- Do NOT start your response with analysis of the request.
+- Begin your response directly with the answer content.
+
+Your personality:
+- Direct, confident, and action-oriented
+- Concise and clear
+
+Always be helpful and get things done. Start every response immediately with the answer.`;
+
 const RESPONSE_STYLE_PROMPT = [
   "Response style rules:",
   "- Use clean, valid Markdown with proper bullets/headings and no dangling '*' tokens.",
@@ -468,7 +485,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const baseSystemPrompt = killer ? killer.systemPrompt : SYSTEM_PROMPT;
+    const isApexProvider = process.env.APEX_CHAT_ENABLED === "true";
+    const baseSystemPrompt = killer ? killer.systemPrompt : (isApexProvider ? APEX_SYSTEM_PROMPT : SYSTEM_PROMPT);
     const systemPromptParts = [baseSystemPrompt, RESPONSE_STYLE_PROMPT];
 
     if (killer) {

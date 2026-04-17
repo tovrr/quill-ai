@@ -153,6 +153,31 @@ function recoverCleanAnswerSentences(value: string): string | null {
   return clean.slice(0, 2).join(" ").trim();
 }
 
+/**
+ * When the entire model output is reasoning with no final answer, try to extract
+ * the last quoted string the model proposed as its answer.
+ * E.g.: `Perhaps "Hello, world! How are you?"` → `Hello, world! How are you?`
+ */
+function extractLastProposedQuotedAnswer(value: string): string | null {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return null;
+
+  // Match the last occurrence of a quoted string (double or Unicode smart quotes)
+  const quotedMatches = [...normalized.matchAll(/["""]([^"""]{8,})["""]/g)];
+  if (quotedMatches.length === 0) return null;
+
+  const lastMatch = quotedMatches[quotedMatches.length - 1];
+  const candidate = normalizeVisibleText(lastMatch?.[1] ?? "");
+  if (!hasRenderableTextValue(candidate)) return null;
+
+  // Don't return if the quoted content is itself reasoning
+  const probe = normalizeSentenceForDetection(candidate).toLowerCase();
+  if (looksLikeReasoningSentence(probe)) return null;
+  if (STREAMING_REASONING_GUARD_REGEX.test(probe)) return null;
+
+  return candidate;
+}
+
 function extractTrailingFinalLine(value: string): string | null {
   const lines = value
     .split("\n")
@@ -345,7 +370,14 @@ export function sanitizeAssistantOutputText(value: string): string {
 
   const trimmed = trimTrailingReasoningFragments(normalized);
   if (splitIntoSentences(trimmed).length <= 1) {
-    return recoverCleanAnswerSentences(normalized) ?? trimmed;
+    const recovered = recoverCleanAnswerSentences(normalized) ?? extractLastProposedQuotedAnswer(normalized);
+    return recovered ?? trimmed;
+  }
+
+  // If the trimmed result still starts with a reasoning signal, try quoted answer extraction.
+  if (looksLikeReasoningSignal(normalizeSentenceForDetection(trimmed))) {
+    const quoted = extractLastProposedQuotedAnswer(normalized);
+    if (quoted) return quoted;
   }
 
   return trimmed;
@@ -387,7 +419,8 @@ export function sanitizeAssistantOutputTextForStreaming(value: string): string {
 
   const trimmed = trimTrailingReasoningFragments(normalized);
   if (splitIntoSentences(trimmed).length <= 1) {
-    return recoverCleanAnswerSentences(normalized) ?? trimmed;
+    const recovered = recoverCleanAnswerSentences(normalized) ?? extractLastProposedQuotedAnswer(normalized);
+    return recovered ?? trimmed;
   }
 
   return trimmed;
