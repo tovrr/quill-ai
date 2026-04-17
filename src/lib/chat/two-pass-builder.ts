@@ -12,7 +12,7 @@ import {
   parseBuilderArtifact,
   type BuilderTarget,
 } from "@/lib/builder-artifacts";
-import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/assistant-message-utils";
+import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
 
 type ChatMode = "fast" | "thinking" | "advanced";
 

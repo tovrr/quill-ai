@@ -30,8 +30,8 @@ import {
   getMessageParts,
   hasRenderableAssistantContent,
   normalizeAssistantMessage,
-} from "@/lib/assistant-message-utils";
-import { getKillerById, type Killer } from "@/lib/killers";
+} from "@/lib/ai/assistant-message-utils";
+import { getKillerById, type Killer } from "@/lib/ai/killers";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
 import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
 import {

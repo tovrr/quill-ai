@@ -30,7 +30,7 @@ import {
 import { SparklesIcon, StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { SettingsModal } from "@/components/ui/SettingsModal";
-import { KILLERS } from "@/lib/killers";
+import { KILLERS } from "@/lib/ai/killers";
 
 type SessionData = {
   user: { id: string; name: string; email: string; image?: string | null } | null;

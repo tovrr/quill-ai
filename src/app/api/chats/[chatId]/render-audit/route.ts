@@ -7,7 +7,7 @@ import {
   getMessagePartTypes,
   hasRenderableAssistantContent,
   isRenderableMessagePart,
-} from "@/lib/assistant-message-utils";
+} from "@/lib/ai/assistant-message-utils";
 
 interface Params {
   params: Promise<{ chatId: string }>;

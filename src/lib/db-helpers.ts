@@ -14,7 +14,7 @@ import {
   userEntitlements,
   userSkills,
 } from "@/db/schema";
-import { sanitizeStoredMessage } from "@/lib/assistant-message-utils";
+import { sanitizeStoredMessage } from "@/lib/ai/assistant-message-utils";
 import { eq, desc, and, gte, count, sql } from "drizzle-orm";
 
 const MAX_DB_FILE_BYTES = Number(process.env.MAX_DB_FILE_BYTES ?? "5242880");

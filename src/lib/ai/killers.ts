@@ -1,5 +1,5 @@
-import type { KillerExecutionPolicy } from "@/lib/killer-autonomy";
-import { createKillerExecutionPolicy } from "@/lib/killer-autonomy";
+import type { KillerExecutionPolicy } from "@/lib/ai/killer-autonomy";
+import { createKillerExecutionPolicy } from "@/lib/ai/killer-autonomy";
 
 export type KillerIconKey = "code" | "flow" | "idea" | "research" | "pen";
 

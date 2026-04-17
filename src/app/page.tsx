@@ -15,7 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/20/solid";
 import { QuillLogo } from "@/components/ui/QuillLogo";
-import { KILLERS, type KillerIconKey } from "@/lib/killers";
+import { KILLERS, type KillerIconKey } from "@/lib/ai/killers";
 import { HeroInput } from "@/components/HeroInput";
 
 export const metadata: Metadata = {

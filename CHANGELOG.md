@@ -4,8 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-### Planned
-- Phase 1 documentation rollout for repository structure and architecture decisions
+### Added
+- Phase 2 batch 1 migration: AI domain modules moved to `src/lib/ai/` (`assistant-message-utils.ts`, `killer-autonomy.ts`, `killers.ts`) with import rewiring across app/components/lib
+
+### Validated
+- `npm run typecheck`
+- `npm run build`
 
 ## [1.0.0] - 2026-04-17
 
