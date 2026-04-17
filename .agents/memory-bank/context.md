@@ -8,6 +8,8 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Executed Phase 1 documentation rollout for repository structure: created `CHANGELOG.md`, added API governance docs (`docs/api/DESIGN_GUIDE.md`, `docs/api/TAXONOMY.md`), added modularity guide (`docs/patterns/MODULARITY.md`), and seeded ADR set (`docs/decisions/001`-`010` + template)
+- [x] Standardized architecture decision tracking under `docs/decisions/` to reduce decision drift and make major technical choices reviewable
 - [x] Base Next.js 16 setup with App Router
 - [x] TypeScript configuration with strict mode
 - [x] Tailwind CSS 4 integration
@@ -175,6 +177,8 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Executed Phase 1 of repository-structure plan after Phase 0 skeleton: created and committed changelog (`CHANGELOG.md`), API documentation (`docs/api/DESIGN_GUIDE.md`, `docs/api/TAXONOMY.md`), modularity conventions (`docs/patterns/MODULARITY.md`), and 10 architecture decision records plus ADR template under `docs/decisions/`. Revalidated with passing `npm run typecheck`.
 
 - 2026-04-17: Reorganized memory bank from `.kilocode/rules/memory-bank/` to `.agents/memory-bank/` to align with agent-focused codebase structure. Updated all references in AGENTS.md and development documentation.
 
