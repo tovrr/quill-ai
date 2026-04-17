@@ -4,7 +4,7 @@ import { headers as nextHeaders } from "next/headers";
 import { getGoogleConnectionByUserId, deleteGoogleConnectionByUserId } from "@/lib/data/db-helpers";
 import { parseBoundedInt, readSafeErrorMessage, sanitizeGoogleNameQuery } from "@/lib/api-security";
 import { logAuditEvent } from "@/lib/data/audit-log";
-import { googleFetch } from "@/lib/google-api";
+import { googleFetch } from "@/lib/integrations/google-api";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability";
 
 export const dynamic = "force-dynamic";

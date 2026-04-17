@@ -20,7 +20,7 @@ import {
 } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/model-usage";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { buildWebSearchContext, searchWeb } from "@/lib/web-search";
+import { buildWebSearchContext, searchWeb } from "@/lib/integrations/web-search";
 import {
   buildRateLimitHeaders,
   createApiRequestContext,

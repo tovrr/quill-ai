@@ -1,7 +1,7 @@
 import { countUserMessagesToday } from "@/lib/data/db-helpers";
 import { resolveUserEntitlements } from "@/lib/entitlements";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { isWebSearchConfigured } from "@/lib/web-search";
+import { isWebSearchConfigured } from "@/lib/integrations/web-search";
 import { getDailyLimitForMode, type ChatMode } from "@/lib/chat/model-selection";
 
 export type ChatAccessFailure = {

@@ -8,6 +8,7 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Continued Phase 2 code reorganization (batch 4): moved integration modules into `src/lib/integrations/` (`google-api.ts`, `web-search.ts`) and rewired imports across chat/google/me/lib callers with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 3): moved data modules into `src/lib/data/` (`db-helpers.ts`, `audit-log.ts`) and rewired imports across API routes/share page/lib with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 2): moved execution modules into `src/lib/execution/` (`service.ts`, `docker.ts`, `providers.ts`) and rewired imports across chat/runtime/sandbox entry points with passing typecheck and build
 - [x] Started Phase 2 code reorganization (batch 1): moved AI domain modules into `src/lib/ai/` (`assistant-message-utils.ts`, `killer-autonomy.ts`, `killers.ts`) and rewired imports across route/UI/lib callers with passing typecheck and build
@@ -180,6 +181,8 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Continued Phase 2 with integrations-domain migration (batch 4): moved `src/lib/google-api.ts` and `src/lib/web-search.ts` to `src/lib/integrations/` using history-preserving moves, rewired all affected imports in chat/google/me/lib modules, and revalidated with passing `npm run typecheck` and `npm run build`.
 
 - 2026-04-17: Continued Phase 2 with data-domain migration (batch 3): moved `src/lib/db-helpers.ts` and `src/lib/audit-log.ts` to `src/lib/data/` using history-preserving moves, rewired all affected imports across API routes/share/lib modules, and revalidated with passing `npm run typecheck` and `npm run build`.
 
