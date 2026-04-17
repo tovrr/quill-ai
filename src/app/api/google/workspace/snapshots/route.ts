@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { getGoogleConnectionByUserId, getGoogleWorkspaceSnapshotsByUserId } from "@/lib/data/db-helpers";
-import { parseBoundedInt } from "@/lib/api-security";
+import { parseBoundedInt } from "@/lib/auth/security";
 import {
   createApiRequestContext,
   logApiCompletion,

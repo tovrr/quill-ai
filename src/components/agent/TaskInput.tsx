@@ -15,7 +15,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { SparklesIcon, StopIcon } from "@heroicons/react/20/solid";
-import type { BuilderTarget } from "@/lib/builder-artifacts";
+import type { BuilderTarget } from "@/lib/builder/artifacts";
 
 export type Mode = "fast" | "thinking" | "advanced";
 

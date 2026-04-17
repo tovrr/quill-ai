@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { getBestFreeModel } from "@/lib/openrouter-models";
+import { getBestFreeModel } from "@/lib/models/openrouter";
 
 export type ChatMode = "fast" | "thinking" | "advanced";
 

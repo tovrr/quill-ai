@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { isWebSearchConfigured } from "@/lib/integrations/web-search";
-import { resolveUserEntitlements } from "@/lib/entitlements";
+import { resolveUserEntitlements } from "@/lib/auth/entitlements";
 
 export const dynamic = "force-dynamic";
 

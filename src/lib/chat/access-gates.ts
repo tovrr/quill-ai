@@ -1,5 +1,5 @@
 import { countUserMessagesToday } from "@/lib/data/db-helpers";
-import { resolveUserEntitlements } from "@/lib/entitlements";
+import { resolveUserEntitlements } from "@/lib/auth/entitlements";
 import { checkRateLimit } from "@/lib/observability/rate-limit";
 import { isWebSearchConfigured } from "@/lib/integrations/web-search";
 import { getDailyLimitForMode, type ChatMode } from "@/lib/chat/model-selection";

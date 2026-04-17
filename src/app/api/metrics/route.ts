@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { getApiMetricsSnapshot } from "@/lib/api-metrics";
+import { getApiMetricsSnapshot } from "@/lib/builder/metrics";
 
 export const dynamic = "force-dynamic";
 

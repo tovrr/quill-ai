@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers as nextHeaders } from "next/headers";
 import { auth } from "@/lib/auth/server";
-import { parseBoundedInt } from "@/lib/api-security";
+import { parseBoundedInt } from "@/lib/auth/security";
 import { listRegistryEntries, type McpRegistryEntry } from "@/lib/extensions/mcp-registry";
 import {
   createApiRequestContext,

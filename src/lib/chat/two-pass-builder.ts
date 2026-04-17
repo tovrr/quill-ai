@@ -6,12 +6,12 @@ import {
 } from "ai";
 import { saveMessage, createArtifactVersion } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/observability/metrics";
-import { recordBuilderMetric } from "@/lib/api-metrics";
+import { recordBuilderMetric } from "@/lib/builder/metrics";
 import {
   analyzeArtifactQuality,
   parseBuilderArtifact,
   type BuilderTarget,
-} from "@/lib/builder-artifacts";
+} from "@/lib/builder/artifacts";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
 
 type ChatMode = "fast" | "thinking" | "advanced";

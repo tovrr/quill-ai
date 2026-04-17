@@ -1,4 +1,4 @@
-import { recordApiMetric } from "@/lib/api-metrics";
+import { recordApiMetric } from "@/lib/builder/metrics";
 
 type ApiRequestContext = {
   route: string;

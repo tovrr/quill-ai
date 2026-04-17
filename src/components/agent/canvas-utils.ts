@@ -1,4 +1,4 @@
-import { parseBuilderArtifact } from "@/lib/builder-artifacts";
+import { parseBuilderArtifact } from "@/lib/builder/artifacts";
 
 function extractHTML(content: string): string {
   const trimmed = content.trim();

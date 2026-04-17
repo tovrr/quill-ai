@@ -8,6 +8,8 @@ Quill AI is a personal AI agent application (Manus AI-style) built on Next.js 16
 
 ## Recently Completed
 
+- [x] Completed remaining Phase 2 domain migrations (batch 7): moved builder/auth/models files to `src/lib/builder/*`, `src/lib/auth/*`, and `src/lib/models/openrouter.ts` with full import rewiring and no stale legacy import paths
+- [x] Started and executed Phase 4 validation pass: `npm run typecheck` + `npm run build` + `npm run test:agent-remediation` passed; `npm run test:execution` import path was fixed for moved execution module and now fails only when local Docker daemon is unavailable
 - [x] Continued Phase 2 code reorganization (batch 6): moved observability modules into `src/lib/observability/` (`metrics.ts`, `logging.ts`, `rate-limit.ts`) and rewired imports across chat/health/admin/artifacts/skills/google/mcp routes with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 5): moved extensions modules into `src/lib/extensions/` (`mcp-registry.ts`, `skills.ts`, `autopilot.ts`, `customization.ts`) and rewired imports across agent/chat/autopilot/mcp/skills/settings callers with passing typecheck and build
 - [x] Continued Phase 2 code reorganization (batch 4): moved integration modules into `src/lib/integrations/` (`google-api.ts`, `web-search.ts`) and rewired imports across chat/google/me/lib callers with passing typecheck and build
@@ -183,6 +185,8 @@ export async function GET() {
 - [ ] Add testing setup recipe
 
 ## Session History
+
+- 2026-04-17: Completed remaining Phase 2 migrations and started Phase 4 validation closure: moved `src/lib/builder-artifacts.ts`, `src/lib/api-metrics.ts`, `src/lib/api-security.ts`, `src/lib/entitlements.ts`, and `src/lib/openrouter-models.ts` into `src/lib/builder/`, `src/lib/auth/`, and `src/lib/models/` with history-preserving renames and import rewiring; verified no stale legacy import paths remain. Validation results: `npm run typecheck` pass, `npm run build` pass, `npm run test:agent-remediation` pass, and `npm run test:execution` now executes with corrected import path but reports local Docker daemon unavailable.
 
 - 2026-04-17: Continued Phase 2 with observability-domain migration (batch 6): moved `src/lib/model-usage.ts`, `src/lib/observability.ts`, and `src/lib/rate-limit.ts` to `src/lib/observability/` as `metrics.ts`, `logging.ts`, and `rate-limit.ts` using history-preserving moves, rewired all affected imports across API/chat/lib modules, corrected one nested import rewrite edge-case, and revalidated with passing `npm run typecheck` and `npm run build`.
 

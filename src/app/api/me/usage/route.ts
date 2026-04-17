@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { countUserMessagesToday } from "@/lib/data/db-helpers";
 import { isWebSearchConfigured } from "@/lib/integrations/web-search";
-import { resolveUserEntitlements } from "@/lib/entitlements";
+import { resolveUserEntitlements } from "@/lib/auth/entitlements";
 
 export const dynamic = "force-dynamic";
 

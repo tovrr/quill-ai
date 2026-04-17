@@ -15,7 +15,7 @@ import {
   analyzeBundleReadiness,
   parseBuilderArtifact,
   type FileBundleArtifact,
-} from "@/lib/builder-artifacts";
+} from "@/lib/builder/artifacts";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@
  *   node scripts/test-execution-service.mjs
  */
 
-import { executeCode as executeLocal, isSandboxEnabled } from "../src/lib/docker-executor.ts";
+import { executeCode as executeLocal, isSandboxEnabled } from "../src/lib/execution/docker.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 

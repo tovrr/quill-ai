@@ -32,8 +32,8 @@ import {
   normalizeAssistantMessage,
 } from "@/lib/ai/assistant-message-utils";
 import { getKillerById, type Killer } from "@/lib/ai/killers";
-import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
-import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder-artifacts";
+import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder/artifacts";
+import { DEFAULT_BUILDER_LOCKS, parseBuilderArtifact } from "@/lib/builder/artifacts";
 import {
   DEFAULT_USER_PROFILE,
   normalizeUserProfile,

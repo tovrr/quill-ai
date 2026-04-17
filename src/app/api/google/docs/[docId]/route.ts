@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { getGoogleConnectionByUserId } from "@/lib/data/db-helpers";
-import { readSafeErrorMessage } from "@/lib/api-security";
+import { readSafeErrorMessage } from "@/lib/auth/security";
 import { googleFetch } from "@/lib/integrations/google-api";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability/logging";
 

@@ -23,7 +23,7 @@ import {
   NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
   normalizeVisibleText,
 } from "@/lib/ai/assistant-message-utils";
-import { parseBuilderArtifact } from "@/lib/builder-artifacts";
+import { parseBuilderArtifact } from "@/lib/builder/artifacts";
 
 function ToolCallBadge({
   toolName,

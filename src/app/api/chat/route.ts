@@ -28,10 +28,10 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability/logging";
-import { parseBuilderArtifact } from "@/lib/builder-artifacts";
-import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder-artifacts";
-import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder-artifacts";
-import { recordBuilderMetric } from "@/lib/api-metrics";
+import { parseBuilderArtifact } from "@/lib/builder/artifacts";
+import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder/artifacts";
+import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder/artifacts";
+import { recordBuilderMetric } from "@/lib/builder/metrics";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT } from "@/lib/ai/assistant-message-utils";
 import { buildExecutionPolicyGuidance } from "@/lib/ai/killer-autonomy";
 import { buildSandboxProviderRuntimeNote } from "@/lib/execution/providers";

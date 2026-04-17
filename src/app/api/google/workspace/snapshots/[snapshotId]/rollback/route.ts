@@ -8,7 +8,7 @@ import {
 } from "@/lib/data/db-helpers";
 import { logAuditEvent } from "@/lib/data/audit-log";
 import { googleFetch } from "@/lib/integrations/google-api";
-import { readSafeErrorMessage } from "@/lib/api-security";
+import { readSafeErrorMessage } from "@/lib/auth/security";
 import {
   createApiRequestContext,
   logApiCompletion,

@@ -1,5 +1,5 @@
-import type { BuilderArtifactType } from "@/lib/builder-artifacts";
-import type { BuilderTarget } from "@/lib/builder-artifacts";
+import type { BuilderArtifactType } from "@/lib/builder/artifacts";
+import type { BuilderTarget } from "@/lib/builder/artifacts";
 
 type RouteMetric = {
   total: number;
