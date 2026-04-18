@@ -65,6 +65,7 @@ interface TaskInputProps {
     keepLabel?: string;
     undoLabel?: string;
   };
+  trustIndicators?: string[];
   onReviewKeep?: () => void;
   onReviewUndo?: () => void;
 }
@@ -77,10 +78,16 @@ const BUILDER_TARGETS: Array<{ id: BuilderTarget; label: string; desc: string }>
 ];
 
 const MODES: { id: Mode; label: string; desc: string }[] = [
-  { id: "fast", label: "Flash", desc: "Instant answers" },
-  { id: "thinking", label: "Think", desc: "More careful and thorough" },
-  { id: "advanced", label: "Pro", desc: "Highest quality output" },
+  { id: "fast", label: "Flash", desc: "Fastest responses, lighter reasoning" },
+  { id: "thinking", label: "Think", desc: "Slower, deeper reasoning for tougher tasks" },
+  { id: "advanced", label: "Pro", desc: "Highest quality, best for complex work" },
 ];
+
+const MODE_HELP: Record<Mode, string> = {
+  fast: "Great for quick drafts and short answers.",
+  thinking: "Better for planning, debugging, and nuanced tradeoffs.",
+  advanced: "Best for high-stakes output quality and difficult tasks.",
+};
 
 export function TaskInput({
   onSend,
@@ -109,6 +116,7 @@ export function TaskInput({
   sendOnEnter = true,
   showActionLabels = false,
   reviewSummary,
+  trustIndicators,
   onReviewKeep,
   onReviewUndo,
 }: TaskInputProps) {
@@ -210,7 +218,7 @@ export function TaskInput({
 
   const currentPlaceholder = imageMode
     ? "Describe the image to generate..."
-    : placeholder ?? "Ask Quill to do anything...";
+    : placeholder ?? "Try: Draft PR summary | Refactor file X | Plan migration Y";
   const enabledModes = new Set(allowedModes ?? MODES.map((m) => m.id));
   const visibleModes = showLockedModes ? MODES : MODES.filter((m) => enabledModes.has(m.id));
   const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Flash";
@@ -227,6 +235,7 @@ export function TaskInput({
     Boolean(isGeneratingImage);
   const showControlLabels = showActionLabels || isActiveComposer || mobileExpanded;
   const showReviewRow = Boolean(reviewSummary);
+  const trustBadges = (trustIndicators ?? []).slice(0, 4);
   const compactToolbarButtons = !showControlLabels;
   const compactAttachButton = compactToolbarButtons && !(attachedFiles && attachedFiles.length > 0);
   const compactBuilderButton = compactToolbarButtons && builderTarget === "auto" && !canvasMode;
@@ -252,8 +261,8 @@ export function TaskInput({
       <div
         className={`rounded-2xl bg-quill-surface transition-all duration-300 border overflow-hidden ${
           isActiveComposer
-            ? "border-[rgba(239,68,68,0.55)] shadow-[0_0_24px_rgba(239,68,68,0.16)]"
-            : "border-quill-border shadow-[inset_0_0_0_1px_rgba(239,68,68,0.03)]"
+            ? "border-[rgba(239,68,68,0.34)] shadow-[0_0_10px_rgba(239,68,68,0.08)]"
+            : "border-quill-border shadow-[inset_0_0_0_1px_rgba(239,68,68,0.02)]"
         } ${showWorkingGlow ? "composer-working-glow" : ""}`}
       >
         {showReviewRow ? (
@@ -299,7 +308,7 @@ export function TaskInput({
           <div className="hidden items-center justify-between gap-2 border-b border-quill-border/70 px-4 py-2 text-[11px] sm:flex">
             <div className="inline-flex min-w-0 items-center gap-2 text-quill-muted">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-quill-accent" />
-              <span className="truncate">Describe a task</span>
+              <span className="truncate">Describe a task (e.g., Draft PR summary, Refactor file X, Plan migration Y)</span>
             </div>
             <span className="truncate text-[10px] uppercase tracking-[0.12em] text-quill-muted">
               {imageMode ? "Image mode" : currentModeLabel}
@@ -371,6 +380,28 @@ export function TaskInput({
           }`}
           style={{ maxHeight: "160px" }}
         />
+
+        {!imageMode && (
+          <div className="px-3 pb-2 text-[11px] text-[#AAB1BC] sm:px-5">
+            <span className="font-medium text-[#D5DAE3]">{currentModeLabel}:</span>{" "}
+            {MODE_HELP[mode]}
+          </div>
+        )}
+
+        {trustBadges.length > 0 && (
+          <div className="px-3 pb-2 sm:px-5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {trustBadges.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-full border border-quill-border-2 bg-quill-surface-2 px-2 py-0.5 text-[10px] font-medium text-[#B8C0CB]"
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Toolbar */}
         <TooltipProvider delayDuration={500}>
@@ -591,7 +622,7 @@ export function TaskInput({
                 </Button>
               </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="top">Select AI model</TooltipContent>
+                <TooltipContent side="top">Flash: fastest | Think: deeper | Pro: highest quality</TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">Mode</DropdownMenuLabel>
@@ -672,10 +703,10 @@ export function TaskInput({
                 size="icon"
                 disabled={!value.trim() || isDisabled}
                 style={{ touchAction: "manipulation" }}
-                className={`h-9 w-9 sm:h-9 sm:w-9 transition-all duration-150 disabled:opacity-30 active:scale-95 shadow-md ${
+                className={`h-10 w-10 sm:h-10 sm:w-10 transition-all duration-150 disabled:opacity-35 active:scale-95 ring-1 ring-white/10 shadow-lg ${
                   imageMode
-                    ? "bg-[#F87171] hover:bg-[#ef4444] shadow-[rgba(248,113,113,0.3)]"
-                    : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[rgba(239,68,68,0.3)]"
+                    ? "bg-[#F87171] hover:bg-[#ef4444] shadow-[0_10px_22px_rgba(248,113,113,0.42)]"
+                    : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[0_10px_22px_rgba(239,68,68,0.45)]"
                 }`}
               >
                 {isGeneratingImage ? (
@@ -703,11 +734,11 @@ export function TaskInput({
       )}
 
       {/* Hint */}
-      <div className="keyboard-hint hidden items-center justify-between gap-3 px-1 text-[11px] text-quill-muted sm:flex">
+      <div className="keyboard-hint hidden items-center justify-between gap-3 px-1 text-[11px] text-[#AAB1BC] sm:flex">
         <p>
-          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Enter</kbd>{" "}
+          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Enter</kbd>{" "}
           send &middot;{" "}
-          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#A1A7B0] text-[10px] font-mono">Shift+Enter</kbd>{" "}
+          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Shift+Enter</kbd>{" "}
           new line
         </p>
         <p className="truncate text-right">

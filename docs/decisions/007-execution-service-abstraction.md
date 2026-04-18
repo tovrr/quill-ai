@@ -10,7 +10,7 @@ Accepted
 Execution cannot be tied to a single provider (Docker only) in all environments.
 
 ## Decision
-Use `src/lib/execution-service.ts` as the execution abstraction and support provider adapters (Docker, future managed providers).
+Use `src/lib/execution/service.ts` as the execution abstraction and support provider adapters (Docker, future managed providers).
 
 ## Alternatives Considered
 - Direct Docker calls from API routes

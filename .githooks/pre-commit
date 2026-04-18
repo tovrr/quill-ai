@@ -1,0 +1,4 @@
+#!/bin/sh
+# Simple pre-commit hook to ensure AI rules are generated and up-to-date
+node scripts/gen-ai-rules.mjs
+git add CLAUDE.md .cursorrules || true

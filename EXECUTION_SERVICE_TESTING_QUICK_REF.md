@@ -32,7 +32,7 @@ npm run dev
 
 | File | Purpose |
 |---|---|
-| `src/lib/execution-service.ts` | Core abstraction layer (new) |
+| `src/lib/execution/service.ts` | Core abstraction layer (new) |
 | `src/app/api/chat/route.ts` | Uses execution-service instead of docker-executor (modified) |
 | `src/lib/chat/policy-runtime.ts` | Uses `isExecutionAvailable()` (modified) |
 | `scripts/test-execution-service.mjs` | Quick validation script (new) |
@@ -106,7 +106,7 @@ Input: "execute print(2+2)"
 1. **Staging:** Set `EXECUTION_SERVICE_PROVIDER=e2b` in Vercel env
 2. **Test:** Same manual test as above
 3. **Production:** Same settings, monitor E2B usage
-4. **Multi-agent:** Hermes/OpenClaw import `src/lib/execution-service` → everything works
+4. **Multi-agent:** Hermes/OpenClaw import `src/lib/execution/service` → everything works
 
 ---
 
@@ -115,7 +115,7 @@ Input: "execute print(2+2)"
 ```
 Quill AI / Hermes / OpenClaw
               ↓
-       execution-service.ts
+    execution/service.ts
               ↓
      ["local" | "e2b" | "modal" | "custom"]
               ↓

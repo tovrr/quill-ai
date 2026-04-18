@@ -156,5 +156,5 @@ See [TESTING_EXECUTION_SERVICE.md](./TESTING_EXECUTION_SERVICE.md) for full deta
 ## Additional Notes
 
 - `BETTER_AUTH_SECRET` must be **identical** in `.env.local` and in your Vercel/production env vars. A mismatch causes silent 401s for authenticated users.
-- Vercel production pricing env vars still need to be configured (see `src/lib/model-usage.ts` for expected var names).
+- Vercel production pricing env vars still need to be configured (see `src/lib/observability/metrics.ts` for expected var names).
 - If TypeScript errors appear after cache clear, run `npm run typecheck` to verify — they are usually pre-existing and not caused by the cache wipe.

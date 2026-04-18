@@ -22,11 +22,10 @@ function normalizeQuery(query: string): string {
   return query.trim().toLowerCase();
 }
 
+import { sanitizeSnippet } from "@/lib/prompt-sanitizer";
+
 function cleanSnippet(value: string | undefined): string {
-  return (value ?? "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 600);
+  return sanitizeSnippet(value ?? "").slice(0, 600);
 }
 
 export function isWebSearchConfigured(): boolean {

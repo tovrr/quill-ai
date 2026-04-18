@@ -1,21 +1,11 @@
-import {
-  createUIMessageStream,
-  streamText,
-  type ModelMessage,
-  type UIMessage,
-} from "ai";
+import { createUIMessageStream, streamText, type ModelMessage, type UIMessage } from "ai";
+import { sanitizeForPrompt } from "@/lib/prompt-sanitizer";
 import { saveMessage, createArtifactVersion } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/observability/metrics";
 import { recordBuilderMetric } from "@/lib/builder/metrics";
-import {
-  analyzeArtifactQuality,
-  parseBuilderArtifact,
-  type BuilderTarget,
-} from "@/lib/builder/artifacts";
-import {
-  NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
-  sanitizeAssistantOutputText,
-} from "@/lib/ai/assistant-message-utils";
+import { analyzeArtifactQuality, parseBuilderArtifact, type BuilderTarget } from "@/lib/builder/artifacts";
+import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT, sanitizeAssistantOutputText } from "@/lib/ai/assistant-message-utils";
+import { validateGeneratedModule } from "@/lib/tools/validator";
 
 type ChatMode = "fast" | "thinking" | "advanced";
 
@@ -111,10 +101,7 @@ function buildArtifactRepairPrompt(
   ].join("\n");
 }
 
-function mergeUsage(
-  current: LanguageUsage | undefined,
-  next: LanguageUsage | undefined,
-): LanguageUsage | undefined {
+function mergeUsage(current: LanguageUsage | undefined, next: LanguageUsage | undefined): LanguageUsage | undefined {
   if (!current) return next;
   if (!next) return current;
 
@@ -175,6 +162,12 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
     selectedMode,
   } = params;
 
+  const safeUserInput = userInput ? sanitizeForPrompt(userInput) : null;
+  const safeModelMessages: ModelMessage[] = (modelMessages || []).map((m) => ({
+    ...m,
+    content: typeof m.content === "string" ? sanitizeForPrompt(m.content) : m.content,
+  }));
+
   return createUIMessageStream({
     originalMessages,
     execute: async ({ writer }) => {
@@ -184,7 +177,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       const draftResult = streamText({
         model,
         system: systemPrompt,
-        messages: modelMessages,
+        messages: safeModelMessages,
       });
 
       let draftText = "";
@@ -195,7 +188,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
 
       const criticResult = streamText({
         model,
-        prompt: buildBuilderCriticPrompt(userInput, requestedBuilderTarget, draftText),
+        prompt: buildBuilderCriticPrompt(safeUserInput, requestedBuilderTarget, draftText),
       });
 
       let criticText = "";
@@ -207,7 +200,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       const rewriteResult = streamText({
         model,
         system: systemPrompt,
-        prompt: buildBuilderRewritePrompt(userInput, criticText, draftText),
+        prompt: buildBuilderRewritePrompt(safeUserInput, criticText, draftText),
       });
 
       let finalText = "";
@@ -223,7 +216,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         const repairResult = streamText({
           model,
           system: systemPrompt,
-          prompt: buildArtifactRepairPrompt(userInput, requestedBuilderTarget, finalText),
+          prompt: buildArtifactRepairPrompt(safeUserInput, requestedBuilderTarget, finalText),
         });
 
         let repairedText = "";
@@ -292,6 +285,19 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         finalText = toArtifactEnvelopeText(artifact);
       }
 
+      let artifactValidationResult: { success: boolean; exitCode: number; details?: string } | undefined;
+      if (artifact && (artifact.type === "react-app" || artifact.type === "nextjs-bundle")) {
+        try {
+          // Validate in-memory file map (artifact.payload.files) before persisting
+          const files = (artifact.payload as any).files as Record<string, string>;
+          if (files && Object.keys(files).length > 0) {
+            artifactValidationResult = await validateGeneratedModule(files as any);
+          }
+        } catch (err) {
+          console.warn("[two-pass-builder] artifact validation failed:", err instanceof Error ? err.message : err);
+        }
+      }
+
       if (!artifact) {
         const artifactStart = finalText.indexOf("<quill-artifact>");
         if (artifactStart >= 0) {
@@ -328,7 +334,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
             payload: artifact.payload,
           });
         } catch (err) {
-          console.warn('[two-pass-builder] artifact version save failed:', err instanceof Error ? err.message : err);
+          console.warn("[two-pass-builder] artifact version save failed:", err instanceof Error ? err.message : err);
         }
       }
       await recordModelUsage({
@@ -343,6 +349,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         providerMetadata: {
           ...finalMetadata,
           builderTwoPass: true,
+          artifactValidation: artifactValidationResult,
         },
       });
 

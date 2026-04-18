@@ -86,13 +86,14 @@ EXECUTION_SERVICE_PROVIDER=e2b
 E2B_API_KEY=your_e2b_api_key_here
 ```
 
-4. **In Quill AI** (`src/lib/execution-service.ts`):
-   - It already routes to E2B if `EXECUTION_SERVICE_PROVIDER=e2b`
-   - All `POST /api/chat` requests with code execution will use E2B
+4. **In Quill AI** (`src/lib/execution/service.ts`):
+  - It already routes to E2B if `EXECUTION_SERVICE_PROVIDER=e2b`
+  - All `POST /api/chat` requests with code execution will use E2B
 
 5. **In Agent Hermes / OpenClaw**, import and call:
+
 ```typescript
-import { executeCode } from "@/lib/execution-service";
+import { executeCode } from "@/lib/execution/service";
 
 const result = await executeCode({
   code: "print('hello')",
@@ -183,7 +184,7 @@ def execute():
 
 ### For Quill AI (Already Done ✅)
 
-- [x] `src/lib/execution-service.ts` — Abstraction layer with E2B/Modal/custom support
+- [x] `src/lib/execution/service.ts` — Abstraction layer with E2B/Modal/custom support
 - [x] `src/app/api/chat/route.ts` — Updated to import from `execution-service`
 - [x] `src/lib/chat/policy-runtime.ts` — Uses `isExecutionAvailable()`
 - [x] `.env.example` — Documented execution service config

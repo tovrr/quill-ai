@@ -178,7 +178,7 @@ Once testing passes:
 1. **Deploy to staging:** Push to GitHub, CI runs tests, deploys to Vercel
 2. **Configure Vercel env:** Set `EXECUTION_SERVICE_PROVIDER=e2b` + `E2B_API_KEY`
 3. **Test live:** Same steps in staging environment
-4. **Integrate Hermes/OpenClaw:** Both agents can now use `executeCode()` from the same service
+4. **Integrate Hermes/OpenClaw:** Both agents can now use `executeCode()` from `src/lib/execution/service.ts`
 
 ---
 

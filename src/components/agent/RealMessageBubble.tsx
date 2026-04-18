@@ -395,7 +395,7 @@ function MarkdownText({ text }: { text: string }) {
   }
 
   return (
-    <div className="text-sm leading-relaxed space-y-1">{elements}</div>
+    <div className="text-[15px] leading-[1.65] space-y-1.5">{elements}</div>
   );
 }
 
@@ -525,7 +525,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         const node = isUser ? (
           <div
             key={i}
-            className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-sm leading-relaxed"
+            className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-[15px] leading-[1.65]"
           >
             {text}
           </div>
@@ -541,7 +541,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
             ) : hasMarkdownSyntax(text) ? (
               <MarkdownText text={text} />
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{text}</p>
+              <p className="text-[15px] leading-[1.65] whitespace-pre-wrap wrap-break-word">{text}</p>
             )}
           </div>
         );

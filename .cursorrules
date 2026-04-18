@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "description": "Optional per-repo cursor rules stub. Not required by build — used as a placeholder for editor extensions that consume cursor behavior settings.",
+  "rules": {
+    "stickyCursor": true,
+    "suggestOnCursorMove": false,
+    "preferredVerticalOffset": 0
+  }
+}

@@ -11,7 +11,7 @@ All notable changes to this project are documented in this file.
 - Phase 2 batch 4 migration: integration modules moved to `src/lib/integrations/` (`google-api.ts`, `web-search.ts`) with import rewiring across chat/google/me routes and lib access gates
 - Phase 2 batch 5 migration: extensions modules moved to `src/lib/extensions/` (`mcp-registry.ts`, `skills.ts`, `autopilot.ts`, `customization.ts`) with import rewiring across agent/chat/autopilot/mcp/skills/settings callers
 - Phase 2 batch 6 migration: observability modules moved to `src/lib/observability/` (`metrics.ts`, `logging.ts`, `rate-limit.ts`) with import rewiring across chat/health/admin/artifacts/skills/google/mcp routes
-- Phase 2 batch 7 migration: remaining domain files moved (`builder/artifacts.ts`, `builder/metrics.ts`, `auth/security.ts`, `auth/entitlements.ts`, `models/openrouter.ts`) with import rewiring across agent/chat/components/me/mcp/google routes
+- Phase 2 batch 7 migration: remaining domain files moved (`builder/artifacts.ts`, `builder/metrics.ts`, `auth/security.ts`, `models/openrouter.ts`) with import rewiring across agent/chat/components/me/mcp/google routes
 
 ### Validated
 - `npm run typecheck`

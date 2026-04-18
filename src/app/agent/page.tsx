@@ -1304,6 +1304,12 @@ export default function AgentPage() {
   }, [messages, setMessages, sendMessage, isLoading]);
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
+  const trustIndicators = [
+    webSearchState === "available" ? (webSearchEnabled ? "Web enabled" : "No web") : webSearchState === "auth-required" ? "Web needs sign in" : "Web unavailable",
+    selectedMode === "advanced" ? "Can run code" : "Code tools limited",
+    isAuthenticated ? `Plan: ${planLabel}` : "Guest limits",
+    isLoading ? "Executing now" : "Ready",
+  ];
   const sidebarFallback = <div className="h-full w-full bg-quill-bg" aria-hidden="true" />;
 
   return (
@@ -1513,7 +1519,7 @@ export default function AgentPage() {
             <div
               ref={messagesContainerRef}
               onScroll={handleMessagesScroll}
-              className={`agent-messages flex-1 overflow-y-auto px-3 md:px-6 py-3 md:py-6 ${uiSettings.compactMessages ? "space-y-2 md:space-y-3" : "space-y-3 md:space-y-5"}`}
+              className={`agent-messages flex-1 overflow-y-auto px-3 md:px-6 py-3 md:py-4 ${uiSettings.compactMessages ? "space-y-2 md:space-y-3" : "space-y-3 md:space-y-4"}`}
             >
               {displayMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
@@ -1617,7 +1623,7 @@ export default function AgentPage() {
             </div>
 
             {/* Input — safe-area bottom padding handled by .agent-composer-shell CSS rule in globals.css */}
-            <div className="agent-composer-shell shrink-0 px-3 md:px-6 pb-5 md:pb-8 pt-2 md:pt-3 border-t border-quill-border bg-quill-bg">
+            <div className="agent-composer-shell shrink-0 px-3 md:px-6 pb-4 md:pb-5 pt-1.5 md:pt-2 border-t border-quill-border bg-quill-bg">
               <div className="max-w-3xl mx-auto">
                 {pageError && (
                   <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 animate-fade-in">
@@ -1670,6 +1676,7 @@ export default function AgentPage() {
                   initialAttachedFile={initialHomepageFile}
                   sendOnEnter={uiSettings.sendOnEnter}
                   showActionLabels={uiSettings.showComposerLabels}
+                  trustIndicators={trustIndicators}
                   reviewSummary={isDraftReview && messages.length === 0 && !isLoading ? {
                     label: "Draft review",
                     additions: initialComposerDraft.trim().length > 0 ? 1 : undefined,

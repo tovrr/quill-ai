@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Regenerate and check AI rule files before commit
+node scripts/gen-ai-rules.mjs
+npm run check:ai-rules || exit 1

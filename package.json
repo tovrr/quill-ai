@@ -43,7 +43,10 @@
     "enforce:ui-standards": "node scripts/ui-standards.mjs enforce",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "gen:ai-rules": "node scripts/gen-ai-rules.mjs",
+    "check:ai-rules": "node scripts/check-ai-rules.mjs",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.53",
@@ -104,6 +107,7 @@
     "eslint-config-next": "^16.2.3",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "husky": "^8.0.0"
   }
 }

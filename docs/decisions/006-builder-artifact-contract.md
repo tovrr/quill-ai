@@ -32,4 +32,4 @@ Supported types:
 - Unsupported custom types are rejected
 
 ## Notes
-See `src/lib/builder-artifacts.ts` and chat prompt constraints.
+See `src/lib/builder/artifacts.ts` and chat prompt constraints.

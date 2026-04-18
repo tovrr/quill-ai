@@ -45,7 +45,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
   - Verification: System prompt conditionally removes execution claims based on `isSandboxEnabled()`. Commit: April 12, 2026.
   - Impact: Eliminates false-claim liability; maintains full code generation/review capability; provides clear user guidance for local verification.
 
-- [x] **Distribute rate limiting from in-memory to Redis (Upstash recommended)** — `src/lib/rate-limit.ts` now uses Upstash Redis pipeline (INCR/EXPIRE/PTTL) with 1500ms timeout and in-memory fallback on Redis errors. All callers (`/api/chat`, `/api/generate-image`, `/api/preview`, `/api/validate-bundle`) updated to `await checkRateLimit()`.
+- [x] **Distribute rate limiting from in-memory to Redis (Upstash recommended)** — `src/lib/observability/rate-limit.ts` now uses Upstash Redis pipeline (INCR/EXPIRE/PTTL) with 1500ms timeout and in-memory fallback on Redis errors. All callers (`/api/chat`, `/api/generate-image`, `/api/preview`, `/api/validate-bundle`) updated to `await checkRateLimit()`.
 
 ## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
 
@@ -84,7 +84,7 @@ These are the 6 foundational gaps blocking product viability. **Must be complete
 - [x] Security Sprint 1: ship CSP report-only + violation collection. — commit `77408d8`.
 - [x] Security Sprint 2: enforce CSP after fixing violations. — commit `77408d8`, enforcing header live.
 - [x] Reliability Sprint: implement readiness checks with dependency probes. — commit `124be4c`; external uptime/alerting still pending.
-- [x] **Multi-Agent Integration**: abstract code execution into service layer (local Docker, E2B, Modal, custom). — Created `src/lib/execution-service.ts`, updated chat route + policy runtime, documented in `MULTI_AGENT_INTEGRATION.md`. Supports: dev (local), staging (E2B free), production (E2B paid / Modal / self-hosted).
+- [x] **Multi-Agent Integration**: abstract code execution into service layer (local Docker, E2B, Modal, custom). — Created `src/lib/execution/service.ts`, updated chat route + policy runtime, documented in `MULTI_AGENT_INTEGRATION.md`. Supports: dev (local), staging (E2B free), production (E2B paid / Modal / self-hosted).
 - [ ] Observability Sprint: uptime checks + alert routing to on-call channel.
 - [ ] Performance Sprint: bundle analyzer + baseline budgets.
 - [ ] PWA Sprint: service worker + offline shell.

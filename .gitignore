@@ -46,3 +46,6 @@ next-env.d.ts
 *.db-wal
 /drizzle
 .env*.local
+
+# temp for ai rules generator
+.tmp_ai_rules/

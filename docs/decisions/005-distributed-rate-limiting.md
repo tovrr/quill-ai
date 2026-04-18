@@ -10,7 +10,7 @@ Accepted
 In-memory limits are insufficient for reliability under multi-instance deployment.
 
 ## Decision
-Use `src/lib/rate-limit.ts` with Redis-backed counting (Upstash) and automatic in-memory fallback for resilience.
+Use `src/lib/observability/rate-limit.ts` with Redis-backed counting (Upstash) and automatic in-memory fallback for resilience.
 
 ## Alternatives Considered
 - In-memory only
