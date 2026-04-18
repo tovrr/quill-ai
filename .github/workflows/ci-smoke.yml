@@ -16,6 +16,7 @@ jobs:
       GOOGLE_GENERATIVE_AI_API_KEY: test-key
       API_METRICS_TOKEN: smoke-metrics-token
       SMOKE_BASE_URL: http://127.0.0.1:3000
+      ALLOW_INMEMORY_RATELIMIT_FALLBACK: "true"
 
     steps:
       - name: Checkout
