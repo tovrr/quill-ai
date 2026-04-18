@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, PaperClipIcon } from "@heroicons/react/24/outline";
+import { ArrowRightIcon, PaperClipIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const PLACEHOLDERS = [
   "Research top AI startups from Q1 2026 and write a report...",
@@ -155,14 +158,14 @@ export function HeroInput() {
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full max-w-2xl mx-auto">
-      <div className="rounded-2xl border border-[rgba(239,68,68,0.22)] bg-[#0d0d15] focus-within:border-[rgba(239,68,68,0.45)] focus-within:shadow-[0_0_20px_rgba(239,68,68,0.08)] transition-all duration-200">
-        <div className="flex items-center gap-2 px-4 pt-3 pb-0.5 text-[11px] text-[#8b8ba8]">
+      <div className="rounded-2xl border border-[rgba(239,68,68,0.22)] bg-quill-surface focus-within:border-[rgba(239,68,68,0.45)] focus-within:shadow-[0_0_20px_rgba(239,68,68,0.08)] transition-all duration-200">
+        <div className="flex items-center gap-2 px-4 pt-3 pb-0.5 text-[11px] text-quill-muted">
           <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
           Describe a task
         </div>
 
         <div className="px-3 pb-3 pt-1">
-          <input
+          <Input
             ref={fileInputRef}
             type="file"
             className="hidden"
@@ -174,7 +177,7 @@ export function HeroInput() {
           />
 
           <div className="min-h-28 sm:min-h-24">
-            <textarea
+            <Textarea
               ref={inputRef}
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -192,45 +195,49 @@ export function HeroInput() {
               }}
               placeholder={isTyping ? displayed + "▌" : displayed}
               rows={2}
-              className="w-full bg-transparent resize-none overflow-y-auto px-5 pt-4 pb-3 text-sm sm:text-base text-quill-text placeholder-[#4a4a6a] outline-none leading-relaxed min-w-0 min-h-22 sm:min-h-20"
+              className="w-full min-h-22 min-w-0 resize-none overflow-y-auto border-0 bg-transparent px-5 pb-3 pt-4 text-sm leading-relaxed text-quill-text placeholder:text-quill-muted shadow-none focus-visible:ring-0 sm:min-h-20 sm:text-base"
               autoComplete="off"
               spellCheck="false"
               aria-label="Describe your task"
             />
 
             <div className="flex items-center justify-between px-2 pb-2">
-              <button
+              <Button
                 type="button"
-                title="Attach a file"
+                aria-label="Attach a file"
                 onClick={triggerFilePicker}
-                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] text-[#f3b1b1] transition-all active:scale-95 hover:bg-[rgba(239,68,68,0.16)]"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-xl border border-quill-border-2 bg-quill-accent-glow text-quill-accent-2 hover:bg-[rgba(239,68,68,0.16)]"
               >
                 <PaperClipIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
+              </Button>
 
               <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={acceptSuggestion}
-                className={`inline-flex h-10 items-center gap-1 rounded-xl border border-[rgba(239,68,68,0.28)] bg-[rgba(239,68,68,0.1)] px-2.5 text-[11px] text-[#f0b0b0] hover:border-[rgba(239,68,68,0.45)] hover:text-[#ffd4d4] transition-colors ${
+                variant="ghost"
+                className={`inline-flex h-10 items-center gap-1 rounded-xl border border-quill-border-2 bg-quill-accent-glow px-2.5 text-[11px] text-quill-accent-2 hover:border-[rgba(239,68,68,0.45)] hover:text-white ${
                   showTabChip ? "opacity-100" : "opacity-0 pointer-events-none"
                 }`}
-                title="Press Tab to accept the suggestion"
+                aria-label="Accept suggestion"
                 aria-hidden={!showTabChip}
                 tabIndex={showTabChip ? 0 : -1}
               >
-                <kbd className="rounded border border-[rgba(239,68,68,0.4)] bg-[rgba(0,0,0,0.22)] px-1 font-mono text-[10px] leading-4 text-[#ffd4d4]">Tab</kbd>
+                <kbd className="rounded border border-[rgba(239,68,68,0.4)] bg-quill-bg px-1 font-mono text-[10px] leading-4 text-white">Tab</kbd>
                 Accept
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="submit"
-                title="Run task"
+                aria-label="Run task"
                 disabled={!value.trim() && !selectedFile}
-                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[#EF4444] text-white transition-all active:scale-95 hover:bg-[#DC2626]"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-xl bg-[#EF4444] text-white hover:bg-[#DC2626]"
               >
                 <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
+              </Button>
               </div>
             </div>
           </div>
@@ -238,17 +245,18 @@ export function HeroInput() {
 
         {selectedFile && (
           <div className="px-4 pb-3">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[11px] text-[#f3b1b1]">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-[rgba(239,68,68,0.25)] bg-quill-accent-glow px-2.5 py-1 text-[11px] text-quill-accent-2">
               <span className="max-w-55 truncate sm:max-w-90" title={selectedFile.name}>{selectedFile.name}</span>
-              <button
+              <Button
                 type="button"
                 onClick={clearSelectedFile}
-                className="rounded px-1 text-[#ffd3d3] hover:bg-[rgba(255,255,255,0.08)]"
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 rounded p-0 text-white hover:bg-[rgba(255,255,255,0.08)]"
                 aria-label="Remove attached file"
-                title="Remove attached file"
               >
-                x
-              </button>
+                <XMarkIcon className="h-3 w-3" aria-hidden="true" />
+              </Button>
             </div>
           </div>
         )}
@@ -258,7 +266,7 @@ export function HeroInput() {
         <p className="text-[11px] text-quill-muted">
           Press Tab to accept suggestion, Enter to send. No sign-in required
         </p>
-        <p className={`mt-1 text-[11px] text-[#f2a1a1] ${handoffError ? "opacity-100" : "opacity-0"}`}>
+        <p className={`mt-1 text-[11px] text-quill-accent-2 ${handoffError ? "opacity-100" : "opacity-0"}`}>
           {handoffError ?? "Placeholder"}
         </p>
       </div>

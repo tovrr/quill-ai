@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,15 @@ import {
 } from "@heroicons/react/24/outline";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { authClient } from "@/lib/auth/client";
 
 export const dynamic = "force-dynamic";
@@ -159,7 +168,7 @@ export default function McpPage() {
           )
         );
         setExpanded((prev) => new Set([...prev, id]));
-        showToast(`Connected — ${json.tools?.length ?? 0} tools discovered`);
+        showToast(`Connected â€” ${json.tools?.length ?? 0} tools discovered`);
       } else {
         setServers((prev) =>
           prev.map((s) => (s.id === id ? { ...s, status: "error" } : s))
@@ -285,16 +294,16 @@ export default function McpPage() {
         </div>
       )}
 
-      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:flex-shrink-0">
+      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:shrink-0">
         <Sidebar />
       </div>
 
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-quill-border px-4 py-3">
-          <button className="lg:hidden rounded-lg p-2 hover:bg-quill-surface" onClick={() => setSidebarOpen(true)}>
+          <Button type="button" variant="ghost" size="icon" className="lg:hidden rounded-lg" onClick={() => setSidebarOpen(true)}>
             <Bars3Icon className="h-5 w-5" />
-          </button>
+          </Button>
           <Link href="/agent" className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors">
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
@@ -302,13 +311,14 @@ export default function McpPage() {
             <h1 className="text-sm font-semibold truncate">MCP Catalog</h1>
             <p className="text-xs text-quill-muted truncate">Connect Model Context Protocol servers</p>
           </div>
-          <button
+          <Button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+            type="button"
+            className="h-auto items-center gap-1.5 rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             Add Server
-          </button>
+          </Button>
           <AccountMenu />
         </div>
 
@@ -327,18 +337,19 @@ export default function McpPage() {
                   loadRegistry(registryQuery);
                 }}
               >
-                <input
+                <Input
                   value={registryQuery}
                   onChange={(e) => setRegistryQuery(e.target.value)}
                   placeholder="Search registry"
-                  className="w-44 rounded-lg border border-quill-border bg-quill-bg px-3 py-1.5 text-xs focus:outline-none focus:border-quill-accent"
+                  className="h-auto w-44 rounded-lg border-quill-border bg-quill-bg px-3 py-1.5 text-xs"
                 />
-                <button
+                <Button
                   type="submit"
-                  className="rounded-lg border border-quill-border px-2.5 py-1.5 text-xs hover:bg-quill-surface-2 transition-colors"
+                  variant="outline"
+                  className="h-auto rounded-lg px-2.5 py-1.5 text-xs hover:bg-quill-surface-2"
                 >
                   Search
-                </button>
+                </Button>
               </form>
             </div>
 
@@ -356,12 +367,14 @@ export default function McpPage() {
                         <p className="text-xs text-quill-muted mt-0.5 line-clamp-2">{item.description}</p>
                         <p className="text-[11px] text-quill-muted mt-1 truncate">{item.url}</p>
                       </div>
-                      <button
+                      <Button
                         onClick={() => installFromRegistry(item)}
-                        className="flex-shrink-0 rounded-md border border-quill-border px-2 py-1 text-[11px] hover:bg-quill-surface-2 transition-colors"
+                        type="button"
+                        variant="outline"
+                        className="h-auto shrink-0 rounded-md px-2 py-1 text-[11px] hover:bg-quill-surface-2"
                       >
                         Install
-                      </button>
+                      </Button>
                     </div>
                     <div className="mt-2 flex items-center gap-1.5 text-[11px] text-quill-muted">
                       <span className="rounded bg-quill-surface-2 px-1.5 py-0.5">{item.category}</span>
@@ -379,9 +392,9 @@ export default function McpPage() {
             <div className="m-4 rounded-xl border border-quill-border bg-quill-surface p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold">Add MCP Server</h2>
-                <button onClick={() => setShowAdd(false)} className="text-quill-muted hover:text-quill-text">
+                <Button type="button" variant="ghost" size="icon" onClick={() => setShowAdd(false)} className="h-7 w-7 rounded-md text-quill-muted hover:text-quill-text">
                   <XMarkIcon className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
 
               {/* Example shortcuts */}
@@ -389,13 +402,15 @@ export default function McpPage() {
                 <p className="text-xs text-quill-muted mb-2">Quick add:</p>
                 <div className="flex flex-wrap gap-2">
                   {EXAMPLE_SERVERS.map((ex) => (
-                    <button
+                    <Button
                       key={ex.name}
+                      type="button"
+                      variant="outline"
                       onClick={() => setForm((f) => ({ ...f, name: ex.name, url: ex.url, description: ex.description }))}
-                      className="text-xs px-2 py-1 rounded border border-quill-border hover:bg-quill-surface-2 transition-colors"
+                      className="h-auto rounded px-2 py-1 text-xs hover:bg-quill-surface-2"
                     >
                       {ex.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -404,20 +419,20 @@ export default function McpPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-quill-muted mb-1">Name *</label>
-                    <input
+                    <Input
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                      className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm"
                       placeholder="e.g. Filesystem"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-quill-muted mb-1">URL *</label>
-                    <input
+                    <Input
                       value={form.url}
                       onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                      className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm"
                       placeholder="http://localhost:8811"
                       required
                     />
@@ -425,63 +440,70 @@ export default function McpPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-quill-muted mb-1">Description</label>
-                  <input
+                  <Input
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                    className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm"
                     placeholder="Optional description"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-quill-muted mb-1">Auth type</label>
-                    <select
+                    <Select
                       value={form.authType}
-                      onChange={(e) => setForm((f) => ({ ...f, authType: e.target.value as "none" | "bearer" | "basic" }))}
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                      onValueChange={(value) =>
+                        setForm((f) => ({ ...f, authType: value as "none" | "bearer" | "basic" }))
+                      }
                     >
-                      <option value="none">None</option>
-                      <option value="bearer">Bearer token</option>
-                      <option value="basic">Basic (user:pass)</option>
-                    </select>
+                      <SelectTrigger className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="bearer">Bearer token</SelectItem>
+                        <SelectItem value="basic">Basic (user:pass)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   {form.authType !== "none" && (
                     <div>
                       <label className="block text-xs text-quill-muted mb-1">
                         {form.authType === "bearer" ? "Token" : "user:password"}
                       </label>
-                      <input
+                      <Input
                         type="password"
                         value={form.authToken}
                         onChange={(e) => setForm((f) => ({ ...f, authToken: e.target.value }))}
-                        className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                        className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm"
                         placeholder={form.authType === "bearer" ? "sk-..." : "user:pass"}
                       />
                     </div>
                   )}
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowAdd(false)}
-                    className="px-3 py-1.5 rounded-lg border border-quill-border text-sm hover:bg-quill-surface transition-colors"
+                    variant="outline"
+                    className="h-auto rounded-lg px-3 py-1.5 text-sm hover:bg-quill-surface"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={adding}
-                    className="px-3 py-1.5 rounded-lg bg-quill-accent text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    className="h-auto rounded-lg bg-quill-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
-                    {adding ? "Adding…" : "Add Server"}
-                  </button>
+                    {adding ? "Addingâ€¦" : "Add Server"}
+                  </Button>
                 </div>
               </form>
             </div>
           )}
 
           {loading ? (
-            <div className="p-8 text-center text-quill-muted text-sm">Loading…</div>
+            <div className="p-8 text-center text-quill-muted text-sm">Loadingâ€¦</div>
           ) : servers.length === 0 && !showAdd ? (
             <div className="p-12 text-center">
               <WrenchScrewdriverIcon className="mx-auto h-10 w-10 text-quill-muted mb-4" />
@@ -489,12 +511,13 @@ export default function McpPage() {
               <p className="text-xs text-quill-muted mt-1 mb-4">
                 Connect any Model Context Protocol server to give Quill access to new tools.
               </p>
-              <button
+              <Button
                 onClick={() => setShowAdd(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                type="button"
+                className="inline-flex h-auto items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
                 <PlusIcon className="h-4 w-4" /> Add your first server
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="p-4 space-y-3">
@@ -502,7 +525,7 @@ export default function McpPage() {
                 <div key={server.id} className="rounded-xl border border-quill-border bg-quill-surface overflow-hidden">
                   {/* Server header */}
                   <div className="flex items-center gap-3 p-4">
-                    <div className="flex-shrink-0">{STATUS_ICONS[server.status]}</div>
+                    <div className="shrink-0">{STATUS_ICONS[server.status]}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{server.name}</span>
@@ -520,52 +543,64 @@ export default function McpPage() {
                         <p className="text-xs text-quill-muted truncate">{server.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {server.authType === "bearer" && server.oauthAuthorizeUrl && server.oauthTokenUrl && server.oauthClientId && (
                         server.oauthConnectedAt ? (
-                          <button
+                          <Button
                             onClick={() => handleOAuthRevoke(server.id)}
+                            type="button"
+                            variant="outline"
                             disabled={oauthPendingId === server.id}
-                            className="text-xs px-2.5 py-1.5 rounded-lg border border-quill-border hover:bg-quill-surface-2 transition-colors disabled:opacity-50"
+                            className="h-auto rounded-lg px-2.5 py-1.5 text-xs hover:bg-quill-surface-2 disabled:opacity-50"
                           >
                             {oauthPendingId === server.id ? "Working..." : "Revoke OAuth"}
-                          </button>
+                          </Button>
                         ) : (
-                          <button
+                          <Button
                             onClick={() => handleOAuthStart(server.id)}
+                            type="button"
+                            variant="outline"
                             disabled={oauthPendingId === server.id}
-                            className="text-xs px-2.5 py-1.5 rounded-lg border border-quill-border hover:bg-quill-surface-2 transition-colors disabled:opacity-50"
+                            className="h-auto rounded-lg px-2.5 py-1.5 text-xs hover:bg-quill-surface-2 disabled:opacity-50"
                           >
                             {oauthPendingId === server.id ? "Redirecting..." : "Connect OAuth"}
-                          </button>
+                          </Button>
                         )
                       )}
-                      <button
+                      <Button
                         onClick={() => handleConnect(server.id)}
+                        type="button"
+                        variant="outline"
                         disabled={connecting === server.id}
-                        className="text-xs px-2.5 py-1.5 rounded-lg border border-quill-border hover:bg-quill-surface-2 transition-colors disabled:opacity-50"
+                        className="h-auto rounded-lg px-2.5 py-1.5 text-xs hover:bg-quill-surface-2 disabled:opacity-50"
                       >
-                        {connecting === server.id ? "Connecting…" : "Connect"}
-                      </button>
+                        {connecting === server.id ? "Connectingâ€¦" : "Connect"}
+                      </Button>
                       {server.toolCount > 0 && (
-                        <button
+                        <Button
                           onClick={() => toggleExpand(server.id)}
-                          className="p-1.5 rounded-lg hover:bg-quill-surface-2 text-quill-muted transition-colors"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg p-0 text-quill-muted hover:bg-quill-surface-2"
                         >
                           {expanded.has(server.id) ? (
                             <ChevronDownIcon className="h-4 w-4" />
                           ) : (
                             <ChevronRightIcon className="h-4 w-4" />
                           )}
-                        </button>
+                        </Button>
                       )}
-                      <button
+                      <Button
                         onClick={() => handleDelete(server.id)}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
                         disabled={deleting === server.id}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-quill-muted transition-colors disabled:opacity-50"
+                        className="h-7 w-7 rounded-lg p-0 text-quill-muted hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
                       >
                         <TrashIcon className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -573,14 +608,14 @@ export default function McpPage() {
                   {expanded.has(server.id) && (
                     <div className="border-t border-quill-border bg-quill-bg">
                       {server.tools === undefined ? (
-                        <p className="px-4 py-3 text-xs text-quill-muted">Loading tools…</p>
+                        <p className="px-4 py-3 text-xs text-quill-muted">Loading toolsâ€¦</p>
                       ) : server.tools.length === 0 ? (
                         <p className="px-4 py-3 text-xs text-quill-muted">No tools discovered</p>
                       ) : (
                         <ul className="divide-y divide-quill-border">
                           {server.tools.map((tool) => (
                             <li key={tool.id} className="flex items-start gap-3 px-4 py-2.5">
-                              <WrenchScrewdriverIcon className="h-3.5 w-3.5 text-quill-muted mt-0.5 flex-shrink-0" />
+                              <WrenchScrewdriverIcon className="h-3.5 w-3.5 text-quill-muted mt-0.5 shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-xs font-mono font-medium">{tool.toolName}</p>
                                 {tool.toolDescription && (
@@ -608,3 +643,4 @@ export default function McpPage() {
     </div>
   );
 }
+

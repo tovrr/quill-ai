@@ -12,88 +12,35 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
-  DEFAULT_USER_PROFILE,
   USER_PRESET_TEMPLATES,
   type UserInstructionProfile,
 } from "@/lib/extensions/customization";
+import { Button } from "@/components/ui/button";
+import {
+  Select as UiSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  type AppSettings,
+  loadAppSettings,
+  saveAppSettings,
+} from "@/lib/ui-settings";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export interface AppSettings {
-  language: string;
-  defaultMode: "fast" | "thinking" | "advanced";
-  sendOnEnter: boolean;
-  analyticsEnabled: boolean;
-  compactMessages: boolean;
-  autoOpenCanvas: boolean;
-  instructionProfile: UserInstructionProfile;
-}
-
-const DEFAULT_SETTINGS: AppSettings = {
-  language: "en",
-  defaultMode: "advanced",
-  sendOnEnter: true,
-  analyticsEnabled: true,
-  compactMessages: false,
-  autoOpenCanvas: true,
-  instructionProfile: DEFAULT_USER_PROFILE,
-};
-
-const SETTINGS_KEY = "quill-settings";
-
-export function loadSettings(): AppSettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  try {
-    const stored = localStorage.getItem(SETTINGS_KEY);
-    return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-function saveSettings(s: AppSettings) {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-  } catch {
-    // ignore
-  }
-}
+export type { AppSettings } from "@/lib/ui-settings";
+export const loadSettings = loadAppSettings;
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      role="switch"
-      aria-checked={on}
-      onClick={() => onChange(!on)}
-      style={{
-        position: "relative",
-        width: "40px",
-        height: "22px",
-        borderRadius: "11px",
-        background: on ? "#EF4444" : "#343944",
-        transition: "background 0.2s",
-        flexShrink: 0,
-        cursor: "pointer",
-        border: "none",
-        padding: 0,
-      }}
-    >
-      <span
-        style={{
-          position: "absolute",
-          top: "3px",
-          left: on ? "21px" : "3px",
-          width: "16px",
-          height: "16px",
-          borderRadius: "50%",
-          background: "white",
-          transition: "left 0.18s ease",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
-        }}
-      />
-    </button>
+    <Switch checked={on} onCheckedChange={onChange} />
   );
 }
 
@@ -109,21 +56,22 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   );
 }
 
-function Select({ value, onChange, options }: {
+function SettingSelect({ value, onChange, options }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="bg-[#1a1a28] border border-quill-border-2 text-sm text-quill-text rounded-lg px-3 py-1.5 outline-none focus:border-[#EF4444] transition-colors cursor-pointer"
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    <UiSelect value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-9 w-44 rounded-lg border-quill-border-2 bg-[#1a1a28] text-sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </UiSelect>
   );
 }
 
@@ -204,7 +152,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const router = useRouter();
   const [section, setSection] = useState<Section>("general");
   // Loaded fresh on every mount (component unmounts when closed via `if (!open) return null`)
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+  const [settings, setSettings] = useState<AppSettings>(() => loadAppSettings());
   const [saved, setSaved] = useState(false);
   const [accountName, setAccountName] = useState("User");
   const [accountEmail, setAccountEmail] = useState("user@example.com");
@@ -263,7 +211,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }, []);
 
   const handleSave = () => {
-    saveSettings(settings);
+    saveAppSettings(settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -286,12 +234,14 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             <h2 className="text-base font-semibold text-quill-text">Settings</h2>
             <p className="text-xs text-quill-muted mt-0.5">Manage your Quill AI preferences</p>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
+            className="h-8 w-8 rounded-lg p-0 text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
           >
             <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -299,10 +249,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           {/* Left nav */}
           <nav className="w-44 shrink-0 border-r border-quill-border p-3 flex flex-col gap-0.5">
             {SECTIONS.map((s) => (
-              <button
+              <Button
                 key={s.id}
+                type="button"
+                variant="ghost"
                 onClick={() => setSection(s.id)}
-                className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-all text-left ${
+                className={`flex h-auto w-full items-center justify-start gap-2.5 rounded-lg px-3 py-2 text-left text-sm ${
                   section === s.id
                     ? "bg-[#EF4444] text-white"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
@@ -310,7 +262,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               >
                 {s.icon}
                 {s.label}
-              </button>
+              </Button>
             ))}
           </nav>
 
@@ -323,7 +275,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">General</p>
 
                 <Row label="Language" hint="Interface and response language">
-                  <Select
+                  <SettingSelect
                     value={settings.language}
                     onChange={(v) => update("language", v)}
                     options={LANGUAGES}
@@ -333,18 +285,20 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <Row label="Default mode" hint="Model used when starting a new chat">
                   <div className="flex items-center gap-1 p-0.5 rounded-lg bg-quill-bg border border-quill-border">
                     {MODES.map((m) => (
-                      <button
+                      <Button
                         key={m.value}
+                        type="button"
+                        variant="ghost"
                         onClick={() => update("defaultMode", m.value)}
-                        title={m.desc}
-                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                        aria-label={m.desc}
+                        className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
                           settings.defaultMode === m.value
                             ? "bg-[#EF4444] text-white"
                             : "text-quill-muted hover:text-[#A1A7B0]"
                         }`}
                       >
                         {m.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </Row>
@@ -362,7 +316,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-3">
                     <div>
                       <p className="text-xs text-quill-muted mb-1.5">Preset profile</p>
-                      <Select
+                      <SettingSelect
                         value={settings.instructionProfile.preset}
                         onChange={(v) =>
                           update("instructionProfile", {
@@ -376,7 +330,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
 
                     <div>
                       <p className="text-xs text-quill-muted mb-1.5">Additional instructions</p>
-                      <textarea
+                      <Textarea
                         value={settings.instructionProfile.additionalInstructions}
                         onChange={(e) =>
                           update("instructionProfile", {
@@ -385,7 +339,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                           })
                         }
                         placeholder="Example: Always keep responses concise, avoid placeholders, and prioritize practical execution steps."
-                        className="w-full h-22 resize-none rounded-lg bg-[#121220] border border-quill-border px-3 py-2 text-xs text-quill-text outline-none focus:border-[#EF4444]"
+                        className="h-22 resize-none rounded-lg bg-[#121220] text-xs"
                       />
                     </div>
                   </div>
@@ -464,8 +418,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                       { value: "dark", label: "Dark" },
                       { value: "system", label: "System" },
                     ].map((t) => (
-                      <button
+                      <Button
                         key={t.value}
+                        type="button"
+                        variant="ghost"
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           t.value === "dark"
                             ? "bg-[#EF4444] text-white"
@@ -473,13 +429,79 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         }`}
                       >
                         {t.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </Row>
 
                 <Row label="Compact messages" hint="Reduce padding between messages for a denser view">
                   <Toggle on={settings.compactMessages} onChange={(v) => update("compactMessages", v)} />
+                </Row>
+
+                <Row label="Conversation layout" hint="Workspace uses Gemini-style assistant rendering">
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-quill-bg border border-quill-border">
+                    {([
+                      { value: "workspace", label: "Workspace" },
+                      { value: "chat", label: "Chat" },
+                    ] as const).map((layout) => (
+                      <Button
+                        key={layout.value}
+                        type="button"
+                        variant="ghost"
+                        onClick={() => update("conversationLayout", layout.value)}
+                        className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
+                          settings.conversationLayout === layout.value
+                            ? "bg-[#EF4444] text-white"
+                            : "text-quill-muted hover:text-[#A1A7B0]"
+                        }`}
+                      >
+                        {layout.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Row>
+
+                <Row label="Assistant avatar" hint="Show assistant avatar on each response row">
+                  <Toggle on={settings.showAssistantAvatar} onChange={(v) => update("showAssistantAvatar", v)} />
+                </Row>
+
+                <Row label="Assistant bubbles" hint="Wrap assistant responses in chat bubbles">
+                  <Toggle on={settings.assistantBubbles} onChange={(v) => update("assistantBubbles", v)} />
+                </Row>
+
+                <Row label="Contextual actions" hint="Only reveal response actions on hover/focus">
+                  <Toggle on={settings.contextualActions} onChange={(v) => update("contextualActions", v)} />
+                </Row>
+
+                <Row label="Focus mode" hint="Collapse sidebar and secondary chrome for deep work">
+                  <Toggle on={settings.focusMode} onChange={(v) => update("focusMode", v)} />
+                </Row>
+
+                <Row label="Status surface" hint="Choose where live execution status appears">
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-quill-bg border border-quill-border">
+                    {([
+                      { value: "thread", label: "Thread" },
+                      { value: "hybrid", label: "Hybrid" },
+                    ] as const).map((surface) => (
+                      <Button
+                        key={surface.value}
+                        type="button"
+                        variant="ghost"
+                        onClick={() => update("statusSurface", surface.value)}
+                        className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
+                          settings.statusSurface === surface.value
+                            ? "bg-[#EF4444] text-white"
+                            : "text-quill-muted hover:text-[#A1A7B0]"
+                        }`}
+                      >
+                        {surface.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Row>
+
+                <Row label="Composer labels" hint="Show text labels for composer icon actions">
+                  <Toggle on={settings.showComposerLabels} onChange={(v) => update("showComposerLabels", v)} />
                 </Row>
 
                 <div className="mt-4 p-3 rounded-xl bg-quill-surface border border-quill-border">
@@ -512,9 +534,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <p className="text-xs text-quill-muted">
                     Your conversations are encrypted and stored securely. We never sell your data.
                   </p>
-                  <button className="text-xs text-[#EF4444] hover:text-[#F87171] transition-colors">
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 text-xs text-[#EF4444] hover:bg-transparent hover:text-[#F87171]">
                     Download your data
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -546,22 +568,23 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     <p className="text-xs text-quill-muted mt-1 mb-3">
                       Unlimited messages, priority access to all models, and advanced features.
                     </p>
-                    <button
+                    <Button
                       onClick={() => router.push("/pricing")}
-                      className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
+                      type="button"
+                      className="h-auto rounded-xl bg-[#EF4444] px-4 py-2 text-xs font-medium text-white hover:bg-[#DC2626]"
                     >
                       View plans
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 <div className="pt-4 flex flex-col gap-1">
-                  <button className="text-xs text-quill-muted hover:text-[#A1A7B0] transition-colors text-left py-1">
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-quill-muted hover:bg-transparent hover:text-[#A1A7B0]">
                     Sign out
-                  </button>
-                  <button className="text-xs text-[#f87171] hover:text-[#fca5a5] transition-colors text-left py-1">
+                  </Button>
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-[#f87171] hover:bg-transparent hover:text-[#fca5a5]">
                     Delete account
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -571,8 +594,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-quill-border shrink-0">
           <span className="text-[11px] text-quill-muted">Quill AI v1.0.0</span>
-          <button
+          <Button
             onClick={handleSave}
+            type="button"
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               saved
                 ? "bg-quill-green text-white"
@@ -587,7 +611,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             ) : (
               "Save changes"
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

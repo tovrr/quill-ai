@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { Button } from "@/components/ui/button";
 
 export default function GlobalError({
   error,
@@ -36,12 +37,13 @@ export default function GlobalError({
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            type="button"
             onClick={reset}
-            className="px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-colors"
+            className="h-auto rounded-xl bg-[#EF4444] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#DC2626]"
           >
             Try again
-          </button>
+          </Button>
           <Link
             href="/"
             className="px-5 py-2.5 rounded-xl border border-quill-border hover:border-quill-border-2 text-quill-muted hover:text-quill-text text-sm font-medium transition-all"

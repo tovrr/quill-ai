@@ -23,6 +23,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth/client";
 
 export const dynamic = "force-dynamic";
@@ -416,16 +419,16 @@ function WorkspaceContent() {
           </div>
         </div>
       )}
-      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:flex-shrink-0">
+      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:shrink-0">
         <Sidebar />
       </div>
 
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-quill-border px-4 py-3">
-          <button className="lg:hidden rounded-lg p-2 hover:bg-quill-surface" onClick={() => setSidebarOpen(true)}>
+          <Button type="button" variant="ghost" size="icon" className="lg:hidden rounded-lg" onClick={() => setSidebarOpen(true)}>
             <Bars3Icon className="h-5 w-5" />
-          </button>
+          </Button>
           <Link href="/agent" className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors">
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
@@ -476,24 +479,28 @@ function WorkspaceContent() {
                     <span className="text-xs text-quill-muted">({status.email})</span>
                   )}
                 </div>
-                <button
+                <Button
                   onClick={handleDisconnect}
+                  type="button"
+                  variant="ghost"
                   disabled={disconnecting}
-                  className="flex items-center gap-1 text-xs text-quill-muted hover:text-red-400 transition-colors disabled:opacity-50"
+                  className="h-auto items-center gap-1 p-0 text-xs text-quill-muted hover:bg-transparent hover:text-red-400 disabled:opacity-50"
                 >
                   <XMarkIcon className="h-3.5 w-3.5" />
                   {disconnecting ? "Disconnecting…" : "Disconnect"}
-                </button>
+                </Button>
               </div>
 
               {/* Tabs + action button */}
               <div className="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-quill-border">
                 <div className="flex gap-1 flex-1">
                   {TABS.map((t) => (
-                    <button
+                    <Button
                       key={t.id}
+                      type="button"
+                      variant="ghost"
                       onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-t-lg transition-colors ${
+                      className={`h-auto items-center justify-start gap-1.5 rounded-t-lg px-3 py-2 text-sm ${
                         tab === t.id
                           ? "border-b-2 border-quill-accent text-quill-text font-medium"
                           : "text-quill-muted hover:text-quill-text"
@@ -501,26 +508,28 @@ function WorkspaceContent() {
                     >
                       {t.icon}
                       {t.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {tab === "docs" && (
-                  <button
+                  <Button
                     onClick={() => openModal({ type: "new-doc" })}
-                    className="mb-1 flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium bg-quill-accent text-white hover:opacity-90 transition-opacity"
+                    type="button"
+                    className="mb-1 h-auto items-center gap-1 rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                   >
                     <PlusIcon className="h-3.5 w-3.5" />
                     New Doc
-                  </button>
+                  </Button>
                 )}
                 {tab === "drive" && (
-                  <button
+                  <Button
                     onClick={() => openModal({ type: "new-folder" })}
-                    className="mb-1 flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium bg-quill-accent text-white hover:opacity-90 transition-opacity"
+                    type="button"
+                    className="mb-1 h-auto items-center gap-1 rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                   >
                     <PlusIcon className="h-3.5 w-3.5" />
                     New Folder
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -529,11 +538,11 @@ function WorkspaceContent() {
                 <div className="px-4 pt-3 pb-2">
                   <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-quill-muted" />
-                    <input
+                    <Input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") loadTab(tab, query); }}
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                      className="w-full rounded-lg border-quill-border bg-quill-bg pl-9 pr-3 py-2 text-sm"
                       placeholder={`Search ${tab === "docs" ? "documents" : "files"}…`}
                     />
                   </div>
@@ -551,14 +560,14 @@ function WorkspaceContent() {
                     <ul className="space-y-2">
                       {events.map((ev) => (
                         <li key={ev.id} className="flex items-start gap-3 rounded-lg border border-quill-border p-3 hover:bg-quill-surface transition-colors">
-                          <CalendarIcon className="h-4 w-4 text-quill-muted mt-0.5 flex-shrink-0" />
+                          <CalendarIcon className="h-4 w-4 text-quill-muted mt-0.5 shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{ev.summary}</p>
                             <p className="text-xs text-quill-muted mt-0.5">{formatEventTime(ev)}</p>
                             {ev.location && <p className="text-xs text-quill-muted truncate">{ev.location}</p>}
                           </div>
                           {ev.htmlLink && (
-                            <a href={ev.htmlLink} target="_blank" rel="noopener noreferrer" className="text-quill-muted hover:text-quill-text flex-shrink-0">
+                            <a href={ev.htmlLink} target="_blank" rel="noopener noreferrer" className="text-quill-muted hover:text-quill-text shrink-0">
                               <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                             </a>
                           )}
@@ -573,26 +582,30 @@ function WorkspaceContent() {
                     <ul className="space-y-1">
                       {docs.map((f) => (
                         <li key={f.id} className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors">
-                          <DocumentTextIcon className="h-4 w-4 text-quill-muted flex-shrink-0" />
+                          <DocumentTextIcon className="h-4 w-4 text-quill-muted shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm truncate">{f.name}</p>
                             <p className="text-xs text-quill-muted">{formatModifiedTime(f.modifiedTime)}</p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              title="Edit content"
+                            <Button
+                              type="button"
+                              variant="ghost"
                               onClick={() => handleOpenEditDoc(f)}
-                              className="rounded p-1 hover:bg-quill-border text-quill-muted hover:text-quill-text"
+                              aria-label="Edit content"
+                              className="h-6 w-6 rounded p-0 text-quill-muted hover:bg-quill-border hover:text-quill-text"
                             >
                               <PencilIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              title="Delete document"
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
                               onClick={() => handleDeleteDoc(f)}
-                              className="rounded p-1 hover:bg-quill-border text-quill-muted hover:text-red-400"
+                              aria-label="Delete document"
+                              className="h-6 w-6 rounded p-0 text-quill-muted hover:bg-quill-border hover:text-red-400"
                             >
                               <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
+                            </Button>
                             {f.webViewLink && (
                               <a
                                 href={f.webViewLink}
@@ -616,29 +629,33 @@ function WorkspaceContent() {
                       <li key={f.id} className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors">
                         {f.iconLink ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={f.iconLink} alt="" className="h-4 w-4 flex-shrink-0" />
+                          <img src={f.iconLink} alt="" className="h-4 w-4 shrink-0" />
                         ) : (
-                          <FolderIcon className="h-4 w-4 text-quill-muted flex-shrink-0" />
+                          <FolderIcon className="h-4 w-4 text-quill-muted shrink-0" />
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm truncate">{f.name}</p>
                           <p className="text-xs text-quill-muted">{formatModifiedTime(f.modifiedTime)}</p>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            title="Rename"
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={() => openModal({ type: "rename", fileId: f.id, currentName: f.name })}
-                            className="rounded p-1 hover:bg-quill-border text-quill-muted hover:text-quill-text"
+                            aria-label="Rename"
+                            className="h-6 w-6 rounded p-0 text-quill-muted hover:bg-quill-border hover:text-quill-text"
                           >
                             <PencilIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            title="Delete"
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={() => handleDeleteFile(f)}
-                            className="rounded p-1 hover:bg-quill-border text-quill-muted hover:text-red-400"
+                            aria-label="Delete"
+                            className="h-6 w-6 rounded p-0 text-quill-muted hover:bg-quill-border hover:text-red-400"
                           >
                             <TrashIcon className="h-3.5 w-3.5" />
-                          </button>
+                          </Button>
                           {f.webViewLink && (
                             <a
                               href={f.webViewLink}
@@ -658,9 +675,11 @@ function WorkspaceContent() {
 
               {/* Recent Changes / Snapshots panel */}
               <div className="border-t border-quill-border">
-                <button
+                <Button
                   onClick={() => setSnapshotsOpen((o) => !o)}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-xs text-quill-muted hover:text-quill-text transition-colors"
+                  type="button"
+                  variant="ghost"
+                  className="h-auto w-full items-center justify-start gap-2 px-4 py-2.5 text-xs text-quill-muted hover:text-quill-text"
                 >
                   {snapshotsOpen ? (
                     <ChevronDownIcon className="h-3.5 w-3.5" />
@@ -669,7 +688,7 @@ function WorkspaceContent() {
                   )}
                   <ClockIcon className="h-3.5 w-3.5" />
                   Recent Changes
-                </button>
+                </Button>
                 {snapshotsOpen && (
                   <div className="px-4 pb-3 max-h-48 overflow-y-auto">
                     {snapshotsLoading ? (
@@ -681,18 +700,20 @@ function WorkspaceContent() {
                         {snapshots.map((s) => (
                           <li key={s.id} className="flex items-center gap-2 text-xs py-1">
                             <span className="flex-1 text-quill-muted truncate">{snapshotLabel(s)}</span>
-                            <span className="text-quill-muted flex-shrink-0">
+                            <span className="text-quill-muted shrink-0">
                               {new Date(s.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                             </span>
-                            <button
+                            <Button
                               onClick={() => handleRollback(s.id)}
+                              type="button"
+                              variant="ghost"
                               disabled={rollingBack === s.id}
-                              title="Rollback this change"
-                              className="flex items-center gap-0.5 rounded px-1.5 py-0.5 bg-quill-surface hover:bg-quill-border text-quill-muted hover:text-quill-text transition-colors disabled:opacity-50 flex-shrink-0"
+                              aria-label="Rollback this change"
+                              className="h-auto shrink-0 items-center gap-0.5 rounded bg-quill-surface px-1.5 py-0.5 text-quill-muted hover:bg-quill-border hover:text-quill-text disabled:opacity-50"
                             >
                               <ArrowUturnLeftIcon className="h-3 w-3" />
                               {rollingBack === s.id ? "…" : "Undo"}
-                            </button>
+                            </Button>
                           </li>
                         ))}
                       </ul>
@@ -716,31 +737,32 @@ function WorkspaceContent() {
               <>
                 <h2 className="text-sm font-semibold mb-4">New Document</h2>
                 <label className="block text-xs text-quill-muted mb-1">Title</label>
-                <input
+                <Input
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleCreateDoc(); }}
-                  className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent mb-3"
+                  className="mb-3 w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="Document title"
                 />
                 <label className="block text-xs text-quill-muted mb-1">Initial content (optional)</label>
-                <textarea
+                <Textarea
                   value={modalText}
                   onChange={(e) => setModalText(e.target.value)}
                   rows={4}
-                  className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent resize-none"
+                  className="w-full resize-none rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="Start writing…"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={closeModal} className="rounded-lg px-4 py-2 text-sm text-quill-muted hover:text-quill-text">Cancel</button>
-                  <button
+                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
                     onClick={handleCreateDoc}
+                    type="button"
                     disabled={modalLoading || !modalTitle.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-quill-accent text-white hover:opacity-90 disabled:opacity-50"
+                    className="h-auto rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {modalLoading ? "Creating…" : "Create"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -752,24 +774,25 @@ function WorkspaceContent() {
                 {modalLoading && !modalText ? (
                   <p className="text-sm text-quill-muted py-6 text-center">Loading content…</p>
                 ) : (
-                  <textarea
+                  <Textarea
                     autoFocus
                     value={modalText}
                     onChange={(e) => setModalText(e.target.value)}
                     rows={10}
-                    className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent resize-none font-mono"
+                    className="w-full resize-none rounded-lg border-quill-border bg-quill-surface px-3 py-2 font-mono text-sm"
                     placeholder="Document content…"
                   />
                 )}
                 <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={closeModal} className="rounded-lg px-4 py-2 text-sm text-quill-muted hover:text-quill-text">Cancel</button>
-                  <button
+                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
                     onClick={() => handleSaveEditDoc(modal.fileId, modal.revisionId)}
+                    type="button"
                     disabled={modalLoading}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-quill-accent text-white hover:opacity-90 disabled:opacity-50"
+                    className="h-auto rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {modalLoading ? "Saving…" : "Save"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -778,23 +801,24 @@ function WorkspaceContent() {
               <>
                 <h2 className="text-sm font-semibold mb-4">New Folder</h2>
                 <label className="block text-xs text-quill-muted mb-1">Folder name</label>
-                <input
+                <Input
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); }}
-                  className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                  className="w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="Folder name"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={closeModal} className="rounded-lg px-4 py-2 text-sm text-quill-muted hover:text-quill-text">Cancel</button>
-                  <button
+                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
                     onClick={handleCreateFolder}
+                    type="button"
                     disabled={modalLoading || !modalTitle.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-quill-accent text-white hover:opacity-90 disabled:opacity-50"
+                    className="h-auto rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {modalLoading ? "Creating…" : "Create"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -803,23 +827,24 @@ function WorkspaceContent() {
               <>
                 <h2 className="text-sm font-semibold mb-4">Rename</h2>
                 <label className="block text-xs text-quill-muted mb-1">New name</label>
-                <input
+                <Input
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleRenameFile(modal.fileId, modalTitle); }}
-                  className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                  className="w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="New name"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={closeModal} className="rounded-lg px-4 py-2 text-sm text-quill-muted hover:text-quill-text">Cancel</button>
-                  <button
+                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
                     onClick={() => handleRenameFile(modal.fileId, modalTitle)}
+                    type="button"
                     disabled={modalLoading || !modalTitle.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-quill-accent text-white hover:opacity-90 disabled:opacity-50"
+                    className="h-auto rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {modalLoading ? "Renaming…" : "Rename"}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
@@ -835,3 +860,4 @@ function WorkspaceContent() {
     </div>
   );
 }
+

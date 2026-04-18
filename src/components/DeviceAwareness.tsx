@@ -60,18 +60,23 @@ export function DeviceAwareness() {
     const os = detectOS(ua);
     const browser = detectBrowser(ua);
     const device = detectDeviceType(ua);
-    const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
 
     const apply = (model?: string) => {
+      const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
+      // Treat as mobile when UA says so, OR when the viewport is narrow + touch is present
+      // (handles unusual UAs on real mobile hardware)
+      const narrowTouchViewport = touch && window.innerWidth < 768;
+      const isMobile = device === "mobile" || narrowTouchViewport;
+
       html.dataset.os = os;
       html.dataset.browser = browser;
       html.dataset.device = device;
       html.dataset.touch = touch ? "true" : "false";
       if (model) html.dataset.model = model;
 
-      html.classList.toggle("is-mobile", device === "mobile");
-      html.classList.toggle("is-tablet", device === "tablet");
-      html.classList.toggle("is-desktop", device === "desktop");
+      html.classList.toggle("is-mobile", isMobile);
+      html.classList.toggle("is-tablet", device === "tablet" && !narrowTouchViewport);
+      html.classList.toggle("is-desktop", !isMobile);
 
       html.classList.toggle("os-ios", os === "ios");
       html.classList.toggle("os-android", os === "android");
@@ -82,17 +87,23 @@ export function DeviceAwareness() {
 
     const fallbackModel = parseModelFromUA(ua);
 
-    if (nav.userAgentData?.getHighEntropyValues) {
-      nav.userAgentData
-        .getHighEntropyValues(["model"])
-        .then((data) => {
-          apply(data.model || fallbackModel);
-        })
-        .catch(() => apply(fallbackModel));
-      return;
-    }
+    const initialize = () => {
+      if (nav.userAgentData?.getHighEntropyValues) {
+        nav.userAgentData
+          .getHighEntropyValues(["model"])
+          .then((data) => apply(data.model || fallbackModel))
+          .catch(() => apply(fallbackModel));
+        return;
+      }
+      apply(fallbackModel);
+    };
 
-    apply(fallbackModel);
+    initialize();
+
+    // Re-evaluate on viewport resize so orientation changes and window resizes stay accurate
+    const onResize = () => apply(html.dataset.model);
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   return null;

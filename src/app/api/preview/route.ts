@@ -8,15 +8,62 @@ const MAX_FILES = 50;
 const MAX_FILE_BYTES = 200_000; // 200 KB per file
 const MAX_TOTAL_BYTES = 2_000_000; // 2 MB total
 
+function getRequestIp(req: NextRequest): string {
+  return (
+    req.headers
+      .get("x-forwarded-for")
+      ?.split(",")
+      .map((part) => part.trim())
+      .find(Boolean) ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function getPositiveIntEnv(name: string, fallback: number): number {
+  const parsed = Number(process.env[name]);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
 export async function POST(req: NextRequest) {
   const sessionData = await auth.api.getSession({ headers: await nextHeaders() }).catch(() => null);
-  if (!sessionData?.user?.id) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = sessionData?.user?.id ?? null;
+  const requestIp = getRequestIp(req);
+  const allowGuestPreview = process.env.API_PREVIEW_ALLOW_GUEST !== "false";
+  const guestFreeAttempts = getPositiveIntEnv("API_PREVIEW_GUEST_FREE_ATTEMPTS", 2);
+  const guestWindowMs = getPositiveIntEnv("API_PREVIEW_GUEST_WINDOW_MS", 86_400_000);
+
+  if (!userId && (!allowGuestPreview || guestFreeAttempts <= 0)) {
+    return Response.json(
+      { error: "Sign in to preview React apps.", code: "preview_auth_required" },
+      { status: 401 }
+    );
   }
 
   const perMinute = Number(process.env.API_PREVIEW_REQUESTS_PER_MINUTE ?? "20");
+  let rateLimitKey = userId ? `preview:user:${userId}` : `preview:ip:${requestIp}`;
+
+  if (!userId) {
+    const guestQuota = await checkRateLimit({
+      key: `preview:guest-free:${requestIp}`,
+      max: guestFreeAttempts,
+      windowMs: guestWindowMs,
+    });
+
+    if (!guestQuota.allowed) {
+      return Response.json(
+        {
+          error: "You used your free previews. Sign in to continue previewing apps.",
+          code: "preview_auth_required",
+        },
+        { status: 401 }
+      );
+    }
+  }
+
   const rateLimit = await checkRateLimit({
-    key: `preview:user:${sessionData.user.id}`,
+    key: rateLimitKey,
     max: perMinute,
     windowMs: 60_000,
   });

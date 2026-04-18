@@ -18,6 +18,10 @@ import {
 } from "@/lib/builder/artifacts";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
 import { exportArtifactAsZip, flattenArtifactFiles } from "@/lib/export/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -384,17 +388,18 @@ function FileBundlePreview({
         </div>
         <div className="p-2 space-y-1">
           {paths.map((path) => (
-            <button
+            <Button
               key={path}
               type="button"
+              variant="ghost"
               onClick={() => setSelectedPath(path)}
-              className={`px-2 py-1 rounded text-[12px] font-mono truncate ${
+              aria-label={`Open file ${path}`}
+              className={`h-auto w-full justify-start rounded px-2 py-1 text-[12px] font-mono truncate ${
                 path === activePath ? "bg-quill-border text-quill-text" : "text-[#9b9bb7]"
               }`}
-              title={path}
             >
               {path}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -509,6 +514,8 @@ function applyMobilePreviewGuardrails(html: string): string {
 export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanelProps) {
   const [preferredTab, setPreferredTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewAuthRequired, setPreviewAuthRequired] = useState(false);
   const streamContainerRef = useRef<HTMLDivElement>(null);
   const [bundleValidation, setBundleValidation] = useState<{
     running: boolean;
@@ -530,6 +537,8 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     if (!bundle) return;
 
     let cancelled = false;
+    setPreviewError(null);
+    setPreviewAuthRequired(false);
 
     fetch("/api/preview", {
       method: "POST",
@@ -539,8 +548,13 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
         entry: bundle.payload.entry,
       }),
     })
-      .then((r) => {
-        if (!r.ok) throw new Error("Preview generation failed");
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = (await r.json().catch(() => null)) as { error?: string } | null;
+          const error = new Error(data?.error ?? "Preview generation failed") as Error & { status?: number };
+          error.status = r.status;
+          throw error;
+        }
         return r.text();
       })
       .then((html) => {
@@ -550,9 +564,26 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
         previewUrlRef.current = blobUrl;
         setPreviewUrl(blobUrl);
       })
-      .catch(() => {
-        if (!cancelled) setPreviewUrl(null);
-      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+
+        setPreviewUrl(null);
+        const message = error instanceof Error ? error.message : "Preview unavailable right now.";
+        setPreviewError(message);
+
+        const status =
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          typeof (error as { status?: number }).status === "number"
+            ? (error as { status: number }).status
+            : null;
+
+        if (status === 401) {
+          setPreviewAuthRequired(true);
+          setPreferredTab("preview");
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -599,10 +630,10 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     ? analyzeBundleReadiness(fileBundle.type, fileBundle.payload.files, fileBundle.payload.entry)
     : null;
   const isReactApp = fileBundle?.type === "react-app";
-  // Loading is implicit: react-app but no blob URL yet = fetch in progress.
+  // Keep preview available for react-app even when generation fails so we can show actionable prompts.
   const canRunReactPreview = isReactApp && Boolean(previewUrl);
-  const previewLoading = isReactApp && !previewUrl;
-  const hasPreview = isHTML || (fileBundle?.type === "react-app" && canRunReactPreview);
+  const previewLoading = isReactApp && !previewUrl && !previewError;
+  const hasPreview = isHTML || fileBundle?.type === "react-app";
   const effectiveTab: Tab = isWorking || !hasPreview ? "code" : preferredTab;
   const showRawStream = isWorking && !isHTML && !fileBundle;
 
@@ -741,6 +772,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
   const dark = isHTML || artifactType === "react-app" || artifactType === "nextjs-bundle";
 
   return (
+    <TooltipProvider delayDuration={500}>
     <div
       className="flex flex-col h-full w-full md:w-130"
       style={{
@@ -769,9 +801,9 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             <span className={`text-sm font-semibold ${dark ? "text-quill-text" : "text-[#1a1a2e]"}`}>
               Canvas
             </span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}>
+            <Badge variant="secondary" className={`text-[10px] ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}>
               {artifactLabel}
-            </span>
+            </Badge>
             {isWorking && (
               <span className="text-[11px] text-[#fcd48f]">Generating...</span>
             )}
@@ -784,26 +816,18 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
 
           {/* Preview / Code tabs */}
           {(isHTML || fileBundle?.type === "react-app") && content && (
-            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-quill-surface border border-quill-border">
-              {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
-                <button
-                  onClick={() => setPreferredTab("preview")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    effectiveTab === "preview" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#A1A7B0]"
-                  }`}
-                >
-                  Preview
-                </button>
-              )}
-              <button
-                onClick={() => setPreferredTab("code")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    effectiveTab === "code" ? "bg-quill-accent text-white" : "text-quill-muted hover:text-[#A1A7B0]"
-                }`}
-              >
-                Code
-              </button>
-            </div>
+            <Tabs value={effectiveTab} onValueChange={(value) => setPreferredTab(value as Tab)}>
+              <TabsList className="h-auto rounded-lg border border-quill-border bg-quill-surface p-0.5">
+                {(isHTML || fileBundle?.type === "react-app") && (
+                  <TabsTrigger value="preview" className="px-2.5 py-1 text-[11px]">
+                    Preview
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="code" className="px-2.5 py-1 text-[11px]">
+                  Code
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
         </div>
 
@@ -811,20 +835,30 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
         <div className="flex items-center gap-0.5">
           {/* Open in new tab — HTML only */}
           {isHTML && content && (
-            <button
-              onClick={handleOpenInTab}
-              title="Open in new tab"
-              className="p-1.5 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
-            >
-              <ArrowTopRightOnSquareIcon className="h-3.25 w-3.25" aria-hidden="true" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleOpenInTab}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open preview in new tab"
+                  className="h-7 w-7 rounded-lg text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                >
+                  <ArrowTopRightOnSquareIcon className="h-3.25 w-3.25" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Open in new tab</TooltipContent>
+            </Tooltip>
           )}
 
           {/* Copy */}
-          <button
+          <Button
             onClick={handleCopy}
+            type="button"
+            variant="ghost"
             disabled={!content}
-            title="Copy source"
+            aria-label="Copy source"
             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
               dark
                 ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -837,28 +871,38 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               <DocumentTextIcon className="h-3 w-3" aria-hidden="true" />
             )}
             {copied ? "Copied" : "Copy"}
-          </button>
+          </Button>
 
           {/* Download */}
-          <button
-            onClick={handleDownload}
-            disabled={!content}
-            title={`Download .${downloadExt}`}
-            className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
-              dark
-                ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
-            }`}
-          >
-            <ArrowDownTrayIcon className="h-3.25 w-3.25" aria-hidden="true" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleDownload}
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={!content}
+                aria-label={`Download .${downloadExt}`}
+                className={`h-7 w-7 rounded-lg transition-all disabled:opacity-40 ${
+                  dark
+                    ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                }`}
+              >
+                <ArrowDownTrayIcon className="h-3.25 w-3.25" aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Download .{downloadExt}</TooltipContent>
+          </Tooltip>
 
           {/* Export as ZIP — For bundled artifacts */}
           {fileBundle && (
-            <button
+            <Button
               onClick={handleExportAsZip}
+              type="button"
+              variant="ghost"
               disabled={!content}
-              title="Export files as ZIP"
+              aria-label="Export files as ZIP"
               className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
                 dark
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
@@ -866,42 +910,54 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               }`}
             >
               Export ZIP
-            </button>
+            </Button>
           )}
 
           {fileBundle?.type === "nextjs-bundle" && (
-            <button
+            <Button
               onClick={handleDownloadSetupScript}
-              title="Download setup script"
+              type="button"
+              variant="ghost"
+              aria-label="Download setup script"
               className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
             >
               Export PS
-            </button>
+            </Button>
           )}
 
           {fileBundle?.type === "nextjs-bundle" && (
-            <button
+            <Button
               onClick={handleValidateBundle}
+              type="button"
+              variant="ghost"
               disabled={bundleValidation.running}
-              title="Validate bundle locally"
+              aria-label="Validate bundle locally"
               className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all disabled:opacity-40"
             >
               {bundleValidation.running ? "Validating..." : "Validate"}
-            </button>
+            </Button>
           )}
 
           {/* Close */}
-          <button
-            onClick={onClose}
-            title="Close canvas"
-            className={`p-1.5 rounded-lg transition-all ${
-              dark
-                ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                : "text-[#8E949E] hover:bg-[#f0f0ff] hover:text-[#7A7F88]"
-            }`}
-          >
-            <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={onClose}
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Close canvas"
+                className={`h-7 w-7 rounded-lg transition-all ${
+                  dark
+                    ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    : "text-[#8E949E] hover:bg-[#f0f0ff] hover:text-[#7A7F88]"
+                }`}
+              >
+                <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Close canvas</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -970,11 +1026,26 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 className="w-full h-full border-0 bg-[#0d0d15]"
                 title="React app preview"
               />
+            ) : previewAuthRequired ? (
+              <div className="h-full flex items-center justify-center px-6">
+                <div className="max-w-md rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-4 text-center space-y-2">
+                  <p className="text-sm font-semibold text-[#f7b0b0]">Sign in required for additional previews</p>
+                  <p className="text-xs text-[#d2d2e6]">
+                    {previewError ?? "You used your free guest previews. Sign in to keep using live preview."}
+                  </p>
+                  <a
+                    href="/login"
+                    className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium bg-[#EF4444] text-white hover:bg-[#dc2626] transition-colors"
+                  >
+                    Sign in to preview
+                  </a>
+                </div>
+              </div>
             ) : (
               /* Loading state while the server generates the preview blob */
               <div className="flex items-center justify-center h-full gap-3 text-[#9b9bb7]">
                 <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
-                <span className="text-sm">Building preview…</span>
+                <span className="text-sm">{previewLoading ? "Building preview..." : previewError ?? "Preview unavailable."}</span>
               </div>
             )
           ) : (
@@ -1045,26 +1116,31 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
       {content && (
         <div className="md:hidden shrink-0 border-t border-quill-border bg-[#0d0d15] px-3 py-2 pb-safe">
           <div className="grid grid-cols-5 gap-1.5 text-[11px]">
-            {(isHTML || (fileBundle?.type === "react-app" && canRunReactPreview)) && (
-              <button
+            {(isHTML || fileBundle?.type === "react-app") && (
+              <Button
                 onClick={() => setPreferredTab("preview")}
-                className={`h-9 rounded-lg border ${effectiveTab === "preview" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+                type="button"
+                variant="outline"
+                className={`h-9 rounded-lg ${effectiveTab === "preview" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
               >
                 Preview
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               onClick={() => setPreferredTab("code")}
-              className={`h-9 rounded-lg border ${effectiveTab === "code" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+              type="button"
+              variant="outline"
+              className={`h-9 rounded-lg ${effectiveTab === "code" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
             >
               Code
-            </button>
-            <button onClick={handleCopy} className="h-9 rounded-lg border border-quill-border text-quill-muted">Copy</button>
-            <button onClick={handleDownload} className="h-9 rounded-lg border border-quill-border text-quill-muted">Save</button>
-            <button onClick={onClose} className="h-9 rounded-lg border border-quill-border text-quill-muted">Close</button>
+            </Button>
+            <Button type="button" variant="outline" onClick={handleCopy} className="h-9 rounded-lg border-quill-border text-quill-muted">Copy</Button>
+            <Button type="button" variant="outline" onClick={handleDownload} className="h-9 rounded-lg border-quill-border text-quill-muted">Save</Button>
+            <Button type="button" variant="outline" onClick={onClose} className="h-9 rounded-lg border-quill-border text-quill-muted">Close</Button>
           </div>
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }

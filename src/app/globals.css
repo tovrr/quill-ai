@@ -74,7 +74,7 @@ body {
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a5e;
+  background: #4a505c;
 }
 
 /* ── Animations ──────────────────────────────────────────────────────────────── */
@@ -94,8 +94,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(124, 106, 247, 0.3); }
-  50%       { box-shadow: 0 0 20px rgba(124, 106, 247, 0.6); }
+  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.22); }
+  50%       { box-shadow: 0 0 20px rgba(239, 68, 68, 0.44); }
 }
 
 @keyframes typing-dot {
@@ -156,6 +156,25 @@ body {
   .keyboard-hint {
     display: none;
   }
+}
+
+/* ── Light theme (opt-in via data-theme="light" or .light class) ─────────────── */
+[data-theme="light"],
+.light {
+  --color-quill-bg: #f5f3ed;
+  --color-quill-surface: #faf9f4;
+  --color-quill-surface-2: #f0eee8;
+  --color-quill-border: #e2dfd9;
+  --color-quill-border-2: #d6d3cd;
+  --color-quill-accent: #dc2626;
+  --color-quill-accent-2: #ef4444;
+  --color-quill-accent-glow: rgba(220, 38, 38, 0.10);
+  --color-quill-text: #1a1a1a;
+  --color-quill-muted: #5c5c5c;
+  --color-quill-green: #16a34a;
+  --color-quill-yellow: #ca8a04;
+  --color-quill-red: #dc2626;
+  --color-quill-orange: #ef4444;
 }
 
 /* ── Utility classes ─────────────────────────────────────────────────────────── */

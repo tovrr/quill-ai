@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth/client";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +69,7 @@ function formatRelativeTime(dateString: string | null): string {
 }
 
 function formatUpcomingTime(dateString: string | null): string {
-  if (!dateString) return "—";
+  if (!dateString) return "â€”";
   const diff = new Date(dateString).getTime() - Date.now();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
@@ -240,7 +243,7 @@ export default function AutopilotPage() {
   if (sessionStatus === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-quill-bg">
-        <div className="text-sm text-quill-muted">Loading…</div>
+        <div className="text-sm text-quill-muted">Loadingâ€¦</div>
       </div>
     );
   }
@@ -254,21 +257,21 @@ export default function AutopilotPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-quill-bg text-quill-text">
-      {/* Sidebar — mobile overlay */}
+      {/* Sidebar â€” mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 flex">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="relative z-50 w-72 flex-shrink-0 overflow-hidden border-r border-quill-border bg-quill-surface">
+          <div className="relative z-50 w-72 shrink-0 overflow-hidden border-r border-quill-border bg-quill-surface">
             <Sidebar onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Sidebar — desktop permanent */}
-      <div className="hidden md:flex md:w-64 md:flex-shrink-0 md:flex-col md:border-r md:border-quill-border md:bg-quill-surface">
+      {/* Sidebar â€” desktop permanent */}
+      <div className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:border-quill-border md:bg-quill-surface">
         <Sidebar />
       </div>
 
@@ -276,13 +279,15 @@ export default function AutopilotPage() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <header className="flex h-12 items-center gap-3 border-b border-quill-border bg-quill-surface px-4">
-          <button
+          <Button
             type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-text md:hidden"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Bars3Icon className="h-5 w-5" />
-          </button>
+          </Button>
 
           <Link
             href="/agent"
@@ -292,14 +297,14 @@ export default function AutopilotPage() {
           </Link>
 
           <div className="flex flex-1 items-center gap-2 min-w-0">
-            <ClockIcon className="h-4 w-4 flex-shrink-0 text-quill-accent" />
+            <ClockIcon className="h-4 w-4 shrink-0 text-quill-accent" />
             <span className="truncate text-sm font-medium text-quill-text">Autopilot</span>
             <span className="text-xs text-quill-muted">Recurring AI workflows</span>
           </div>
 
-          <button
+          <Button
             type="button"
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-quill-accent px-3 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            className="h-8 items-center gap-1.5 rounded-lg bg-quill-accent px-3 text-xs font-medium text-white hover:opacity-90"
             onClick={() => {
               setShowNewForm(true);
               setFormError(null);
@@ -307,7 +312,7 @@ export default function AutopilotPage() {
           >
             <PlusIcon className="h-3.5 w-3.5" />
             New workflow
-          </button>
+          </Button>
 
           <AccountMenu compact />
         </header>
@@ -319,69 +324,72 @@ export default function AutopilotPage() {
             <div className="mb-6 rounded-xl border border-quill-border bg-quill-surface p-4">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-quill-text">New workflow</h2>
-                <button
+                <Button
                   type="button"
-                  className="text-quill-muted hover:text-quill-text transition-colors"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md text-quill-muted hover:text-quill-text"
                   onClick={() => { setShowNewForm(false); setFormError(null); }}
                 >
                   <XMarkIcon className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
               <form onSubmit={(e) => { void handleCreate(e); }} className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-quill-muted">Name</label>
-                  <input
+                  <Input
                     type="text"
                     required
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="Weekly research digest"
-                    className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-quill-accent focus:ring-1 focus:ring-quill-accent"
+                    className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-quill-muted">Prompt</label>
-                  <textarea
+                  <Textarea
                     required
                     rows={3}
                     value={form.prompt}
                     onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
                     placeholder="Summarize the latest news about AI models and write a 200-word digest."
-                    className="w-full resize-none rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-quill-accent focus:ring-1 focus:ring-quill-accent"
+                    className="w-full resize-none rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted"
                   />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-quill-muted">Schedule (cron)</label>
-                    <input
+                    <Input
                       type="text"
                       required
                       value={form.cronExpression}
                       onChange={(e) => setForm((f) => ({ ...f, cronExpression: e.target.value }))}
                       placeholder="0 8 * * *"
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 font-mono text-sm text-quill-text placeholder-quill-muted outline-none focus:border-quill-accent focus:ring-1 focus:ring-quill-accent"
+                      className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 font-mono text-sm text-quill-text placeholder-quill-muted"
                     />
                     <div className="mt-1 flex flex-wrap gap-1">
                       {CRON_TEMPLATES.map((t) => (
-                        <button
+                        <Button
                           key={t.value}
                           type="button"
-                          className="rounded px-1.5 py-0.5 text-xs text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-text"
+                          variant="ghost"
+                          className="h-auto rounded px-1.5 py-0.5 text-xs text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
                           onClick={() => setForm((f) => ({ ...f, cronExpression: t.value }))}
                         >
                           {t.label}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-quill-muted">Timezone</label>
-                    <input
+                    <Input
                       type="text"
                       value={form.timezone}
                       onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
                       placeholder="America/New_York"
-                      className="w-full rounded-lg border border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-quill-accent focus:ring-1 focus:ring-quill-accent"
+                      className="w-full rounded-lg border-quill-border bg-quill-bg px-3 py-2 text-sm text-quill-text placeholder-quill-muted"
                     />
                   </div>
                 </div>
@@ -389,20 +397,21 @@ export default function AutopilotPage() {
                   <p className="text-xs text-quill-accent">{formError}</p>
                 )}
                 <div className="flex gap-2 pt-1">
-                  <button
+                  <Button
                     type="submit"
                     disabled={formSaving}
-                    className="flex items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="h-auto items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
-                    {formSaving ? "Saving…" : "Create workflow"}
-                  </button>
-                  <button
+                    {formSaving ? "Savingâ€¦" : "Create workflow"}
+                  </Button>
+                  <Button
                     type="button"
-                    className="rounded-lg border border-quill-border px-4 py-2 text-xs font-medium text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-text"
+                    variant="outline"
+                    className="h-auto rounded-lg px-4 py-2 text-xs font-medium text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
                     onClick={() => { setShowNewForm(false); setFormError(null); }}
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -422,14 +431,14 @@ export default function AutopilotPage() {
               <p className="max-w-xs text-xs text-quill-muted">
                 Create recurring AI workflows that run on a schedule and produce automatic digests, reports, or actions.
               </p>
-              <button
+              <Button
                 type="button"
-                className="mt-2 flex items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="mt-2 h-auto items-center gap-1.5 rounded-lg bg-quill-accent px-4 py-2 text-xs font-medium text-white hover:opacity-90"
                 onClick={() => { setShowNewForm(true); setFormError(null); }}
               >
                 <PlusIcon className="h-3.5 w-3.5" />
                 Create your first workflow
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -443,7 +452,7 @@ export default function AutopilotPage() {
                     className="group flex flex-col gap-3 rounded-xl border border-quill-border bg-quill-surface p-4 transition-colors hover:border-quill-border-2 sm:flex-row sm:items-start"
                   >
                     {/* Status dot */}
-                    <div className="flex-shrink-0 pt-0.5">
+                    <div className="shrink-0 pt-0.5">
                       <span
                         className={`block h-2 w-2 rounded-full ${
                           workflow.status === "active" ? "bg-quill-green" : "bg-quill-muted"
@@ -501,38 +510,44 @@ export default function AutopilotPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-shrink-0 items-center gap-1">
-                      <button
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
                         type="button"
                         disabled={isActioning}
-                        title={workflow.status === "active" ? "Pause" : "Resume"}
+                        aria-label={workflow.status === "active" ? "Pause workflow" : "Resume workflow"}
+                        variant="outline"
+                        size="icon"
                         onClick={() => { void handleTogglePause(workflow); }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-quill-border text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-text disabled:opacity-40"
+                        className="h-7 w-7 rounded-lg text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text disabled:opacity-40"
                       >
                         {workflow.status === "active" ? (
                           <PauseIcon className="h-3.5 w-3.5" />
                         ) : (
                           <PlayIcon className="h-3.5 w-3.5" />
                         )}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         disabled={isActioning || workflow.status !== "active"}
-                        title="Run now"
+                        aria-label="Run workflow now"
+                        variant="outline"
+                        size="icon"
                         onClick={() => { void handleRunNow(workflow); }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-quill-border text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-text disabled:opacity-40"
+                        className="h-7 w-7 rounded-lg text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text disabled:opacity-40"
                       >
                         <BoltIcon className="h-3.5 w-3.5" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         disabled={isActioning}
-                        title="Delete"
+                        aria-label="Delete workflow"
+                        variant="outline"
+                        size="icon"
                         onClick={() => { void handleDelete(workflow); }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-quill-border text-quill-muted transition-colors hover:bg-quill-surface-2 hover:text-quill-accent disabled:opacity-40"
+                        className="h-7 w-7 rounded-lg text-quill-muted hover:bg-quill-surface-2 hover:text-quill-accent disabled:opacity-40"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -552,7 +567,7 @@ export default function AutopilotPage() {
                       key={run.id}
                       className="flex items-start gap-3 rounded-lg border border-quill-border bg-quill-surface px-3 py-2.5"
                     >
-                      <span className={`mt-0.5 flex-shrink-0 ${run.status === "success" ? "text-quill-green" : "text-quill-accent"}`}>
+                      <span className={`mt-0.5 shrink-0 ${run.status === "success" ? "text-quill-green" : "text-quill-accent"}`}>
                         {run.status === "success" ? (
                           <CheckCircleIcon className="h-4 w-4" />
                         ) : (
@@ -591,3 +606,4 @@ export default function AutopilotPage() {
     </div>
   );
 }
+

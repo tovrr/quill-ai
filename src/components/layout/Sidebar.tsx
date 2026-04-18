@@ -28,8 +28,11 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { SparklesIcon, StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { SettingsModal } from "@/components/ui/SettingsModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { KILLERS } from "@/lib/ai/killers";
 
 type SessionData = {
@@ -78,6 +81,8 @@ interface HealthPayload {
 }
 
 const PINNED_KEY = "quill-pinned-chats";
+const sidebarSectionToggleClass = "flex h-auto w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted hover:text-[#A1A7B0]";
+const sidebarRowButtonClass = "flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -342,6 +347,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
   const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchPlaceholder = mobileCompact ? "Search chats, agents..." : "Search chats, agents, shortcuts";
   const [engineStatus, setEngineStatus] = useState<"loading" | "ok" | "degraded" | "down">("loading");
   const [engineDetail, setEngineDetail] = useState("Checking runtime health");
   const [pinned, setPinned] = useState<string[]>(() => {
@@ -510,8 +516,10 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         : engineStatus === "down"
           ? "Offline"
           : "Checking";
+  const sidebarHistoryActionClass = "h-7 w-7 rounded-md text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]";
 
   return (
+    <TooltipProvider delayDuration={500}>
     <aside
       className="flex h-full w-full shrink-0 flex-col overflow-y-auto border-r border-quill-border bg-[#0d0d15] scroll-smooth overscroll-contain"
       style={{ WebkitOverflowScrolling: "touch" }}
@@ -526,32 +534,41 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
             </div>
           </div>
           {onClose && (
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-quill-text md:hidden"
-              title="Close sidebar"
-            >
-              <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onClose}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close sidebar"
+                  className="size-8 rounded-lg text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text md:hidden"
+                >
+                  <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close sidebar</TooltipContent>
+            </Tooltip>
           )}
         </div>
 
         <div className="mt-4 space-y-3">
-          <button
+          <Button
             onClick={() => navigateTo("/agent")}
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#EF4444] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all duration-150 hover:bg-[#DC2626]"
+            type="button"
+            className="flex h-auto w-full items-center justify-center gap-2.5 rounded-xl bg-[#EF4444] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all duration-150 hover:bg-[#DC2626]"
           >
             <PlusIcon className="h-3.5 w-3.5" aria-hidden="true" />
             New mission
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2 rounded-xl border border-quill-border bg-quill-surface px-3 py-2">
             <MagnifyingGlassIcon className="h-4 w-4 shrink-0 text-quill-muted" aria-hidden="true" />
-            <input
+            <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search chats, agents, shortcuts"
-              className="w-full bg-transparent text-sm text-quill-text outline-none placeholder:text-quill-muted"
+              placeholder={searchPlaceholder}
+              className="h-auto w-full border-0 bg-transparent px-0 py-0 text-sm text-quill-text shadow-none focus-visible:ring-0 placeholder:text-quill-muted"
               aria-label="Search sidebar"
             />
           </div>
@@ -566,9 +583,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         )}
 
         <div className="space-y-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setCommandOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
+            className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
               <HomeIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -579,7 +598,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               aria-hidden="true"
               style={{ transform: commandOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
-          </button>
+          </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
@@ -589,17 +608,19 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               {visibleCommandLinks.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <button
+                  <Button
                     key={item.id}
+                    type="button"
+                    variant="ghost"
                     onClick={() => navigateTo(item.href)}
-                    className="flex w-full items-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2"
+                    className={sidebarRowButtonClass}
                   >
                     <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                     <span className="min-w-0">
                       <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -607,9 +628,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         </div>
 
         <div className="space-y-1 pt-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setAgentsOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
+            className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="h-2.5 w-2.5 text-[#F87171]" aria-hidden="true" />
@@ -620,7 +643,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               aria-hidden="true"
               style={{ transform: agentsOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
-          </button>
+          </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
@@ -628,17 +651,19 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
           >
             <div className="flex flex-col gap-1 pb-2 pt-1">
               {filteredAgents.map((killer) => (
-                <button
+                <Button
                   key={killer.id}
+                  type="button"
+                  variant="ghost"
                   onClick={() => openAgentForKiller(killer.id)}
-                  className="flex w-full items-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2"
+                  className={sidebarRowButtonClass}
                 >
                   <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: killer.accent }} />
                   <span className="min-w-0">
                     <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{killer.name}</span>
                     <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{killer.tagline}</span>
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -646,9 +671,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
 
         {!mobileCompact && (
         <div className="space-y-1 pt-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setMemoryOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
+            className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
               <FolderIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -659,7 +686,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               aria-hidden="true"
               style={{ transform: memoryOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
-          </button>
+          </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
@@ -669,8 +696,10 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               {filteredMemoryShortcuts.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <button
+                  <Button
                     key={item.id}
+                    type="button"
+                    variant="ghost"
                     onClick={() => {
                       if (item.action === "settings") {
                         setSettingsOpen(true);
@@ -681,14 +710,14 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                         openAgentPrompt(item.prompt, item.launchMode ?? "draft");
                       }
                     }}
-                    className="flex w-full items-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2"
+                    className={sidebarRowButtonClass}
                   >
                     <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                     <span className="min-w-0">
                       <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
 
@@ -696,17 +725,19 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                 <div className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">Learned skills</div>
               )}
               {filteredSkillShortcuts.map((item) => (
-                <button
+                <Button
                   key={item.id}
+                  type="button"
+                  variant="ghost"
                   onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
-                  className="flex w-full items-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2"
+                  className={sidebarRowButtonClass}
                 >
                   <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" aria-hidden="true" />
                   <span className="min-w-0">
                     <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                     <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -715,9 +746,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
 
         {!mobileCompact && (
         <div className="space-y-1 pt-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setStudioOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
+            className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
               <DocumentTextIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -728,7 +761,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               aria-hidden="true"
               style={{ transform: studioOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
-          </button>
+          </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
@@ -748,17 +781,19 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     </div>
                     <div className="flex flex-col gap-1">
                       {group.items.map((item) => (
-                        <button
+                        <Button
                           key={item.id}
+                          type="button"
+                          variant="ghost"
                           onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
-                          className="flex w-full items-start gap-2 rounded-lg border border-transparent px-2 py-2 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.2)] hover:bg-quill-surface-2"
+                          className="flex h-auto w-full items-start justify-start gap-2 rounded-lg border border-transparent px-2 py-2 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.2)] hover:bg-quill-surface-2"
                         >
                           <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#EF4444]" />
                           <span className="min-w-0">
                             <span className="block text-[12px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                             <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                           </span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -772,9 +807,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         <div className="mx-4 my-2 border-t border-quill-border" />
 
         <div className="space-y-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setHistoryOpen((value) => !value)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted transition-all hover:text-[#A1A7B0]"
+            className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
               <ClockIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -785,7 +822,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               aria-hidden="true"
               style={{ transform: historyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
-          </button>
+          </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
@@ -814,9 +851,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     onMouseEnter={() => setHoveredChat(chat.id)}
                     onMouseLeave={() => setHoveredChat(null)}
                   >
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => openChat(chat.id)}
-                      className="flex min-w-0 flex-1 items-start gap-2 px-3 py-2 pr-11 text-left md:pr-3"
+                      className="flex h-auto min-w-0 flex-1 items-start justify-start gap-2 px-3 py-2 pr-11 text-left md:pr-3"
                     >
                       <span
                         className="mt-1.5 h-1 w-1 shrink-0 rounded-full transition-colors"
@@ -825,80 +864,116 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                       <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-[#b8b8d0]">
                         {chat.title}
                       </span>
-                    </button>
+                    </Button>
 
                     <div
                       className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 transition-opacity duration-150 md:flex"
                       style={{ opacity: isHovered ? 1 : 0 }}
                     >
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          togglePin(chat.id);
-                        }}
-                        title={isPinned ? "Unpin" : "Pin to top"}
-                        className="rounded-md p-1 transition-all hover:bg-quill-border"
-                        style={{ color: isPinned ? "#EF4444" : "#838387" }}
-                      >
-                        {isPinned ? <StarIconSolid className="h-2.75 w-2.75" aria-hidden="true" /> : <StarIconOutline className="h-2.75 w-2.75" aria-hidden="true" />}
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              togglePin(chat.id);
+                            }}
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={isPinned ? "Unpin chat" : "Pin chat to top"}
+                            className={sidebarHistoryActionClass}
+                            style={{ color: isPinned ? "#EF4444" : "#838387" }}
+                          >
+                            {isPinned ? <StarIconSolid className="h-2.75 w-2.75" aria-hidden="true" /> : <StarIconOutline className="h-2.75 w-2.75" aria-hidden="true" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">{isPinned ? "Unpin" : "Pin to top"}</TooltipContent>
+                      </Tooltip>
 
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          const url = `${window.location.origin}/share/${chat.id}`;
-                          navigator.clipboard.writeText(url).then(() => {
-                            setShareToast(chat.id);
-                            setTimeout(() => setShareToast(null), 1500);
-                          }).catch(() => {
-                            setShareToast(`error-${chat.id}`);
-                            setTimeout(() => setShareToast(null), 1500);
-                          });
-                        }}
-                        title={shareToast === chat.id ? "Copied!" : "Copy share link"}
-                        className={`rounded-md p-1 transition-all ${shareToast === chat.id ? "bg-[#22c55e]/10 text-[#4ade80]" : "text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]"}`}
-                      >
-                        <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const url = `${window.location.origin}/share/${chat.id}`;
+                              navigator.clipboard.writeText(url).then(() => {
+                                setShareToast(chat.id);
+                                setTimeout(() => setShareToast(null), 1500);
+                              }).catch(() => {
+                                setShareToast(`error-${chat.id}`);
+                                setTimeout(() => setShareToast(null), 1500);
+                              });
+                            }}
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={shareToast === chat.id ? "Share link copied" : "Copy share link"}
+                            className={`${sidebarHistoryActionClass} ${shareToast === chat.id ? "bg-[#22c55e]/10 text-[#4ade80]" : "text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]"}`}
+                          >
+                            <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">{shareToast === chat.id ? "Copied!" : "Copy share link"}</TooltipContent>
+                      </Tooltip>
 
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          requestDeleteChat(chat);
-                        }}
-                        disabled={deletingChatId === chat.id}
-                        title="Delete chat"
-                        className="rounded-md p-1 text-quill-muted transition-all hover:bg-quill-border hover:text-[#f87171] disabled:opacity-50"
-                      >
-                        <TrashIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              requestDeleteChat(chat);
+                            }}
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            disabled={deletingChatId === chat.id}
+                            aria-label="Delete chat"
+                            className="h-7 w-7 rounded-md text-quill-muted transition-all hover:bg-quill-border hover:text-[#f87171] disabled:opacity-50"
+                          >
+                            <TrashIcon className="h-2.75 w-2.75" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Delete chat</TooltipContent>
+                      </Tooltip>
                     </div>
 
                     <div className="absolute right-2 top-2 md:hidden">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setOpenChatMenuId((prev) => (prev === chat.id ? null : chat.id));
-                        }}
-                        title="More actions"
-                        className="rounded-md p-1 text-quill-muted transition-all hover:bg-quill-border hover:text-[#b8b8d0]"
-                      >
-                        <EllipsisVerticalIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenChatMenuId((prev) => (prev === chat.id ? null : chat.id));
+                            }}
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="More chat actions"
+                            className="h-8 w-8 rounded-md text-quill-muted hover:bg-quill-border hover:text-[#b8b8d0]"
+                          >
+                            <EllipsisVerticalIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">More actions</TooltipContent>
+                      </Tooltip>
 
                       {openChatMenuId === chat.id && (
                         <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-quill-border bg-[#11111a] p-1.5 shadow-xl">
-                          <button
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={(event) => {
                               event.stopPropagation();
                               togglePin(chat.id);
                               setOpenChatMenuId(null);
                             }}
-                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] transition-all hover:bg-quill-border"
+                            className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] hover:bg-quill-border"
                           >
                             {isPinned ? "Unpin" : "Pin to top"}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={(event) => {
                               event.stopPropagation();
                               const url = `${window.location.origin}/share/${chat.id}`;
@@ -911,21 +986,23 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                               });
                               setOpenChatMenuId(null);
                             }}
-                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] transition-all hover:bg-quill-border"
+                            className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] hover:bg-quill-border"
                           >
                             Copy share link
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={(event) => {
                               event.stopPropagation();
                               requestDeleteChat(chat);
                               setOpenChatMenuId(null);
                             }}
                             disabled={deletingChatId === chat.id}
-                            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-[#f7b0b0] transition-all hover:bg-quill-border disabled:opacity-50"
+                            className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#f7b0b0] hover:bg-quill-border disabled:opacity-50"
                           >
                             Delete chat
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -967,25 +1044,29 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
             <p className="mt-2 line-clamp-2 text-xs text-[#A1A7B0]">{pendingDeleteChat.title}</p>
 
             <div className="mt-4 flex items-center justify-end gap-2">
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setPendingDeleteChat(null)}
-                className="rounded-lg border border-quill-border px-3 py-1.5 text-xs text-[#A1A7B0] transition-all hover:border-quill-border-2 hover:text-quill-text"
+                className="h-auto rounded-lg px-3 py-1.5 text-xs text-[#A1A7B0] hover:border-quill-border-2 hover:text-quill-text"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
                 onClick={() => {
                   void confirmDeleteChat();
                 }}
                 disabled={deletingChatId === pendingDeleteChat.id}
-                className="rounded-lg bg-[#EF4444] px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-[#DC2626] disabled:opacity-60"
+                className="h-auto rounded-lg bg-[#EF4444] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#DC2626] disabled:opacity-60"
               >
                 {deletingChatId === pendingDeleteChat.id ? "Deleting..." : "Delete"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
     </aside>
+    </TooltipProvider>
   );
 }

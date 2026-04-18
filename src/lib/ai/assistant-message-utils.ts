@@ -3,6 +3,7 @@ import type { UIMessage } from "ai";
 export const NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT = "I could not render that response. Please retry.";
 const INVISIBLE_TEXT_CHARS_REGEX = /[\u200B-\u200D\uFEFF]/g;
 const MARKDOWN_DECORATOR_LINE_REGEX = /^([-*_=]{3,}|`{3,})$/;
+const TOOL_ACTIVE_STATES = new Set(["input-streaming", "input-available", "call"]);
 const TOOL_TERMINAL_STATES = new Set(["result", "output-available", "output-error"]);
 
 type MessageRole = UIMessage["role"] | "tool";
@@ -557,7 +558,7 @@ export function isRenderableMessagePart(part: unknown): boolean {
     const toolName = normalizeVisibleText(part.toolName);
     const state = normalizeVisibleText(part.state);
     if (toolName.length === 0 && state.length === 0) return false;
-    return TOOL_TERMINAL_STATES.has(state);
+    return TOOL_TERMINAL_STATES.has(state) || TOOL_ACTIVE_STATES.has(state);
   }
 
   if (part.type.startsWith("tool-")) {
@@ -565,7 +566,7 @@ export function isRenderableMessagePart(part: unknown): boolean {
     const explicitName = normalizeVisibleText(part.toolName);
     const state = normalizeVisibleText(part.state);
     if (inferredName.length === 0 && explicitName.length === 0 && state.length === 0) return false;
-    return TOOL_TERMINAL_STATES.has(state);
+    return TOOL_TERMINAL_STATES.has(state) || TOOL_ACTIVE_STATES.has(state);
   }
 
   return false;

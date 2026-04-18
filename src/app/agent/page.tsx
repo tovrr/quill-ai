@@ -21,6 +21,7 @@ import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatus
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TaskInput, type Mode } from "@/components/agent/TaskInput";
 import { RealMessageBubble } from "@/components/agent/RealMessageBubble";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
@@ -39,6 +40,8 @@ import {
   normalizeUserProfile,
   type UserInstructionProfile,
 } from "@/lib/extensions/customization";
+import { loadAppSettings, saveAppSettings, type AppSettings } from "@/lib/ui-settings";
+import { getUiVariant, trackUiEvent } from "@/lib/ui-experiments";
 
 const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
@@ -286,6 +289,14 @@ function extractMessageText(message: UIMessage): string {
   return extractTextFromMessageParts(getMessageParts(message) as unknown[]);
 }
 
+function formatElapsed(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}m ${seconds}s`;
+}
+
 function canonicalizeAssistantForDisplay(message: UIMessage): UIMessage {
   const normalized = normalizeAssistantMessage({
     ...message,
@@ -352,6 +363,7 @@ export default function AgentPage() {
   const [initialComposerDraft, setInitialComposerDraft] = useState("");
   const [initialHomepageFile, setInitialHomepageFile] = useState<File | null>(null);
   const [isDraftReview, setIsDraftReview] = useState(false);
+  const [streamClockMs, setStreamClockMs] = useState(0);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
@@ -359,6 +371,7 @@ export default function AgentPage() {
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
   const [isMounted, setIsMounted] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [uiSettings, setUiSettings] = useState<AppSettings>(() => loadAppSettings());
   const activeKiller = isMounted ? killer : null;
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
@@ -371,12 +384,27 @@ export default function AgentPage() {
   const isTrialPlan = planLabel.toLowerCase().startsWith("trial") || trialDaysLeft !== null;
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRequestRef = useRef<number | null>(null);
+  const streamStartRef = useRef<number | null>(null);
   const guestSessionRestoredRef = useRef(false);
   const guestSessionImportTriedRef = useRef(false);
   const manualStopRef = useRef(false);
   const awaitingAssistantRef = useRef(false);
   const pendingAssistantSinceRef = useRef<number | null>(null);
   const chatTitleInputRef = useRef<HTMLInputElement>(null);
+  const streamTelemetryRef = useRef<{
+    startedAt: number | null;
+    firstAssistantAt: number | null;
+    firstRenderableAt: number | null;
+  }>({
+    startedAt: null,
+    firstAssistantAt: null,
+    firstRenderableAt: null,
+  });
 
   // Refs for transport (stable, avoid re-creating)
   const modeRef = useRef<Mode>(selectedMode);
@@ -451,13 +479,39 @@ export default function AgentPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      const loaded = loadAppSettings();
+      userProfileRef.current = normalizeUserProfile(loaded.instructionProfile);
+      setUiSettings(loaded);
+
+      const variant = getUiVariant();
       const raw = localStorage.getItem("quill-settings");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { instructionProfile?: unknown };
-      userProfileRef.current = normalizeUserProfile(parsed.instructionProfile);
+      const parsed = raw ? (JSON.parse(raw) as Partial<AppSettings>) : null;
+      const hasConversationLayout = parsed && typeof parsed.conversationLayout === "string";
+      if (!hasConversationLayout && variant === "workspace-default") {
+        const next = { ...loaded, conversationLayout: "workspace" as const };
+        saveAppSettings(next);
+        setUiSettings(next);
+      }
+
+      trackUiEvent("agent_page_open", {
+        conversationLayout: loaded.conversationLayout,
+        focusMode: loaded.focusMode,
+      });
     } catch {
       userProfileRef.current = DEFAULT_USER_PROFILE;
     }
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== "quill-settings") return;
+      const loaded = loadAppSettings();
+      setUiSettings(loaded);
+      userProfileRef.current = normalizeUserProfile(loaded.instructionProfile);
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   useEffect(() => {
@@ -498,6 +552,11 @@ export default function AgentPage() {
     transport,
     id: chatId,
     onError: (error: unknown) => {
+      streamTelemetryRef.current = {
+        startedAt: null,
+        firstAssistantAt: null,
+        firstRenderableAt: null,
+      };
       awaitingAssistantRef.current = false;
       pendingAssistantSinceRef.current = null;
       if (manualStopRef.current) {
@@ -556,12 +615,43 @@ export default function AgentPage() {
   );
   const hasActiveAssistantMessage = Boolean(messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant");
   const isLoading = status === "streaming" || status === "submitted";
+  const activeToolNames = useMemo(() => {
+    const latestAssistant = [...displayMessages].reverse().find((message) => message.role === "assistant");
+    if (!latestAssistant) return [] as string[];
+
+    const parts = getMessageParts(latestAssistant);
+    const names: string[] = [];
+    for (const part of parts) {
+      const candidate = part as Record<string, unknown>;
+      const type = typeof candidate.type === "string" ? candidate.type : "";
+      const isToolPart = type === "dynamic-tool" || type.startsWith("tool-");
+      if (!isToolPart) continue;
+
+      const state =
+        typeof candidate.state === "string" ? candidate.state.trim().toLowerCase() : "";
+      const isActive = state === "input-streaming" || state === "input-available" || state === "call";
+      if (!isActive) continue;
+
+      const rawName =
+        typeof candidate.toolName === "string" ? candidate.toolName : type.replace(/^tool-/, "");
+      const label = rawName.trim();
+      if (!label || names.includes(label)) continue;
+      names.push(label);
+    }
+
+    return names;
+  }, [displayMessages]);
 
   const sendMessageTracked = useCallback(
     (payload: { text: string; files?: FileList }) => {
       setPageError(null);
       awaitingAssistantRef.current = true;
       pendingAssistantSinceRef.current = Date.now();
+      streamTelemetryRef.current = {
+        startedAt: performance.now(),
+        firstAssistantAt: null,
+        firstRenderableAt: null,
+      };
       sendMessage(payload);
     },
     [sendMessage]
@@ -860,6 +950,37 @@ export default function AgentPage() {
 
         setAgentStatus("done");
         setStatusStepCount(3);
+
+        const telemetry = streamTelemetryRef.current;
+        if (telemetry.startedAt !== null) {
+          const now = performance.now();
+          const firstAssistantMs =
+            telemetry.firstAssistantAt !== null
+              ? Math.round(telemetry.firstAssistantAt - telemetry.startedAt)
+              : null;
+          const firstRenderableMs =
+            telemetry.firstRenderableAt !== null
+              ? Math.round(telemetry.firstRenderableAt - telemetry.startedAt)
+              : null;
+          const totalMs = Math.round(now - telemetry.startedAt);
+
+          console.info(
+            "[chat.telemetry]",
+            JSON.stringify({
+              event: "chat_stream_complete",
+              firstAssistantMs,
+              firstRenderableMs,
+              totalMs,
+              messageCount: messages.length,
+            }),
+          );
+          streamTelemetryRef.current = {
+            startedAt: null,
+            firstAssistantAt: null,
+            firstRenderableAt: null,
+          };
+        }
+
         const resetTimer = setTimeout(() => {
           setAgentStatus("idle");
           setStatusStepCount(undefined);
@@ -869,6 +990,22 @@ export default function AgentPage() {
     }, 0);
     return () => clearTimeout(timer);
   }, [status, messages, setMessages]);
+
+  useEffect(() => {
+    const telemetry = streamTelemetryRef.current;
+    if (telemetry.startedAt === null) return;
+
+    const lastAssistant = [...displayMessages].reverse().find((message) => message.role === "assistant");
+    if (!lastAssistant) return;
+
+    if (telemetry.firstAssistantAt === null) {
+      telemetry.firstAssistantAt = performance.now();
+    }
+
+    if (telemetry.firstRenderableAt === null && hasRenderableAssistantContent(lastAssistant)) {
+      telemetry.firstRenderableAt = performance.now();
+    }
+  }, [displayMessages]);
 
   // Update canvas content; auto-open for renderable artifacts/pages
   useEffect(() => {
@@ -898,18 +1035,67 @@ export default function AgentPage() {
       setCanvasContent(text);
     }
 
-    if (shouldTrackInCanvas) {
+    if (shouldTrackInCanvas && uiSettings.autoOpenCanvas) {
       setCanvasMode(true);
     }
-  }, [messages, isLoading, builderTarget]);
+  }, [messages, isLoading, builderTarget, uiSettings.autoOpenCanvas]);
 
-  // Auto-scroll
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 80;
+  }, []);
+
+  // Auto-scroll with RAF+timeout debounce — prevents scroll conflicts while streaming
+  // and respects the user's read position when they scroll up.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    if (scrollRequestRef.current) cancelAnimationFrame(scrollRequestRef.current);
+
+    const lastMessage = displayMessages[displayMessages.length - 1];
+    const forceStickToBottom = Boolean(isLoading) || lastMessage?.role === "user";
+    if (!forceStickToBottom && !shouldAutoScrollRef.current) return;
+    if (isScrollingRef.current) return;
+
+    const behavior: ScrollBehavior = forceStickToBottom ? "smooth" : "auto";
+    scrollRequestRef.current = requestAnimationFrame(() => {
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = true;
+        bottomRef.current?.scrollIntoView({ behavior });
+        setTimeout(() => { isScrollingRef.current = false; }, behavior === "smooth" ? 300 : 50);
+      }, 16);
+    });
+  }, [displayMessages, isLoading]);
+
+  // Live elapsed timer — 100ms tick while a stream is active.
+  useEffect(() => {
+    if (isLoading) {
+      if (streamStartRef.current === null) streamStartRef.current = Date.now();
+      setStreamClockMs(0);
+      const interval = setInterval(() => {
+        setStreamClockMs(Date.now() - (streamStartRef.current ?? Date.now()));
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      streamStartRef.current = null;
+      setStreamClockMs(0);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (canvasMode && mobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+    }
+  }, [canvasMode, mobileSidebarOpen]);
 
   const handleSend = useCallback(
     (text: string, files?: FileList) => {
+      trackUiEvent("composer_send", {
+        hasFiles: Boolean(files && files.length > 0),
+        mode: selectedMode,
+        builderTarget,
+      });
       setIsDraftReview(false);
       setActiveTaskTitle(text.trim().slice(0, 80) || "Task");
       setStatusStepCount(1);
@@ -926,7 +1112,7 @@ export default function AgentPage() {
         sendMessageTracked({ text });
       }
     },
-    [sendMessageTracked, builderTarget]
+    [sendMessageTracked, builderTarget, selectedMode]
   );
 
   const handleQuickPageRefine = useCallback(
@@ -955,6 +1141,11 @@ export default function AgentPage() {
       ...prev,
       [lock]: !prev[lock],
     }));
+  }, []);
+
+  const handleOpenCanvasFromMessage = useCallback((content: string) => {
+    setCanvasContent(content);
+    setCanvasMode(true);
   }, []);
 
   const pageRefineActions = [
@@ -996,6 +1187,7 @@ export default function AgentPage() {
 
   const handleGenerateImage = useCallback(
     async (prompt: string) => {
+      trackUiEvent("composer_generate_image", { promptLength: prompt.length });
       setPageError(null);
       setIsGeneratingImage(true);
       setActiveTaskTitle(prompt.trim().slice(0, 80) || "Generate image");
@@ -1118,11 +1310,13 @@ export default function AgentPage() {
     <div className="agent-screen relative flex h-screen bg-quill-bg overflow-hidden">
 
       {/* Desktop: always-visible sidebar */}
+      {!uiSettings.focusMode && (
       <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
         <Suspense fallback={sidebarFallback}>
           <Sidebar />
         </Suspense>
       </aside>
+      )}
 
       {/* Mobile backdrop */}
       {mobileSidebarOpen && (
@@ -1145,10 +1339,16 @@ export default function AgentPage() {
       {/* ── Main content ─────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <header className="flex items-center gap-2 px-3 py-2 md:gap-3 md:px-4 md:py-3 border-b border-quill-border bg-quill-bg shrink-0">
+        <header className={`flex items-center gap-2 border-b border-quill-border bg-quill-bg shrink-0 ${uiSettings.focusMode ? "px-2 py-2 md:px-3" : "px-3 py-2 md:gap-3 md:px-4 md:py-3"}`}>
           {/* Hamburger: mobile drawer toggle */}
           <Button
-            onClick={() => setMobileSidebarOpen((v) => !v)}
+            onClick={() => {
+              if (canvasMode) {
+                setCanvasMode(false);
+                return;
+              }
+              setMobileSidebarOpen((v) => !v);
+            }}
             variant="ghost"
             size="sm"
             className="icon-btn md:hidden h-auto rounded-lg p-1.5 text-quill-muted transition-all hover:bg-quill-surface-2 hover:text-quill-text"
@@ -1170,6 +1370,14 @@ export default function AgentPage() {
             </div>
           )}
 
+          {/* Mobile-only: truncated chat title in header center */}
+          {chatTitle && (
+            <span className="md:hidden flex-1 min-w-0 truncate text-center text-xs text-quill-muted px-1">
+              {chatTitle}
+            </span>
+          )}
+
+          <TooltipProvider delayDuration={500}>
           <div className="ml-1 hidden min-w-0 flex-1 md:block">
             {isEditingChatTitle ? (
               <Input
@@ -1194,30 +1402,56 @@ export default function AgentPage() {
                 aria-label="Edit active chat name"
               />
             ) : (
-              <Button
-                type="button"
-                onClick={() => setIsEditingChatTitle(true)}
-                variant="ghost"
-                size="sm"
-                className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
-                title="Rename chat"
-              >
-                <span className="truncate">{chatTitle}</span>
-                <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    onClick={() => setIsEditingChatTitle(true)}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Rename chat"
+                    className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
+                  >
+                    <span className="truncate">{chatTitle}</span>
+                    <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Rename chat</TooltipContent>
+              </Tooltip>
             )}
           </div>
 
           <div className="ml-auto flex items-center gap-1.5 md:gap-2">
-            {/* New chat */}
-            <button
-              onClick={handleNewChat}
-              title="New chat"
-              aria-label="New chat"
-              className="p-2 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 transition-all"
+            <Button
+              onClick={() => {
+                const next = { ...uiSettings, focusMode: !uiSettings.focusMode };
+                setUiSettings(next);
+                saveAppSettings(next);
+                trackUiEvent("focus_mode_toggle", { enabled: next.focusMode });
+              }}
+              type="button"
+              variant="outline"
+              aria-label={uiSettings.focusMode ? "Exit focus mode" : "Enable focus mode"}
+              className="hidden h-auto rounded-lg px-2.5 py-1 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 md:inline-flex"
             >
-              <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
-            </button>
+              {uiSettings.focusMode ? "Exit focus" : "Focus"}
+            </Button>
+            {/* New chat */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleNewChat}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="New chat"
+                  className="size-8 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
+                >
+                  <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">New chat</TooltipContent>
+            </Tooltip>
 
             {/* Unified auth slot: same header position, switches by auth state */}
             <div className="flex items-center justify-center min-w-8 min-h-8">
@@ -1230,13 +1464,15 @@ export default function AgentPage() {
                   <AccountMenu compact />
                 </Suspense>
               ) : authResolved ? (
-                <button
+                <Button
                   onClick={() => router.push("/login")}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-medium text-quill-muted hover:text-quill-text border border-quill-border hover:border-quill-border-2 hover:bg-quill-surface-2 transition-all"
-                  title="Sign in"
+                  type="button"
+                  variant="outline"
+                  aria-label="Sign in"
+                  className="h-auto rounded-full px-3.5 py-1.5 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
                 >
                   Sign in
-                </button>
+                </Button>
               ) : (
                 <div className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse" aria-hidden="true" />
               )}
@@ -1246,9 +1482,10 @@ export default function AgentPage() {
               <span className="hidden md:inline text-[11px] text-quill-muted">Importing...</span>
             )}
           </div>
+          </TooltipProvider>
         </header>
 
-        {(agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
+        {uiSettings.statusSurface === "hybrid" && (agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
           <>
             <div className="md:hidden">
               <AgentStatusBar
@@ -1273,7 +1510,11 @@ export default function AgentPage() {
         <div className="relative flex flex-1 min-h-0">
           <div className="flex flex-col flex-1 min-w-0">
             {/* Messages */}
-            <div className="agent-messages flex-1 overflow-y-auto px-3 md:px-6 py-3 md:py-6 space-y-3 md:space-y-5">
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+              className={`agent-messages flex-1 overflow-y-auto px-3 md:px-6 py-3 md:py-6 ${uiSettings.compactMessages ? "space-y-2 md:space-y-3" : "space-y-3 md:space-y-5"}`}
+            >
               {displayMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
@@ -1306,21 +1547,56 @@ export default function AgentPage() {
                   <RealMessageBubble
                     key={msg.id}
                     message={msg}
+                    onOpenCanvasFromMessage={handleOpenCanvasFromMessage}
                     onRegenerate={isLastAssistant && !isLoading ? handleRegenerate : undefined}
+                    layoutMode={uiSettings.conversationLayout}
+                    showAssistantAvatar={uiSettings.showAssistantAvatar}
+                    assistantBubbles={uiSettings.assistantBubbles}
+                    contextualActions={uiSettings.contextualActions}
+                    compact={uiSettings.compactMessages}
+                    isStreaming={Boolean(isLoading && isLastAssistant)}
                   />
                 );
               })}
 
-              {isLoading && !isGeneratingImage && !hasActiveAssistantMessage && (
+              {isLoading && !isGeneratingImage && (!hasActiveAssistantMessage || activeToolNames.length > 0) && (
                 <div className="flex items-start gap-3 animate-fade-in">
                   <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
                     <QuillLogo size={16} />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border px-4 py-3 flex items-center gap-2">
+                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border px-4 py-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
                     {[0, 1, 2].map((i) => (
                       <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot" style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
-                    <span className="text-xs text-quill-muted">Thinking...</span>
+                    <span className="text-xs text-quill-muted">
+                      {activeToolNames.length > 0
+                        ? `Running ${activeToolNames.length} tool${activeToolNames.length > 1 ? "s" : ""}...`
+                        : hasActiveAssistantMessage
+                        ? "Streaming response..."
+                        : "Thinking..."}
+                    </span>
+                    {streamClockMs > 500 && (
+                      <span className="text-[10px] text-quill-muted/60 ml-1">
+                        {formatElapsed(streamClockMs)}
+                      </span>
+                    )}
+                    </div>
+                    {activeToolNames.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {activeToolNames.slice(0, 3).map((name) => (
+                          <span
+                            key={name}
+                            className="rounded-full border border-[rgba(239,68,68,0.22)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] text-[#f7b0b0]"
+                          >
+                            {name}
+                          </span>
+                        ))}
+                        {activeToolNames.length > 3 && (
+                          <span className="text-[10px] text-quill-muted">+{activeToolNames.length - 3} more</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1340,8 +1616,8 @@ export default function AgentPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Input — safe-area bottom padding for iPhone home indicator */}
-            <div className="agent-composer-shell shrink-0 px-3 md:px-6 pb-5 md:pb-8 pt-2 md:pt-3 border-t border-quill-border bg-quill-bg pb-safe">
+            {/* Input — safe-area bottom padding handled by .agent-composer-shell CSS rule in globals.css */}
+            <div className="agent-composer-shell shrink-0 px-3 md:px-6 pb-5 md:pb-8 pt-2 md:pt-3 border-t border-quill-border bg-quill-bg">
               <div className="max-w-3xl mx-auto">
                 {pageError && (
                   <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 animate-fade-in">
@@ -1349,31 +1625,25 @@ export default function AgentPage() {
                       <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]" aria-hidden="true" />
                       <p className="text-[12px] leading-relaxed text-[#f7b0b0]">{pageError}</p>
                     </div>
-                    <button
+                      <Button
                       type="button"
                       onClick={() => setPageError(null)}
-                      className="shrink-0 rounded-lg border border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] transition-colors hover:bg-[rgba(239,68,68,0.12)]"
+                        variant="outline"
+                        className="h-auto shrink-0 rounded-lg border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.12)]"
                     >
                       Dismiss
-                    </button>
-                  </div>
-                )}
-                {/* QuillClaw review banner — shown when draft came from a QuillClaw shortcut */}
-                {isDraftReview && messages.length === 0 && !isLoading && (
-                  <div className="mb-3 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.06)] animate-fade-in">
-                    <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]" aria-hidden="true" />
-                    <p className="text-[12px] text-[#f7b0b0] leading-relaxed">
-                      <span className="font-medium text-[#F87171]">Review before running.</span>{" "}
-                      Read the task below, edit it if needed, then press{" "}
-                      <kbd className="px-1 py-0.5 rounded bg-quill-accent-glow text-[#F87171] text-[10px] font-mono">Enter</kbd>{" "}
-                      to start. Quill will show you a plan before making any changes.
-                    </p>
+                      </Button>
                   </div>
                 )}
                 <TaskInput
                   onSend={handleSend}
                   onStop={() => {
                     manualStopRef.current = true;
+                    streamTelemetryRef.current = {
+                      startedAt: null,
+                      firstAssistantAt: null,
+                      firstRenderableAt: null,
+                    };
                     stop();
                     setAgentStatus("idle");
                   }}
@@ -1398,6 +1668,23 @@ export default function AgentPage() {
                   workingLabel={isGeneratingImage ? "Generating image..." : activeKiller ? `${activeKiller.name} is working...` : "Quill is working..."}
                   initialDraft={initialComposerDraft}
                   initialAttachedFile={initialHomepageFile}
+                  sendOnEnter={uiSettings.sendOnEnter}
+                  showActionLabels={uiSettings.showComposerLabels}
+                  reviewSummary={isDraftReview && messages.length === 0 && !isLoading ? {
+                    label: "Draft review",
+                    additions: initialComposerDraft.trim().length > 0 ? 1 : undefined,
+                    deletions: 0,
+                    keepLabel: "Keep",
+                    undoLabel: "Undo",
+                  } : undefined}
+                  onReviewKeep={() => {
+                    setIsDraftReview(false);
+                  }}
+                  onReviewUndo={() => {
+                    setIsDraftReview(false);
+                    setInitialComposerDraft("");
+                    setInitialHomepageFile(null);
+                  }}
                 />
 
                 {canUsePageRefineActions && messages.length > 0 && (
@@ -1409,26 +1696,30 @@ export default function AgentPage() {
                     <div className="border-t border-quill-border px-3 py-3">
                       <div className="flex flex-wrap gap-2">
                         {pageRefineActions.map((action) => (
-                          <button
+                          <Button
                             key={action.id}
+                            type="button"
+                            variant="outline"
                             onClick={() => handleQuickPageRefine(action.label, action.instruction)}
                             disabled={isLoading || isGeneratingImage}
-                            className="px-2.5 py-1.5 rounded-lg border border-quill-border text-[11px] text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="h-auto rounded-lg px-2.5 py-1.5 text-[11px] text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {action.label}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {sectionRefineActions.map((action) => (
-                          <button
+                          <Button
                             key={action.id}
+                            type="button"
+                            variant="outline"
                             onClick={() => handleSectionRegenerate(action.section)}
                             disabled={isLoading || isGeneratingImage}
-                            className="px-2.5 py-1.5 rounded-lg border border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="h-auto rounded-lg border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1.5 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {action.label}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -1450,17 +1741,19 @@ export default function AgentPage() {
                       ] as Array<[keyof BuilderLocks, string]>).map(([key, label]) => {
                         const active = builderLocks[key];
                         return (
-                          <button
+                          <Button
                             key={key}
+                            type="button"
+                            variant="outline"
                             onClick={() => toggleBuilderLock(key)}
-                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] transition-all ${
+                            className={`h-auto rounded-lg px-2.5 py-1.5 text-[11px] ${
                               active
                                 ? "border-[rgba(239,68,68,0.45)] bg-[rgba(239,68,68,0.1)] text-[#f7b0b0]"
                                 : "border-quill-border text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface"
                             }`}
                           >
                             {label}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -1473,11 +1766,12 @@ export default function AgentPage() {
           {/* Canvas panel — softer desktop overlay, full-screen on mobile */}
           {canvasMode && (
             <>
-              <button
+              <Button
                 type="button"
                 aria-label="Close canvas"
                 onClick={() => setCanvasMode(false)}
-                className="hidden md:block absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] animate-fade-in"
+                variant="ghost"
+                className="hidden absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] animate-fade-in md:block"
               />
               <div
                 className="hidden md:block absolute inset-y-0 right-0 z-30 shadow-2xl shadow-black/40 animate-slide-in-left"

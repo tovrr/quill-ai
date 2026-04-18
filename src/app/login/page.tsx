@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 
@@ -124,16 +126,17 @@ function LoginContent() {
           {/* Tab switcher */}
           <div className="flex rounded-xl bg-quill-surface p-1 mb-5">
             {(["signin", "signup"] as Tab[]).map((t) => (
-              <button
+              <Button
                 key={t}
                 type="button"
+                variant="ghost"
                 onClick={() => handleTabChange(t)}
-                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`h-auto flex-1 py-1.5 rounded-lg text-sm font-medium ${
                   tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-[#A1A7B0]"
                 }`}
               >
                 {t === "signin" ? "Sign in" : "Sign up"}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -143,39 +146,39 @@ function LoginContent() {
                 <label className="text-xs font-medium text-quill-muted">
                   Name <span className="text-[#3a3a5a]">(optional)</span>
                 </label>
-                <input
+                <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
-                  className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                  className="w-full rounded-xl border-quill-border bg-quill-surface px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted"
                 />
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-quill-muted">Email address</label>
-              <input
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
                 autoFocus
-                className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                className="w-full rounded-xl border-quill-border bg-quill-surface px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-quill-muted">Password</label>
-              <input
+              <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 minLength={8}
-                className="w-full bg-quill-surface border border-quill-border rounded-xl px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted outline-none focus:border-[rgba(239,68,68,0.5)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)] transition-all"
+                className="w-full rounded-xl border-quill-border bg-quill-surface px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted"
               />
             </div>
 
@@ -190,15 +193,15 @@ function LoginContent() {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading || !email.trim() || !password.trim()}
-              className="w-full py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-[0.98]"
+              className="h-auto w-full rounded-xl bg-[#EF4444] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(239,68,68,0.25)] hover:bg-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading
                 ? tab === "signup" ? "Creating account…" : "Signing in…"
                 : tab === "signup" ? "Create account" : "Continue with email"}
-            </button>
+            </Button>
           </form>
 
           <p className="text-xs text-quill-muted text-center mt-4">

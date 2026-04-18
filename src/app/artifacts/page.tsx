@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
 
 export const dynamic = "force-dynamic";
@@ -119,7 +120,7 @@ export default function ArtifactsPage() {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:flex-shrink-0">
+      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:shrink-0">
         <Sidebar />
       </div>
 
@@ -127,12 +128,15 @@ export default function ArtifactsPage() {
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-quill-border px-4 py-3">
-          <button
-            className="lg:hidden rounded-lg p-2 hover:bg-quill-surface"
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="lg:hidden rounded-lg"
             onClick={() => setSidebarOpen(true)}
           >
             <Bars3Icon className="h-5 w-5" />
-          </button>
+          </Button>
           <Link
             href="/agent"
             className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors"
@@ -151,9 +155,9 @@ export default function ArtifactsPage() {
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
           {/* List panel */}
-          <div className="w-full lg:w-80 flex-shrink-0 overflow-y-auto border-r border-quill-border">
+          <div className="w-full lg:w-80 shrink-0 overflow-y-auto border-r border-quill-border">
             {loading ? (
-              <div className="p-6 text-center text-quill-muted text-sm">Loading…</div>
+              <div className="p-6 text-center text-quill-muted text-sm">Loadingâ€¦</div>
             ) : versions.length === 0 ? (
               <div className="p-8 text-center">
                 <ClockIcon className="mx-auto h-8 w-8 text-quill-muted mb-3" />
@@ -166,32 +170,42 @@ export default function ArtifactsPage() {
               <ul className="divide-y divide-quill-border">
                 {versions.map((v) => (
                   <li key={v.id}>
-                    <button
-                      onClick={() => setSelected(v)}
-                      className={`w-full text-left px-4 py-3 hover:bg-quill-surface transition-colors ${
+                    <div
+                      className={`flex items-start justify-between gap-2 px-4 py-3 hover:bg-quill-surface transition-colors ${
                         selected?.id === v.id ? "bg-quill-surface border-l-2 border-quill-accent" : ""
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-quill-muted flex-shrink-0">{typeIcon(v.artifactType)}</span>
-                          <span className="text-sm font-medium truncate">{v.title}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setSelected(v)}
+                        className="h-auto min-w-0 flex-1 items-start justify-start rounded p-0 text-left hover:bg-transparent"
+                      >
+                        <div className="w-full">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-quill-muted shrink-0">{typeIcon(v.artifactType)}</span>
+                            <span className="text-sm font-medium truncate">{v.title}</span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className="text-xs text-quill-muted bg-quill-surface-2 px-1.5 py-0.5 rounded">
+                              {typeLabel(v.artifactType)}
+                            </span>
+                            <span className="text-xs text-quill-muted">{formatDate(v.createdAt)}</span>
+                          </div>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
-                          disabled={deleting === v.id}
-                          className="flex-shrink-0 p-1 rounded hover:bg-red-500/10 hover:text-red-400 text-quill-muted transition-colors"
-                        >
-                          <TrashIcon className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-xs text-quill-muted bg-quill-surface-2 px-1.5 py-0.5 rounded">
-                          {typeLabel(v.artifactType)}
-                        </span>
-                        <span className="text-xs text-quill-muted">{formatDate(v.createdAt)}</span>
-                      </div>
-                    </button>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(v.id)}
+                        aria-label="Delete artifact version"
+                        disabled={deleting === v.id}
+                        className="h-7 w-7 shrink-0 rounded text-quill-muted hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <TrashIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -206,7 +220,7 @@ export default function ArtifactsPage() {
                   <div>
                     <p className="text-sm font-semibold">{selected.title}</p>
                     <p className="text-xs text-quill-muted">
-                      {typeLabel(selected.artifactType)} · {formatDate(selected.createdAt)}
+                      {typeLabel(selected.artifactType)} Â· {formatDate(selected.createdAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -218,12 +232,15 @@ export default function ArtifactsPage() {
                         <EyeIcon className="h-3.5 w-3.5" /> Open chat
                       </Link>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setSelected(null)}
-                      className="p-1 rounded hover:bg-quill-surface text-quill-muted"
+                      className="h-7 w-7 rounded text-quill-muted"
                     >
                       <XMarkIcon className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div className="flex-1 overflow-auto">
@@ -261,3 +278,4 @@ export default function ArtifactsPage() {
     </div>
   );
 }
+

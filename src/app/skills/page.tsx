@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
 import type { Skill, SkillConfigField } from "@/lib/extensions/skills";
 
@@ -20,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export default function SkillsPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen bg-quill-bg text-quill-muted items-center justify-center text-sm">Loading…</div>}>
+    <Suspense fallback={<div className="flex h-screen bg-quill-bg text-quill-muted items-center justify-center text-sm">Loadingâ€¦</div>}>
       <SkillsContent />
     </Suspense>
   );
@@ -60,7 +62,7 @@ function SkillIcon({ skill }: { skill: Skill }) {
   const path = icons[skill.id] ?? "M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z";
 
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`h-6 w-6 ${colorClass} flex-shrink-0`}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`h-6 w-6 ${colorClass} shrink-0`}>
       <path d={path} />
     </svg>
   );
@@ -209,23 +211,23 @@ function SkillsContent() {
           </div>
         </div>
       )}
-      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:flex-shrink-0">
+      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:shrink-0">
         <Sidebar />
       </div>
 
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-quill-border px-4 py-3">
-          <button className="lg:hidden rounded-lg p-2 hover:bg-quill-surface" onClick={() => setSidebarOpen(true)}>
+          <Button type="button" variant="ghost" size="icon" className="lg:hidden rounded-lg" onClick={() => setSidebarOpen(true)}>
             <Bars3Icon className="h-5 w-5" />
-          </button>
+          </Button>
           <Link href="/agent" className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors">
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-semibold truncate">Skills</h1>
             <p className="text-xs text-quill-muted truncate">
-              {loading ? "Loading…" : `${installedCount} installed · ${skills.length} available`}
+              {loading ? "Loadingâ€¦" : `${installedCount} installed Â· ${skills.length} available`}
             </p>
           </div>
           <AccountMenu />
@@ -234,14 +236,16 @@ function SkillsContent() {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 py-4 max-w-2xl w-full mx-auto">
           {loading ? (
-            <p className="text-sm text-quill-muted py-8 text-center">Loading skills…</p>
+            <p className="text-sm text-quill-muted py-8 text-center">Loading skillsâ€¦</p>
           ) : (
             <div className="space-y-4">
               {grouped.map(({ cat, label, skills: catSkills }) => (
                 <div key={cat} className="rounded-xl border border-quill-border overflow-hidden">
-                  <button
+                  <Button
                     onClick={() => toggleCategory(cat)}
-                    className="flex w-full items-center justify-between px-4 py-3 bg-quill-surface hover:bg-quill-border transition-colors text-left"
+                    type="button"
+                    variant="ghost"
+                    className="h-auto w-full items-center justify-between bg-quill-surface px-4 py-3 text-left hover:bg-quill-border"
                   >
                     <span className="text-xs font-semibold uppercase tracking-wide text-quill-muted">{label}</span>
                     {expandedCategories.has(cat) ? (
@@ -249,7 +253,7 @@ function SkillsContent() {
                     ) : (
                       <ChevronRightIcon className="h-3.5 w-3.5 text-quill-muted" />
                     )}
-                  </button>
+                  </Button>
                   {expandedCategories.has(cat) && (
                     <div className="divide-y divide-quill-border">
                       {catSkills.map((skill) => (
@@ -284,9 +288,9 @@ function SkillsContent() {
                 <h2 className="text-sm font-semibold">{configDrawer.skill.name}</h2>
                 <p className="text-xs text-quill-muted mt-0.5">{configDrawer.skill.description}</p>
               </div>
-              <button className="ml-auto text-quill-muted hover:text-quill-text" onClick={() => setConfigDrawer(null)}>
+              <Button type="button" variant="ghost" size="icon" className="ml-auto h-7 w-7 rounded-md text-quill-muted hover:text-quill-text" onClick={() => setConfigDrawer(null)}>
                 <XMarkIcon className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
             <div className="space-y-3">
               {(configDrawer.skill.configFields ?? []).map((field: SkillConfigField) => (
@@ -295,11 +299,11 @@ function SkillsContent() {
                     {field.label}
                     {field.required && <span className="text-red-400 ml-0.5">*</span>}
                   </label>
-                  <input
+                  <Input
                     type={field.type === "password" ? "password" : "text"}
                     value={configDrawer.values[field.key] ?? ""}
                     onChange={(e) => setConfigDrawer((d) => d ? { ...d, values: { ...d.values, [field.key]: e.target.value } } : d)}
-                    className="w-full rounded-lg border border-quill-border bg-quill-surface px-3 py-2 text-sm focus:outline-none focus:border-quill-accent"
+                    className="w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                     placeholder={field.placeholder}
                   />
                   {field.helpText && <p className="text-xs text-quill-muted mt-1">{field.helpText}</p>}
@@ -307,14 +311,15 @@ function SkillsContent() {
               ))}
             </div>
             <div className="flex justify-end gap-2 mt-5">
-              <button onClick={() => setConfigDrawer(null)} className="rounded-lg px-4 py-2 text-sm text-quill-muted hover:text-quill-text">Cancel</button>
-              <button
+              <Button type="button" variant="ghost" onClick={() => setConfigDrawer(null)} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+              <Button
                 onClick={handleSaveConfig}
+                type="button"
                 disabled={actionLoading === configDrawer.skill.id}
-                className="rounded-lg px-4 py-2 text-sm font-medium bg-quill-accent text-white hover:opacity-90 disabled:opacity-50"
+                className="h-auto rounded-lg bg-quill-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
-                {actionLoading === configDrawer.skill.id ? "Saving…" : configDrawer.skill.installed ? "Save Config" : "Install"}
-              </button>
+                {actionLoading === configDrawer.skill.id ? "Savingâ€¦" : configDrawer.skill.installed ? "Save Config" : "Install"}
+              </Button>
             </div>
           </div>
         </div>
@@ -352,7 +357,7 @@ function SkillCard({ skill, actionLoading, onInstall, onUninstall, onConfigure }
             </span>
           )}
           {skill.installed && !isComingSoon && (
-            <CheckCircleIcon className="h-3.5 w-3.5 text-quill-green flex-shrink-0" />
+            <CheckCircleIcon className="h-3.5 w-3.5 text-quill-green shrink-0" />
           )}
         </div>
         <p className="text-xs text-quill-muted mt-0.5 leading-relaxed">{skill.description}</p>
@@ -361,43 +366,49 @@ function SkillCard({ skill, actionLoading, onInstall, onUninstall, onConfigure }
             href={skill.oauthHref}
             className="inline-block mt-1.5 text-xs text-quill-accent hover:underline"
           >
-            Manage connection →
+            Manage connection â†’
           </Link>
         )}
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {!isComingSoon && skill.installed && skill.configFields?.length ? (
-          <button
+          <Button
             onClick={onConfigure}
-            className="rounded-lg px-3 py-1.5 text-xs text-quill-muted border border-quill-border hover:bg-quill-surface transition-colors"
+            type="button"
+            variant="outline"
+            className="h-auto rounded-lg px-3 py-1.5 text-xs text-quill-muted hover:bg-quill-surface"
           >
             Config
-          </button>
+          </Button>
         ) : null}
         {isComingSoon ? (
-          <span className="text-xs text-quill-muted">—</span>
+          <span className="text-xs text-quill-muted">â€”</span>
         ) : skill.installed && !skill.builtIn ? (
-          <button
+          <Button
             onClick={onUninstall}
+            type="button"
+            variant="outline"
             disabled={actionLoading}
-            className="rounded-lg px-3 py-1.5 text-xs text-quill-muted border border-quill-border hover:border-red-400 hover:text-red-400 transition-colors disabled:opacity-50"
+            className="h-auto rounded-lg px-3 py-1.5 text-xs text-quill-muted hover:border-red-400 hover:text-red-400 disabled:opacity-50"
           >
-            {actionLoading ? "…" : "Uninstall"}
-          </button>
+            {actionLoading ? "â€¦" : "Uninstall"}
+          </Button>
         ) : skill.installed && skill.builtIn ? (
           <span className="rounded-lg px-3 py-1.5 text-xs text-quill-green border border-quill-border cursor-default">
             Built-in
           </span>
         ) : (
-          <button
+          <Button
             onClick={onInstall}
+            type="button"
             disabled={actionLoading}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-quill-accent text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="h-auto rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
-            {actionLoading ? "…" : "Install"}
-          </button>
+            {actionLoading ? "â€¦" : "Install"}
+          </Button>
         )}
       </div>
     </div>
   );
 }
+
