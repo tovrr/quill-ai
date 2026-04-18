@@ -17,6 +17,7 @@ import {
   type FileBundleArtifact,
 } from "@/lib/builder/artifacts";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
+import { exportArtifactAsZip, flattenArtifactFiles } from "@/lib/export/client";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -709,6 +710,28 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     }
   };
 
+  const handleExportAsZip = async () => {
+    if (!artifact) return;
+
+    const files = flattenArtifactFiles(artifact.payload);
+    if (Object.keys(files).length === 0) return;
+
+    try {
+      await exportArtifactAsZip({
+        artifactType: artifact.type,
+        artifactTitle: artifact.title ?? "artifact",
+        files,
+        onProgress: (status) => console.log("[export]", status),
+        onError: (error) => {
+          console.error("[export] Error:", error);
+          alert(`Export failed: ${error}`);
+        },
+      });
+    } catch (error) {
+      console.error("[export] Export failed:", error);
+    }
+  };
+
   const handleOpenInTab = () => {
     const blob = new Blob([htmlSrc], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -829,6 +852,22 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           >
             <ArrowDownTrayIcon className="h-3.25 w-3.25" aria-hidden="true" />
           </button>
+
+          {/* Export as ZIP — For bundled artifacts */}
+          {fileBundle && (
+            <button
+              onClick={handleExportAsZip}
+              disabled={!content}
+              title="Export files as ZIP"
+              className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
+                dark
+                  ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                  : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+              }`}
+            >
+              Export ZIP
+            </button>
+          )}
 
           {fileBundle?.type === "nextjs-bundle" && (
             <button
