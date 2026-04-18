@@ -446,12 +446,7 @@ function WorkspaceContent() {
           ) : !status.connected ? (
             <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-12 text-center max-w-md mx-auto">
               <div className="rounded-full bg-quill-surface border border-quill-border p-5">
-                <svg viewBox="0 0 48 48" className="h-10 w-10" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.2 33.6 29.7 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 6 1.1 8.2 3l6-6C34.3 5.1 29.4 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.8 0 20-7.8 20-21 0-1.4-.1-2.7-.5-4z"/>
-                  <path fill="#EA4335" d="M6.3 14.7l7 5.1C15 15.2 19.1 12 24 12c3.1 0 6 1.1 8.2 3l6-6C34.3 5.1 29.4 3 24 3 16.3 3 9.7 7.8 6.3 14.7z"/>
-                  <path fill="#FBBC05" d="M24 45c5.3 0 10.1-1.8 13.8-4.9l-6.4-5.3C29.5 36.7 26.9 37.5 24 37.5c-5.6 0-10.4-3.8-12-9l-7 5.4C8.5 41 15.7 45 24 45z"/>
-                  <path fill="#34A853" d="M44.5 20H24v8.5h11.8c-1.1 3-3.4 5.5-6.3 7.1l6.4 5.3C40.5 37 44.5 31 44.5 24c0-1.4-.1-2.7-.5-4z"/>
-                </svg>
+                <FolderIcon className="h-10 w-10 text-quill-accent" />
               </div>
               <div>
                 <h2 className="text-base font-semibold">Connect Google Workspace</h2>
