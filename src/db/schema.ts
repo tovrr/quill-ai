@@ -10,6 +10,7 @@ import {
   doublePrecision,
   jsonb,
   unique,
+  customType,
 } from "drizzle-orm/pg-core";
 
 // ─── Better Auth tables ──────────────────────────────────────────────────────
@@ -392,5 +393,68 @@ export const userSkills = pgTable(
     index("user_skill_user_id_idx").on(table.userId),
     index("user_skill_skill_id_idx").on(table.skillId),
     unique("user_skill_user_skill_uniq").on(table.userId, table.skillId),
+  ]
+);
+
+// ─── RAG (Retrieval-Augmented Generation) ────────────────────────────────────
+
+// pgvector type for Drizzle ORM
+const vector = customType<{ data: number[]; driverData: string; config: { dimensions: number } }>({
+  dataType(config) {
+    return `vector(${config?.dimensions ?? 1536})`;
+  },
+  fromDriver(value: string) {
+    // pgvector returns values like "[0.1,0.2,...]"
+    return JSON.parse(value) as number[];
+  },
+  toDriver(value: number[]) {
+    return JSON.stringify(value);
+  },
+});
+
+export const ragDocuments = pgTable(
+  "rag_document",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title").notNull(),
+    source: varchar("source").notNull().default("upload"),
+    mimeType: varchar("mimeType").notNull().default("text/plain"),
+    byteSize: integer("byteSize").notNull().default(0),
+    chunkCount: integer("chunkCount").notNull().default(0),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("rag_document_user_id_idx").on(table.userId),
+    index("rag_document_created_at_idx").on(table.createdAt),
+  ]
+);
+
+export const ragChunks = pgTable(
+  "rag_chunk",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    documentId: text("documentId")
+      .notNull()
+      .references(() => ragDocuments.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    chunkIndex: integer("chunkIndex").notNull(),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("rag_chunk_document_id_idx").on(table.documentId),
+    index("rag_chunk_user_id_idx").on(table.userId),
   ]
 );

@@ -39,8 +39,7 @@ type RemoteExecutionConfig = {
 
 function isRemoteExecutionReady(config: RemoteExecutionConfig): boolean {
   if (config.provider === "e2b") {
-    // E2B is intentionally disabled until SDK-backed execution is implemented.
-    return false;
+    return Boolean(config.apiKey);
   }
 
   if (config.provider === "modal") {
@@ -101,15 +100,49 @@ async function executeRemote(
 
   // E2B integration point
   if (config.provider === "e2b") {
-    return {
-      ok: false,
-      stdout: "",
-      stderr: "",
-      exitCode: 1,
-      durationMs: 0,
-      error:
-        "E2B provider is configured but not enabled in this build. Use EXECUTION_SERVICE_PROVIDER=custom/modal or local sandbox until SDK integration ships.",
-    };
+    if (!config.apiKey) {
+      return {
+        ok: false,
+        stdout: "",
+        stderr: "",
+        exitCode: 1,
+        durationMs: 0,
+        error: "E2B execution requires E2B_API_KEY.",
+      };
+    }
+
+    try {
+      const { Sandbox } = await import("@e2b/code-interpreter");
+      const start = Date.now();
+      const sandbox = await Sandbox.create({ apiKey: config.apiKey });
+      try {
+        const timeoutSec = Math.ceil((request.timeoutMs ?? 15_000) / 1_000);
+        const execution = await sandbox.runCode(request.code, { timeoutMs: timeoutSec * 1_000 });
+        const durationMs = Date.now() - start;
+        const stdout = execution.logs.stdout.join("");
+        const stderr = execution.logs.stderr.join("");
+        const exitCode = execution.error ? 1 : 0;
+        return {
+          ok: exitCode === 0,
+          stdout,
+          stderr,
+          exitCode,
+          durationMs,
+          error: execution.error?.value ?? undefined,
+        };
+      } finally {
+        await sandbox.kill().catch(() => undefined);
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        stdout: "",
+        stderr: err instanceof Error ? err.message : String(err),
+        exitCode: 1,
+        durationMs: 0,
+        error: "E2B execution failed",
+      };
+    }
   }
 
   // Modal integration point

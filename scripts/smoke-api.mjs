@@ -1,5 +1,5 @@
 const baseUrl = process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000";
-const metricsToken = process.env.API_METRICS_TOKEN ?? "smoke-metrics-token";
+const metricsToken = process.env.API_METRICS_TOKEN;
 
 async function check(name, fn) {
   try {
@@ -42,6 +42,11 @@ await check("metrics endpoint is protected and available with token", async () =
   const unauthorized = await fetch(`${baseUrl}/api/metrics`);
   if (unauthorized.status !== 401) {
     throw new Error(`Expected 401 without token, got ${unauthorized.status}`);
+  }
+
+  if (!metricsToken) {
+    console.log("[SKIP] metrics authorized check skipped: API_METRICS_TOKEN is not set");
+    return;
   }
 
   const authorized = await fetch(`${baseUrl}/api/metrics`, {

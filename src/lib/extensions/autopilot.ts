@@ -45,3 +45,25 @@ export function normalizeCronExpression(input: unknown): string | null {
 export function estimateNextRunAt(): Date {
   return new Date(Date.now() + 60 * 60 * 1000);
 }
+
+/**
+ * Compute the next Date when a cron expression fires after a given reference time.
+ * Uses cron-parser (5-field standard cron). Falls back to +1 hour on parse error.
+ */
+export function computeNextRunAt(cronExpression: string, timezone = "UTC", after = new Date()): Date {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const parser = require("cron-parser") as {
+      parseExpression: (expr: string, opts?: { currentDate?: Date; tz?: string }) => {
+        next(): { toDate(): Date };
+      };
+    };
+    const interval = parser.parseExpression(cronExpression, {
+      currentDate: after,
+      tz: timezone,
+    });
+    return interval.next().toDate();
+  } catch {
+    return new Date(after.getTime() + 60 * 60 * 1000);
+  }
+}
