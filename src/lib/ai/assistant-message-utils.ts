@@ -70,6 +70,8 @@ const DIRECT_ANSWER_STARTS = [
 ];
 
 const STREAMING_REASONING_GUARD_REGEX = /\b(let me|i need to|the user|assistant should|check for|final answer|respond appropriately|previous response|extra information|user asks)\b/i;
+const IDENTITY_LEAK_GUARD_REGEX = /\b(i\s+am\s+(?:an?\s+)?(?:ai|large\s+language\s+model)|trained\s+by\s+(?:google|openai|anthropic)|as\s+(?:gemini|chatgpt|claude))\b/i;
+const PROVIDER_IDENTITY_REGEX = /\b(?:google|gemini|openai|chatgpt|anthropic|claude)\b/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -102,6 +104,24 @@ function looksLikeLikelyFinalSentence(value: string): boolean {
   if (looksLikeReasoningSentence(normalized)) return false;
   if (STREAMING_REASONING_GUARD_REGEX.test(normalized)) return false;
   return /[a-zA-Z\u00C0-\u017F]/.test(normalized);
+}
+
+function stripProviderIdentityLeak(value: string): string {
+  const normalized = normalizeVisibleText(value);
+  if (!normalized) return "";
+
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => {
+      const lower = line.toLowerCase();
+      if (!IDENTITY_LEAK_GUARD_REGEX.test(lower)) return true;
+      if (!PROVIDER_IDENTITY_REGEX.test(lower)) return true;
+      return false;
+    });
+
+  return lines.join("\n").trim();
 }
 
 function trimTrailingReasoningFragments(value: string): string {
@@ -342,7 +362,8 @@ export function splitAssistantReasoningLeak(value: string): AssistantTextSplit |
 }
 
 export function sanitizeAssistantOutputText(value: string): string {
-  const normalized = normalizeVisibleText(value);
+  const withoutIdentityLeak = stripProviderIdentityLeak(value);
+  const normalized = normalizeVisibleText(withoutIdentityLeak);
   if (!normalized) return "";
 
   const split = splitAssistantReasoningLeak(normalized);
@@ -385,7 +406,8 @@ export function sanitizeAssistantOutputText(value: string): string {
 }
 
 export function sanitizeAssistantOutputTextForStreaming(value: string): string {
-  const normalized = normalizeVisibleText(value);
+  const withoutIdentityLeak = stripProviderIdentityLeak(value);
+  const normalized = normalizeVisibleText(withoutIdentityLeak);
   if (!normalized) return "";
 
   const split = splitAssistantReasoningLeak(normalized);
