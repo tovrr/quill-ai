@@ -11,7 +11,7 @@ import { AccountMenu } from "@/components/layout/AccountMenu";
 
 function TemplatesContent() {
   const searchParams = useSearchParams();
-  const category = searchParams.get("category") as any || undefined;
+  const category = (searchParams.get("category") as any) || undefined;
 
   const handleTemplateSelect = (template: Template) => {
     console.log("Selected template:", template);
@@ -40,18 +40,13 @@ function TemplatesContent() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <TemplateGallery
-          onTemplateSelect={handleTemplateSelect}
-          selectedCategory={category}
-        />
+        <TemplateGallery onTemplateSelect={handleTemplateSelect} selectedCategory={category} />
       </main>
 
       {/* Footer */}
       <footer className="border-t border-quill-border px-4 sm:px-6 py-6 mt-12">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-quill-muted text-center">
-            © 2026 Quill AI. Template Marketplace.
-          </p>
+          <p className="text-xs text-quill-muted text-center">© 2026 Quill AI. Template Marketplace.</p>
           <div className="flex gap-4 text-xs text-quill-muted">
             <Link href="/docs" className="hover:text-quill-text transition-colors">
               Documentation
@@ -68,11 +63,13 @@ function TemplatesContent() {
 
 export default function TemplatesPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-quill-bg flex items-center justify-center">
-        <div className="text-quill-muted">Loading templates...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-quill-bg flex items-center justify-center">
+          <div className="text-quill-muted">Loading templates...</div>
+        </div>
+      }
+    >
       <TemplatesContent />
     </Suspense>
   );
