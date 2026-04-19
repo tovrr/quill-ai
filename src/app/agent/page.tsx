@@ -17,7 +17,12 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
-import { AgentStatusBar, type AgentStatus } from "@/components/agent/AgentStatusBar";
+import {
+  AgentStatusBar,
+  getAgentStatusColor,
+  getAgentStatusMessage,
+  type AgentStatus,
+} from "@/components/agent/AgentStatusBar";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1654,29 +1659,9 @@ export default function AgentPage() {
                       className={`w-1.5 h-1.5 rounded-full ${
                         agentStatus === "running" || agentStatus === "thinking" ? "animate-pulse" : ""
                       }`}
-                      style={{
-                        background:
-                          agentStatus === "idle"
-                            ? "#838387"
-                            : agentStatus === "thinking"
-                              ? "#F87171"
-                              : agentStatus === "running"
-                                ? "#EF4444"
-                                : agentStatus === "done"
-                                  ? "#34d399"
-                                  : "#f87171",
-                      }}
+                      style={{ background: getAgentStatusColor(agentStatus) }}
                     />
-                    Agent{" "}
-                    {agentStatus === "idle"
-                      ? "Ready"
-                      : agentStatus === "thinking"
-                        ? "Planning..."
-                        : agentStatus === "running"
-                          ? "Building..."
-                          : agentStatus === "done"
-                            ? "Done"
-                            : "Error"}
+                    Agent {getAgentStatusMessage(agentStatus)}
                   </span>
                   <svg
                     className={`w-3.5 h-3.5 transition-transform ${statusBarCollapsed ? "" : "rotate-180"}`}
