@@ -407,34 +407,74 @@ function FileBundlePreview({
 }) {
   const paths = Object.keys(files).sort();
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const defaultPath = entry && files[entry] ? entry : (paths[0] ?? null);
-  const activePath = selectedPath && files[selectedPath] ? selectedPath : defaultPath;
+  const filteredPaths = paths.filter((path) => path.toLowerCase().includes(query.trim().toLowerCase()));
+  const activePath = selectedPath && files[selectedPath] ? selectedPath : (filteredPaths[0] ?? defaultPath);
   const activeCode = activePath ? files[activePath] : "";
+  const activeLineCount = activeCode ? activeCode.split("\n").length : 0;
 
   return (
-    <div className="h-full grid grid-cols-1 md:grid-cols-[220px_1fr] bg-[#0d0d15]">
-      <div className="border-b md:border-b-0 md:border-r border-quill-border overflow-auto max-h-45 md:max-h-none">
-        <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
-          {type === "react-app" ? "React app files" : "Next.js bundle files"}
+    <div className="h-full grid grid-cols-1 md:grid-cols-[260px_1fr] bg-[#0d0d15]">
+      <div className="border-b border-quill-border md:border-b-0 md:border-r overflow-auto max-h-52 md:max-h-none">
+        <div className="sticky top-0 z-10 border-b border-quill-border bg-[#10121a]/95 px-3 py-3 backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
+                {type === "react-app" ? "React app files" : "Next.js bundle files"}
+              </div>
+              <div className="mt-1 text-[11px] text-quill-muted">{paths.length} files ready to inspect</div>
+            </div>
+            {entry && (
+              <span className="rounded-full border border-quill-border bg-quill-surface px-2 py-1 text-[10px] text-quill-muted">
+                entry
+              </span>
+            )}
+          </div>
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search files"
+            className="mt-3 w-full rounded-xl border border-quill-border bg-[#0d0d15] px-3 py-2 text-[12px] text-quill-text outline-none placeholder:text-quill-muted"
+          />
         </div>
         <div className="p-2 space-y-1">
-          {paths.map((path) => (
+          {(filteredPaths.length > 0 ? filteredPaths : paths).map((path) => (
             <Button
               key={path}
               type="button"
               variant="ghost"
               onClick={() => setSelectedPath(path)}
               aria-label={`Open file ${path}`}
-              className={`h-auto w-full justify-start rounded px-2 py-1 text-[12px] font-mono truncate ${
-                path === activePath ? "bg-quill-border text-quill-text" : "text-[#9b9bb7]"
+              className={`h-auto w-full justify-start rounded-xl px-2.5 py-2 text-[12px] font-mono truncate ${
+                path === activePath
+                  ? "bg-quill-border text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.16)]"
+                  : "text-[#9b9bb7] hover:bg-[#151924]"
               }`}
             >
               {path}
             </Button>
           ))}
+          {filteredPaths.length === 0 && query.trim().length > 0 && (
+            <div className="rounded-xl border border-dashed border-quill-border px-3 py-4 text-center text-[11px] text-quill-muted">
+              No files match &quot;{query}&quot;.
+            </div>
+          )}
         </div>
       </div>
       <div className="overflow-auto min-h-0">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-quill-border bg-[#10121a]/95 px-4 py-2.5 backdrop-blur">
+          <div className="min-w-0">
+            <div className="truncate text-[12px] font-medium text-quill-text">{activePath ?? "No file selected"}</div>
+            <div className="mt-0.5 text-[11px] text-quill-muted">{activeLineCount} lines</div>
+          </div>
+          {activePath === entry && (
+            <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+              Entry point
+            </span>
+          )}
+        </div>
         <pre className="p-5 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
           {activeCode}
         </pre>
@@ -897,7 +937,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           </div>
 
           {/* Right: actions */}
-          <div className="flex items-center gap-0.25 md:gap-0.5">
+          <div className="flex items-center gap-px md:gap-0.5">
             {/* Open in new tab — HTML only */}
             {isHTML && content && (
               <Tooltip>

@@ -253,6 +253,7 @@ export function TaskInput({
     builderTarget !== "auto" ? (BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build") : null,
     canvasMode ? "Canvas" : null,
   ].filter((value): value is string => Boolean(value));
+  const primaryActionLabel = imageMode ? "Create" : builderTarget === "auto" ? "Send" : "Build";
 
   return (
     <div className="flex flex-col gap-2">
@@ -311,9 +312,19 @@ export function TaskInput({
                 Describe a task (e.g., Draft PR summary, Refactor file X, Plan migration Y)
               </span>
             </div>
-            <span className="truncate text-[10px] uppercase tracking-[0.12em] text-quill-muted">
-              {imageMode ? "Image mode" : currentModeLabel}
-            </span>
+            <div className="flex items-center gap-2">
+              {activeCapabilityBadges.slice(0, 2).map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-full border border-quill-border-2 bg-quill-surface-2 px-2 py-0.5 text-[10px] font-medium text-[#B8C0CB]"
+                >
+                  {badge}
+                </span>
+              ))}
+              <span className="truncate text-[10px] uppercase tracking-[0.12em] text-quill-muted">
+                {imageMode ? "Image mode" : currentModeLabel}
+              </span>
+            </div>
           </div>
         )}
 
@@ -384,13 +395,13 @@ export function TaskInput({
           style={{ maxHeight: "160px" }}
         />
 
-        {!imageMode && (
+        {!imageMode && (isFocused || hasTypedContent || isWorking) && (
           <div className="px-3 pb-2 text-[11px] text-[#AAB1BC] sm:px-5">
             <span className="font-medium text-[#D5DAE3]">{currentModeLabel}:</span> {MODE_HELP[mode]}
           </div>
         )}
 
-        {trustBadges.length > 0 && (
+        {trustBadges.length > 0 && (isFocused || hasTypedContent || isWorking) && (
           <div className="px-3 pb-2 sm:px-5">
             <div className="flex flex-wrap items-center gap-1.5">
               {trustBadges.map((badge) => (
@@ -775,11 +786,11 @@ export function TaskInput({
                   size="icon"
                   disabled={!value.trim() || isDisabled}
                   style={{ touchAction: "manipulation" }}
-                  className={`h-10 w-10 sm:h-10 sm:w-10 transition-all duration-150 disabled:opacity-35 active:scale-95 ring-1 ring-white/10 shadow-lg ${
+                  className={`h-10 w-10 sm:h-10 sm:w-auto sm:min-w-28 transition-all duration-150 disabled:opacity-35 active:scale-95 ring-1 ring-white/10 shadow-lg ${
                     imageMode
                       ? "bg-[#F87171] hover:bg-[#ef4444] shadow-[0_10px_22px_rgba(248,113,113,0.42)]"
                       : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[0_10px_22px_rgba(239,68,68,0.45)]"
-                  }`}
+                  } ${value.trim() ? "sm:px-3" : "sm:px-2.5"}`}
                 >
                   {isGeneratingImage ? (
                     <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-white" aria-hidden="true" />
@@ -788,6 +799,7 @@ export function TaskInput({
                   ) : (
                     <PaperAirplaneIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
                   )}
+                  <span className="hidden sm:inline ml-2 text-xs font-semibold text-white">{primaryActionLabel}</span>
                 </Button>
               )}
             </div>
@@ -795,7 +807,7 @@ export function TaskInput({
         </TooltipProvider>
       </div>
 
-      {activeCapabilityBadges.length > 0 && (
+      {activeCapabilityBadges.length > 0 && (isFocused || hasTypedContent || isWorking || imageMode) && (
         <div className="flex flex-wrap items-center gap-1.5 px-1">
           {activeCapabilityBadges.map((label) => (
             <Badge key={label} variant="secondary" className="bg-quill-surface text-[10px] text-quill-muted">

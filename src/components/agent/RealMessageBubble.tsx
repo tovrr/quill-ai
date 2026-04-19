@@ -324,7 +324,7 @@ function MarkdownText({ text }: { text: string }) {
               <code>{codeLines.join("\n")}</code>
             </pre>
             {/* Mobile scroll hint */}
-            <div className="md:hidden absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0d0d15] to-transparent pointer-events-none flex items-center justify-end pr-1">
+            <div className="md:hidden absolute right-0 top-0 bottom-0 w-6 bg-linear-to-l from-[#0d0d15] to-transparent pointer-events-none flex items-center justify-end pr-1">
               <svg className="w-3 h-3 text-quill-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -421,19 +421,46 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
       onClick={() => onOpenCanvas(text)}
       variant="outline"
       size="sm"
-      className="shrink-0 h-auto rounded-md px-2 py-1 text-[10px] font-medium text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
-      title="Open this artifact in Canvas"
-      aria-label="Open this artifact in Canvas"
+      className="shrink-0 h-auto rounded-xl border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-3 py-1.5 text-[10px] font-medium text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] hover:text-white"
+      title="Open this artifact"
+      aria-label="Open this artifact"
     >
-      Show Canvas
+      Open artifact
     </Button>
   ) : null;
 
+  const artifactBadge =
+    artifact.type === "page"
+      ? "Live page"
+      : artifact.type === "react-app"
+        ? "React app"
+        : artifact.type === "nextjs-bundle"
+          ? "Next.js bundle"
+          : "Document";
+
+  const shellClass =
+    "w-full rounded-2xl border border-quill-border bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.18)]";
+
   if (artifact.type === "page") {
     return (
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-sm text-quill-text">Built page artifact ready in Canvas preview.</div>
-        {action}
+      <div className={shellClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
+                {artifactBadge}
+              </span>
+              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+                Preview ready
+              </span>
+            </div>
+            <div className="text-sm font-medium text-quill-text">Page artifact is ready for visual review.</div>
+            <div className="mt-1 text-xs leading-5 text-quill-muted">
+              Open the artifact to review layout, refine sections, and keep approved parts fixed.
+            </div>
+          </div>
+          {action}
+        </div>
       </div>
     );
   }
@@ -441,21 +468,55 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
   if (artifact.type === "react-app" || artifact.type === "nextjs-bundle") {
     const fileCount = Object.keys(artifact.payload.files ?? {}).length;
     return (
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-sm text-quill-text">
-          Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open
-          Canvas to inspect code.
+      <div className={shellClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
+                {artifactBadge}
+              </span>
+              <span className="rounded-full border border-[rgba(239,68,68,0.18)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f7b0b0]">
+                {fileCount} files
+              </span>
+              <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] text-quill-muted">
+                Exportable
+              </span>
+            </div>
+            <div className="text-sm font-medium text-quill-text">
+              {artifact.type === "react-app"
+                ? "Interactive app artifact is ready."
+                : "Bundle artifact is ready for inspection."}
+            </div>
+            <div className="mt-1 text-xs leading-5 text-quill-muted">
+              Review files, validate structure, then export when the implementation looks right.
+            </div>
+          </div>
+          {action}
         </div>
-        {action}
       </div>
     );
   }
 
   if (artifact.type === "document") {
     return (
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-sm text-quill-text">Built document artifact. Open Canvas to read and export.</div>
-        {action}
+      <div className={shellClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
+                {artifactBadge}
+              </span>
+              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+                Readable
+              </span>
+            </div>
+            <div className="text-sm font-medium text-quill-text">Document artifact is ready to review and export.</div>
+            <div className="mt-1 text-xs leading-5 text-quill-muted">
+              Open the artifact to read the full document, tighten sections, and export the final version.
+            </div>
+          </div>
+          {action}
+        </div>
       </div>
     );
   }

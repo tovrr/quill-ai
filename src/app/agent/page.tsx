@@ -1230,6 +1230,38 @@ export default function AgentPage() {
     },
   ] as const;
 
+  const starterPrompts = [
+    {
+      id: "landing",
+      label: "Launch page",
+      detail: "Hero, proof, CTA, motion",
+      prompt: "Build a premium Next.js landing page with strong hierarchy, social proof, and polished motion.",
+      target: "nextjs-bundle" as BuilderTarget,
+    },
+    {
+      id: "prototype",
+      label: "App prototype",
+      detail: "Core flow + responsive UI",
+      prompt: "Design a mobile-first product prototype with a clear primary flow and responsive dashboard screens.",
+      target: "react-app" as BuilderTarget,
+    },
+    {
+      id: "debug",
+      label: "Debug code",
+      detail: "Root cause, fix, validate",
+      prompt:
+        "Debug this issue systematically, explain the root cause, apply the smallest robust fix, and validate it.",
+      target: "auto" as BuilderTarget,
+    },
+    {
+      id: "research",
+      label: "Research brief",
+      detail: "Decision memo + next steps",
+      prompt: "Research this topic and turn it into an executive brief with tradeoffs, recommendation, and next steps.",
+      target: "auto" as BuilderTarget,
+    },
+  ] as const;
+
   const sectionRefineActions = [
     { id: "hero", label: "Regenerate hero", section: "hero" },
     { id: "pricing", label: "Regenerate pricing", section: "pricing" },
@@ -1318,6 +1350,16 @@ export default function AgentPage() {
       }
     },
     [setMessages],
+  );
+
+  const handleStarterPrompt = useCallback(
+    (prompt: string, target: BuilderTarget) => {
+      setBuilderTarget(target);
+      setActiveTaskTitle(prompt.slice(0, 72));
+      setAgentStatus("thinking");
+      sendMessageTracked({ text: prompt });
+    },
+    [sendMessageTracked],
   );
 
   const handleNewChat = useCallback(() => {
@@ -1599,15 +1641,15 @@ export default function AgentPage() {
         </header>
 
         <div className="md:hidden border-b border-quill-border bg-quill-bg px-3 py-2">
-          <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-quill-border bg-quill-surface p-1">
+          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-quill-border bg-quill-surface p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <Button
               type="button"
               variant="ghost"
               onClick={handleOpenMobileMenu}
               aria-pressed={mobileWorkspaceView === "menu"}
-              className={`h-9 rounded-lg text-[11px] font-medium transition-all ${
+              className={`h-10 rounded-xl text-[11px] font-medium transition-all ${
                 mobileWorkspaceView === "menu"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
                   : "text-quill-muted"
               }`}
             >
@@ -1618,9 +1660,9 @@ export default function AgentPage() {
               variant="ghost"
               onClick={handleShowMobileChat}
               aria-pressed={mobileWorkspaceView === "chat"}
-              className={`h-9 rounded-lg text-[11px] font-medium transition-all ${
+              className={`h-10 rounded-xl text-[11px] font-medium transition-all ${
                 mobileWorkspaceView === "chat"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
                   : "text-quill-muted"
               }`}
             >
@@ -1632,14 +1674,24 @@ export default function AgentPage() {
               onClick={handleShowMobileCanvas}
               disabled={!hasCanvasContent}
               aria-pressed={mobileWorkspaceView === "canvas"}
-              className={`h-9 rounded-lg text-[11px] font-medium transition-all disabled:opacity-45 ${
+              className={`h-10 rounded-xl text-[11px] font-medium transition-all disabled:opacity-45 ${
                 mobileWorkspaceView === "canvas"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
                   : "text-quill-muted"
               }`}
             >
               Canvas
             </Button>
+          </div>
+          <div className="mt-2 flex items-center justify-between rounded-xl border border-quill-border/70 bg-quill-surface/60 px-3 py-2 text-[11px] text-quill-muted">
+            <span className="truncate">
+              {hasCanvasContent
+                ? "Artifact ready to inspect in Canvas"
+                : "Chat is active. Canvas appears when Quill builds."}
+            </span>
+            <span className="ml-3 shrink-0 text-[10px] uppercase tracking-[0.12em] text-quill-muted/75">
+              {mobileWorkspaceView}
+            </span>
           </div>
         </div>
 
@@ -1712,33 +1764,84 @@ export default function AgentPage() {
               className={`agent-messages flex-1 overflow-y-auto px-3 md:px-6 py-3 md:py-4 ${uiSettings.compactMessages ? "space-y-2 md:space-y-3" : "space-y-3 md:space-y-4"}`}
             >
               {displayMessages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={
-                      activeKiller
-                        ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` }
-                        : { background: "#171A20", border: "1px solid #272B33" }
-                    }
-                  >
-                    {activeKiller ? (
-                      <span className="w-5 h-5 rounded-full" style={{ background: activeKiller.accent }} />
-                    ) : (
-                      <QuillLogo size={32} />
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold" style={activeKiller ? { color: activeKiller.accent } : {}}>
-                      {activeKiller ? activeKiller.name : <span className="gradient-text">Quill AI</span>}
-                    </h2>
-                    <p className="text-sm text-quill-muted mt-1 max-w-sm">
-                      {activeKiller
-                        ? activeKiller.description
-                        : "Your personal AI agent. Ask anything, attach files, generate images, or build a page."}
-                    </p>
-                    {activeKiller && (
-                      <p className="text-xs text-quill-muted mt-2">Active assistant selected from the sidebar.</p>
-                    )}
+                <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-center py-6 md:py-10">
+                  <div className="w-full rounded-[28px] border border-quill-border bg-[radial-gradient(circle_at_top,rgba(239,68,68,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0))] px-5 py-6 shadow-[0_18px_70px_rgba(0,0,0,0.28)] md:px-8 md:py-8">
+                    <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                      <div className="max-w-2xl">
+                        <div
+                          className="mb-4 flex h-15 w-15 items-center justify-center rounded-3xl"
+                          style={
+                            activeKiller
+                              ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` }
+                              : { background: "#171A20", border: "1px solid #272B33" }
+                          }
+                        >
+                          {activeKiller ? (
+                            <span className="h-5 w-5 rounded-full" style={{ background: activeKiller.accent }} />
+                          ) : (
+                            <QuillLogo size={34} />
+                          )}
+                        </div>
+                        <h2
+                          className="text-2xl font-semibold tracking-tight"
+                          style={activeKiller ? { color: activeKiller.accent } : {}}
+                        >
+                          {activeKiller ? (
+                            activeKiller.name
+                          ) : (
+                            <span className="gradient-text">Build, refine, and ship in one thread</span>
+                          )}
+                        </h2>
+                        <p className="mt-3 max-w-xl text-sm leading-7 text-quill-muted md:text-[15px]">
+                          {activeKiller
+                            ? activeKiller.description
+                            : "Quill should feel like a premium operator, not a blank terminal. Start with a strong outcome, then inspect the artifact, refine sections, and export without losing context."}
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-quill-muted">
+                          <span className="rounded-full border border-quill-border bg-quill-surface px-3 py-1.5">
+                            Chat-first workflow
+                          </span>
+                          <span className="rounded-full border border-quill-border bg-quill-surface px-3 py-1.5">
+                            Live artifact canvas
+                          </span>
+                          <span className="rounded-full border border-quill-border bg-quill-surface px-3 py-1.5">
+                            Mobile-ready controls
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-full max-w-xl rounded-3xl border border-quill-border bg-[#13171d] p-3 md:p-4">
+                        <div className="mb-3 flex items-center justify-between px-1">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-quill-muted">
+                              Start Faster
+                            </p>
+                            <p className="mt-1 text-sm text-quill-text">
+                              Pick a high-signal task and Quill will do the rest.
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f7b0b0]">
+                            Operator mode
+                          </span>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {starterPrompts.map((starter) => (
+                            <Button
+                              key={starter.id}
+                              type="button"
+                              variant="ghost"
+                              onClick={() => handleStarterPrompt(starter.prompt, starter.target)}
+                              className="h-auto items-start justify-start rounded-2xl border border-quill-border bg-quill-surface px-3 py-3 text-left hover:border-quill-border-2 hover:bg-quill-surface-2"
+                            >
+                              <span className="flex flex-col items-start gap-1">
+                                <span className="text-sm font-medium text-quill-text">{starter.label}</span>
+                                <span className="text-[11px] leading-5 text-quill-muted">{starter.detail}</span>
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1920,13 +2023,24 @@ export default function AgentPage() {
                   }}
                 />
 
-                {canUsePageRefineActions && messages.length > 0 && (
-                  <details className="mt-2 rounded-xl border border-quill-border bg-quill-surface/40">
-                    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-quill-muted">
-                      Refine page
-                      <span className="text-[11px]">Quick edits and section rewrites</span>
-                    </summary>
-                    <div className="border-t border-quill-border px-3 py-3">
+                {canUsePageRefineActions && (
+                  <div className="mt-2 grid gap-2 md:grid-cols-[1.4fr_1fr]">
+                    <section className="rounded-2xl border border-quill-border bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-quill-muted">
+                            Next Actions
+                          </p>
+                          <p className="mt-1 text-sm text-quill-text">
+                            Refine the current artifact without breaking flow.
+                          </p>
+                        </div>
+                        {recentRefinements.length > 0 && (
+                          <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] text-quill-muted">
+                            {recentRefinements[0]}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {pageRefineActions.map((action) => (
                           <Button
@@ -1935,7 +2049,7 @@ export default function AgentPage() {
                             variant="outline"
                             onClick={() => handleQuickPageRefine(action.label, action.instruction)}
                             disabled={isLoading || isGeneratingImage}
-                            className="h-auto rounded-lg px-2.5 py-1.5 text-[11px] text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="h-auto rounded-xl border-quill-border bg-quill-surface px-3 py-2 text-[11px] text-quill-muted hover:border-quill-border-2 hover:bg-quill-surface-2 hover:text-quill-text disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             {action.label}
                           </Button>
@@ -1949,50 +2063,48 @@ export default function AgentPage() {
                             variant="outline"
                             onClick={() => handleSectionRegenerate(action.section)}
                             disabled={isLoading || isGeneratingImage}
-                            className="h-auto rounded-lg border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1.5 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="h-auto rounded-xl border-[rgba(248,113,113,0.35)] bg-[rgba(239,68,68,0.08)] px-3 py-2 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             {action.label}
                           </Button>
                         ))}
                       </div>
-                    </div>
-                  </details>
-                )}
+                    </section>
 
-                {canUsePageRefineActions && (
-                  <details className="mt-2 rounded-xl border border-quill-border bg-quill-surface/40">
-                    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-quill-muted">
-                      Keep fixed
-                      <span className="text-[11px]">Lock layout, colors, order, and copy</span>
-                    </summary>
-                    <div className="border-t border-quill-border px-3 py-3 flex flex-wrap gap-2">
-                      {(
-                        [
-                          ["layout", "Lock layout"],
-                          ["colors", "Lock colors"],
-                          ["sectionOrder", "Lock sections"],
-                          ["copy", "Lock copy"],
-                        ] as Array<[keyof BuilderLocks, string]>
-                      ).map(([key, label]) => {
-                        const active = builderLocks[key];
-                        return (
-                          <Button
-                            key={key}
-                            type="button"
-                            variant="outline"
-                            onClick={() => toggleBuilderLock(key)}
-                            className={`h-auto rounded-lg px-2.5 py-1.5 text-[11px] ${
-                              active
-                                ? "border-[rgba(239,68,68,0.45)] bg-[rgba(239,68,68,0.1)] text-[#f7b0b0]"
-                                : "border-quill-border text-quill-muted hover:text-quill-text hover:border-quill-border-2 hover:bg-quill-surface"
-                            }`}
-                          >
-                            {label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </details>
+                    <section className="rounded-2xl border border-quill-border bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-3">
+                      <div className="mb-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-quill-muted">Keep Fixed</p>
+                        <p className="mt-1 text-sm text-quill-text">Protect the parts users already approved.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            ["layout", "Layout"],
+                            ["colors", "Colors"],
+                            ["sectionOrder", "Sections"],
+                            ["copy", "Copy"],
+                          ] as Array<[keyof BuilderLocks, string]>
+                        ).map(([key, label]) => {
+                          const active = builderLocks[key];
+                          return (
+                            <Button
+                              key={key}
+                              type="button"
+                              variant="outline"
+                              onClick={() => toggleBuilderLock(key)}
+                              className={`h-auto rounded-xl px-3 py-2 text-[11px] ${
+                                active
+                                  ? "border-[rgba(239,68,68,0.45)] bg-[rgba(239,68,68,0.1)] text-[#f7b0b0]"
+                                  : "border-quill-border bg-quill-surface text-quill-muted hover:border-quill-border-2 hover:bg-quill-surface-2 hover:text-quill-text"
+                              }`}
+                            >
+                              {active ? `Locked ${label}` : `Lock ${label}`}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </div>
                 )}
               </div>
             </div>
