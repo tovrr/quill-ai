@@ -897,7 +897,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           </div>
 
           {/* Right: actions */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.25 md:gap-0.5">
             {/* Open in new tab — HTML only */}
             {isHTML && content && (
               <Tooltip>
@@ -924,7 +924,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               variant="ghost"
               disabled={!content}
               aria-label="Copy source"
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
+              className={`hidden md:flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
                 dark
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                   : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
@@ -936,6 +936,27 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 <DocumentTextIcon className="h-3 w-3" aria-hidden="true" />
               )}
               {copied ? "Copied" : "Copy"}
+            </Button>
+
+            {/* Copy icon-only on mobile */}
+            <Button
+              onClick={handleCopy}
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={!content}
+              aria-label="Copy source"
+              className={`md:hidden h-7 w-7 rounded-lg transition-all disabled:opacity-40 ${
+                dark
+                  ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                  : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+              }`}
+            >
+              {copied ? (
+                <CheckIcon className="h-3 w-3" aria-hidden="true" />
+              ) : (
+                <DocumentTextIcon className="h-3 w-3" aria-hidden="true" />
+              )}
             </Button>
 
             {/* Download */}
@@ -968,7 +989,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 variant="ghost"
                 disabled={!content}
                 aria-label="Export files as ZIP"
-                className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
+                className={`hidden md:flex px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
                   dark
                     ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
                     : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
@@ -984,7 +1005,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 type="button"
                 variant="ghost"
                 aria-label="Download setup script"
-                className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
+                className="hidden md:flex px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"
               >
                 Export PS
               </Button>
@@ -997,7 +1018,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 variant="ghost"
                 disabled={bundleValidation.running}
                 aria-label="Validate bundle locally"
-                className="px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all disabled:opacity-40"
+                className="hidden md:flex px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all disabled:opacity-40"
               >
                 {bundleValidation.running ? "Validating..." : "Validate"}
               </Button>
