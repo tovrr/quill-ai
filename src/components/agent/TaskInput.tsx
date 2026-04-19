@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   ArrowRightIcon,
   CheckIcon,
@@ -126,6 +127,7 @@ export function TaskInput({
   const [attachedFiles, setAttachedFiles] = useState<FileList | null>(null);
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [builderDropdownOpen, setBuilderDropdownOpen] = useState(false);
+  const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -146,10 +148,7 @@ export function TaskInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(
-        textareaRef.current.scrollHeight,
-        160
-      )}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
     }
   }, [value]);
 
@@ -218,7 +217,7 @@ export function TaskInput({
 
   const currentPlaceholder = imageMode
     ? "Describe the image to generate..."
-    : placeholder ?? "Try: Draft PR summary | Refactor file X | Plan migration Y";
+    : (placeholder ?? "Try: Draft PR summary | Refactor file X | Plan migration Y");
   const enabledModes = new Set(allowedModes ?? MODES.map((m) => m.id));
   const visibleModes = showLockedModes ? MODES : MODES.filter((m) => enabledModes.has(m.id));
   const currentModeLabel = MODES.find((m) => m.id === mode)?.label ?? visibleModes[0]?.label ?? "Flash";
@@ -251,7 +250,7 @@ export function TaskInput({
   const activeCapabilityBadges = [
     webSearchEnabled ? "Web search" : null,
     imageMode ? "Image" : null,
-    builderTarget !== "auto" ? BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build" : null,
+    builderTarget !== "auto" ? (BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build") : null,
     canvasMode ? "Canvas" : null,
   ].filter((value): value is string => Boolean(value));
 
@@ -308,7 +307,9 @@ export function TaskInput({
           <div className="hidden items-center justify-between gap-2 border-b border-quill-border/70 px-4 py-2 text-[11px] sm:flex">
             <div className="inline-flex min-w-0 items-center gap-2 text-quill-muted">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-quill-accent" />
-              <span className="truncate">Describe a task (e.g., Draft PR summary, Refactor file X, Plan migration Y)</span>
+              <span className="truncate">
+                Describe a task (e.g., Draft PR summary, Refactor file X, Plan migration Y)
+              </span>
             </div>
             <span className="truncate text-[10px] uppercase tracking-[0.12em] text-quill-muted">
               {imageMode ? "Image mode" : currentModeLabel}
@@ -365,8 +366,12 @@ export function TaskInput({
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onCompositionStart={() => { isComposingRef.current = true; }}
-          onCompositionEnd={() => { isComposingRef.current = false; }}
+          onCompositionStart={() => {
+            isComposingRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            isComposingRef.current = false;
+          }}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -374,17 +379,14 @@ export function TaskInput({
           placeholder={currentPlaceholder}
           rows={1}
           className={`w-full bg-transparent resize-none px-3 sm:px-5 text-sm sm:text-[15px] text-quill-text placeholder-quill-muted outline-none leading-relaxed transition-all ${
-            mobileExpanded
-              ? "py-2.5 sm:py-4 min-h-12 sm:min-h-13"
-              : "py-2 sm:py-4 min-h-10 sm:min-h-13"
+            mobileExpanded ? "py-2.5 sm:py-4 min-h-12 sm:min-h-13" : "py-2 sm:py-4 min-h-10 sm:min-h-13"
           }`}
           style={{ maxHeight: "160px" }}
         />
 
         {!imageMode && (
           <div className="px-3 pb-2 text-[11px] text-[#AAB1BC] sm:px-5">
-            <span className="font-medium text-[#D5DAE3]">{currentModeLabel}:</span>{" "}
-            {MODE_HELP[mode]}
+            <span className="font-medium text-[#D5DAE3]">{currentModeLabel}:</span> {MODE_HELP[mode]}
           </div>
         )}
 
@@ -405,321 +407,391 @@ export function TaskInput({
 
         {/* Toolbar */}
         <TooltipProvider delayDuration={500}>
-        <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-quill-border/70 px-2.5 pb-2.5 pt-2">
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            multiple
-            accept="image/*,.pdf,.txt,.md,.csv,.json,.docx,.xlsx"
-          />
+          <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-quill-border/70 px-2.5 pb-2.5 pt-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+              multiple
+              accept="image/*,.pdf,.txt,.md,.csv,.json,.docx,.xlsx"
+            />
 
-          {/* Left: attach + search + image */}
-          <div className="flex min-w-0 items-center gap-1 pr-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-            <Button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setModeDropdownOpen(false);
-                setBuilderDropdownOpen(false);
-              }}
-              type="button"
-              variant="ghost"
-              disabled={isDisabled}
-              aria-label="Attach file"
-              className={`flex items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${attachButtonSizingClass} ${
-                attachedFiles && attachedFiles.length > 0
-                  ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
-                  : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-              }`}
-            >
-              {/* Mobile: + icon; Desktop: paperclip */}
-              <PlusIcon className="h-4.5 w-4.5 md:hidden" aria-hidden="true" />
-              <PaperClipIcon className="hidden h-4.5 w-4.5 md:block" aria-hidden="true" />
-              {showControlLabels && <span className="hidden sm:inline">Attach</span>}
-              {attachedFiles && attachedFiles.length > 0 && (
-                <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
-                  {attachedFiles.length}
-                </span>
-              )}
-            </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {attachedFiles && attachedFiles.length > 0 ? `${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""} attached` : "Attach file"}
-              </TooltipContent>
-            </Tooltip>
-
-          {/* Web search standalone button */}
-          {showWebSearch && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-            <Button
-              onClick={() => {
-                if (webSearchState === "auth-required") {
-                  router.push("/login?callbackUrl=%2Fagent");
-                  return;
-                }
-
-                if (webSearchState !== "available") {
-                  setModeDropdownOpen(false);
-                  setBuilderDropdownOpen(false);
-                  return;
-                }
-
-                onWebSearchToggle();
-              }}
-              type="button"
-              variant="ghost"
-              disabled={isDisabled || webSearchState === "coming-soon"}
-              aria-label={webSearchState === "available" ? (webSearchEnabled ? "Disable web search" : "Search the web") : webSearchState === "auth-required" ? "Sign in to use web search" : "Web search coming soon"}
-              className={`flex items-center ${toolbarButtonBaseClass} ${toolbarButtonSizingClass} ${
-                webSearchState === "available"
-                  ? webSearchEnabled
-                    ? "text-quill-green bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
-                    : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  : webSearchState === "auth-required"
-                    ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                    : "text-quill-muted bg-quill-border/40 opacity-70"
-              } ${isDisabled ? "opacity-30" : ""}`}
-            >
-              <GlobeAltIcon className="h-4.5 w-4.5" aria-hidden="true" />
-              {showControlLabels && <span className="hidden sm:inline">Search</span>}
-              {webSearchState === "coming-soon" && (
-                <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
-                  Soon
-                </span>
-              )}
-            </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {webSearchState === "available" ? (webSearchEnabled ? "Disable web search" : "Search the web") : webSearchState === "auth-required" ? "Sign in to use web search" : "Coming soon"}
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* Generate image standalone button */}
-          {onGenerateImage && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-            <Button
-              onClick={() => {
-                if (!imageGenerationEnabled) {
-                  router.push("/login?callbackUrl=%2Fagent");
-                  return;
-                }
-                setImageMode((m) => !m);
-                setAttachedFiles(null);
-              }}
-              type="button"
-              variant="ghost"
-              disabled={isDisabled}
-              aria-label={imageGenerationEnabled ? (imageMode ? "Disable image generation" : "Generate an image") : "Sign in to generate images"}
-              className={`flex items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${toolbarButtonSizingClass} ${
-                !imageGenerationEnabled
-                  ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  : imageMode
-                  ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
-                  : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-              }`}
-            >
-              {/* Sparkles icon */}
-              <SparklesIcon className="h-3.25 w-3.25" aria-hidden="true" />
-              {showControlLabels && <span className="hidden sm:inline">Image</span>}
-            </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {imageGenerationEnabled ? (imageMode ? "Disable image generation" : "Generate an image") : "Sign in to generate images"}
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          </div>{/* end left group */}
-
-          {/* Right: mode selector + send */}
-          <div className="flex shrink-0 items-center gap-1 border-l border-quill-border pl-1.5">
-            <DropdownMenu open={builderDropdownOpen} onOpenChange={setBuilderDropdownOpen}>
+            {/* Left: attach + search + image */}
+            <div className="flex min-w-0 items-center gap-1 pr-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={isDisabled}
-                  aria-label="Builder options"
-                  className={`flex min-w-0 items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${builderButtonSizingClass} ${
-                    builderDropdownOpen || builderTarget !== "auto" || canvasMode
-                      ? "bg-quill-border text-quill-text"
-                      : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  }`}
-                >
-                  <RectangleGroupIcon className="h-3 w-3" aria-hidden="true" />
-                  {(builderTarget !== "auto" || canvasMode || showControlLabels) && (
-                    <span className="hidden sm:inline">{BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}</span>
-                  )}
-                  {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
-                  )}
-                  <ChevronDownIcon
-                    className="h-2.5 w-2.5 transition-transform duration-150"
-                    aria-hidden="true"
-                    style={{ transform: builderDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                  />
-                </Button>
-              </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="top">Output format &amp; canvas</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">Output format</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={builderTarget}
-                  onValueChange={(value) => onBuilderTargetChange(value as BuilderTarget)}
-                >
-                  {BUILDER_TARGETS.map((target) => (
-                    <DropdownMenuRadioItem key={target.id} value={target.id} className="items-start py-2">
-                      <span className="flex flex-col gap-0.5">
-                        <span>{target.label}</span>
-                        <span className="text-[11px] text-quill-muted">{target.desc}</span>
+                  <Button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setModeDropdownOpen(false);
+                      setBuilderDropdownOpen(false);
+                    }}
+                    type="button"
+                    variant="ghost"
+                    disabled={isDisabled}
+                    aria-label="Attach file"
+                    className={`flex items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${attachButtonSizingClass} ${
+                      attachedFiles && attachedFiles.length > 0
+                        ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
+                        : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    }`}
+                  >
+                    {/* Mobile: + icon; Desktop: paperclip */}
+                    <PlusIcon className="h-4.5 w-4.5 md:hidden" aria-hidden="true" />
+                    <PaperClipIcon className="hidden h-4.5 w-4.5 md:block" aria-hidden="true" />
+                    {showControlLabels && <span className="hidden sm:inline">Attach</span>}
+                    {attachedFiles && attachedFiles.length > 0 && (
+                      <span className="text-[10px] bg-[#EF4444] text-white px-1.5 py-0.5 rounded-full">
+                        {attachedFiles.length}
                       </span>
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCanvasToggle} className="gap-3 py-2.5">
-                  <RectangleGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span>Preview panel</span>
-                  {canvasMode && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu open={modeDropdownOpen} onOpenChange={setModeDropdownOpen}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={isDisabled}
-                  aria-label="Model mode"
-                  className={`flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 ${modeButtonSizingClass} ${
-                    modeDropdownOpen
-                      ? "bg-quill-border text-quill-text"
-                      : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  }`}
-                >
-                  <span className={showControlLabels ? "hidden sm:inline" : "inline text-[11px] sm:inline"}>
-                    {showControlLabels ? currentModeLabel : currentModeLabel}
-                  </span>
-                  <ChevronDownIcon
-                    className="h-2.5 w-2.5 transition-transform duration-150"
-                    aria-hidden="true"
-                    style={{ transform: modeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                  />
-                </Button>
-              </DropdownMenuTrigger>
+                    )}
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Flash: fastest | Think: deeper | Pro: highest quality</TooltipContent>
+                <TooltipContent side="top">
+                  {attachedFiles && attachedFiles.length > 0
+                    ? `${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""} attached`
+                    : "Attach file"}
+                </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">Mode</DropdownMenuLabel>
-                {visibleModes.map((m) => {
-                  const isEnabled = enabledModes.has(m.id);
-                  return (
-                    <DropdownMenuItem
-                      key={m.id}
+
+              {/* Web search standalone button */}
+              {showWebSearch && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
                       onClick={() => {
-                        if (!isEnabled) {
-                          setModeDropdownOpen(false);
-                          router.push("/pricing");
+                        if (webSearchState === "auth-required") {
+                          router.push("/login?callbackUrl=%2Fagent");
                           return;
                         }
-                        onModeChange(m.id);
-                        setModeDropdownOpen(false);
-                      }}
-                      className="items-start gap-3 py-2"
-                    >
-                      <span className="flex flex-1 flex-col gap-0.5">
-                        <span className={!isEnabled ? "text-quill-muted" : mode === m.id ? "text-[#F87171]" : "text-[#A1A7B0]"}>
-                          {m.label}
-                        </span>
-                        <span className="text-[11px] text-quill-muted">{m.desc}</span>
-                      </span>
-                      {!isEnabled ? (
-                        <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
-                          Paid
-                        </span>
-                      ) : mode === m.id ? (
-                        <CheckIcon className="h-3.25 w-3.25 shrink-0 text-[#F87171]" aria-hidden="true" />
-                      ) : null}
-                    </DropdownMenuItem>
-                  );
-                })}
 
-                {hasLockedModes && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <div className="mx-1 rounded-xl border border-quill-accent-glow bg-[rgba(239,68,68,0.05)] p-3">
-                      <p className="text-xs text-[#c7c7d8]">Think and Pro require a paid plan.</p>
-                      <Button
-                        type="button"
-                        onClick={() => {
+                        if (webSearchState !== "available") {
                           setModeDropdownOpen(false);
-                          router.push("/pricing");
-                        }}
-                        className="mt-2 inline-flex h-auto items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-[#DC2626]"
-                      >
-                        Upgrade
-                        <ArrowRightIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                          setBuilderDropdownOpen(false);
+                          return;
+                        }
 
-            {canStop ? (
+                        onWebSearchToggle();
+                      }}
+                      type="button"
+                      variant="ghost"
+                      disabled={isDisabled || webSearchState === "coming-soon"}
+                      aria-label={
+                        webSearchState === "available"
+                          ? webSearchEnabled
+                            ? "Disable web search"
+                            : "Search the web"
+                          : webSearchState === "auth-required"
+                            ? "Sign in to use web search"
+                            : "Web search coming soon"
+                      }
+                      className={`flex items-center ${toolbarButtonBaseClass} ${toolbarButtonSizingClass} ${
+                        webSearchState === "available"
+                          ? webSearchEnabled
+                            ? "text-quill-green bg-[rgba(52,211,153,0.1)] hover:bg-[rgba(52,211,153,0.16)]"
+                            : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                          : webSearchState === "auth-required"
+                            ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                            : "text-quill-muted bg-quill-border/40 opacity-70"
+                      } ${isDisabled ? "opacity-30" : ""}`}
+                    >
+                      <GlobeAltIcon className="h-4.5 w-4.5" aria-hidden="true" />
+                      {showControlLabels && <span className="hidden sm:inline">Search</span>}
+                      {webSearchState === "coming-soon" && (
+                        <span className="rounded-full border border-quill-border-2 px-1.5 py-0.5 text-[10px] leading-none">
+                          Soon
+                        </span>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {webSearchState === "available"
+                      ? webSearchEnabled
+                        ? "Disable web search"
+                        : "Search the web"
+                      : webSearchState === "auth-required"
+                        ? "Sign in to use web search"
+                        : "Coming soon"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Generate image standalone button */}
+              {onGenerateImage && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        if (!imageGenerationEnabled) {
+                          router.push("/login?callbackUrl=%2Fagent");
+                          return;
+                        }
+                        setImageMode((m) => !m);
+                        setAttachedFiles(null);
+                      }}
+                      type="button"
+                      variant="ghost"
+                      disabled={isDisabled}
+                      aria-label={
+                        imageGenerationEnabled
+                          ? imageMode
+                            ? "Disable image generation"
+                            : "Generate an image"
+                          : "Sign in to generate images"
+                      }
+                      className={`flex items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${toolbarButtonSizingClass} ${
+                        !imageGenerationEnabled
+                          ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                          : imageMode
+                            ? "text-[#F87171] bg-[rgba(248,113,113,0.1)] hover:bg-[rgba(248,113,113,0.16)]"
+                            : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                      }`}
+                    >
+                      {/* Sparkles icon */}
+                      <SparklesIcon className="h-3.25 w-3.25" aria-hidden="true" />
+                      {showControlLabels && <span className="hidden sm:inline">Image</span>}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {imageGenerationEnabled
+                      ? imageMode
+                        ? "Disable image generation"
+                        : "Generate an image"
+                      : "Sign in to generate images"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            {/* end left group */}
+
+            {/* Right: mode selector + send */}
+            <div className="flex shrink-0 items-center gap-1 border-l border-quill-border pl-1.5">
               <Tooltip>
                 <TooltipTrigger asChild>
-              <Button
-                onClick={onStop}
-                type="button"
-                size="icon"
-                aria-label="Stop generation"
-                className="h-9 w-9 sm:h-9 sm:w-9 transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
-              >
-                  <StopIcon className="h-3 w-3 text-white" aria-hidden="true" />
-              </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isDisabled}
+                    aria-label="Toggle advanced options"
+                    onClick={() => {
+                      setAdvancedOptionsOpen((value) => !value);
+                      setModeDropdownOpen(false);
+                      setBuilderDropdownOpen(false);
+                    }}
+                    className={`flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 ${
+                      advancedOptionsOpen || builderTarget !== "auto" || canvasMode || mode !== "fast"
+                        ? "bg-quill-border text-quill-text"
+                        : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    }`}
+                  >
+                    <AdjustmentsHorizontalIcon className="h-3.75 w-3.75" aria-hidden="true" />
+                    {showControlLabels && <span className="hidden sm:inline">Options</span>}
+                    <ChevronDownIcon
+                      className="h-2.5 w-2.5 transition-transform duration-150"
+                      aria-hidden="true"
+                      style={{ transform: advancedOptionsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Stop generation</TooltipContent>
+                <TooltipContent side="top">Output format, canvas, and model mode</TooltipContent>
               </Tooltip>
-            ) : (
-              <Button
-                onClick={handleSend}
-                type="button"
-                size="icon"
-                disabled={!value.trim() || isDisabled}
-                style={{ touchAction: "manipulation" }}
-                className={`h-10 w-10 sm:h-10 sm:w-10 transition-all duration-150 disabled:opacity-35 active:scale-95 ring-1 ring-white/10 shadow-lg ${
-                  imageMode
-                    ? "bg-[#F87171] hover:bg-[#ef4444] shadow-[0_10px_22px_rgba(248,113,113,0.42)]"
-                    : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[0_10px_22px_rgba(239,68,68,0.45)]"
-                }`}
-              >
-                {isGeneratingImage ? (
-                  <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-white" aria-hidden="true" />
-                ) : imageMode ? (
-                  <SparklesIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
-                ) : (
-                  <PaperAirplaneIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
-                )}
-              </Button>
-            )}
+
+              {advancedOptionsOpen && (
+                <>
+                  <DropdownMenu open={builderDropdownOpen} onOpenChange={setBuilderDropdownOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={isDisabled}
+                            aria-label="Builder options"
+                            className={`flex min-w-0 items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${builderButtonSizingClass} ${
+                              builderDropdownOpen || builderTarget !== "auto" || canvasMode
+                                ? "bg-quill-border text-quill-text"
+                                : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                            }`}
+                          >
+                            <RectangleGroupIcon className="h-3 w-3" aria-hidden="true" />
+                            {(builderTarget !== "auto" || canvasMode || showControlLabels) && (
+                              <span className="hidden sm:inline">
+                                {BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}
+                              </span>
+                            )}
+                            {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
+                            )}
+                            <ChevronDownIcon
+                              className="h-2.5 w-2.5 transition-transform duration-150"
+                              aria-hidden="true"
+                              style={{ transform: builderDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Output format &amp; canvas</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">
+                        Output format
+                      </DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={builderTarget}
+                        onValueChange={(value) => onBuilderTargetChange(value as BuilderTarget)}
+                      >
+                        {BUILDER_TARGETS.map((target) => (
+                          <DropdownMenuRadioItem key={target.id} value={target.id} className="items-start py-2">
+                            <span className="flex flex-col gap-0.5">
+                              <span>{target.label}</span>
+                              <span className="text-[11px] text-quill-muted">{target.desc}</span>
+                            </span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={onCanvasToggle} className="gap-3 py-2.5">
+                        <RectangleGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span>Preview panel</span>
+                        {canvasMode && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <DropdownMenu open={modeDropdownOpen} onOpenChange={setModeDropdownOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={isDisabled}
+                            aria-label="Model mode"
+                            className={`flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 ${modeButtonSizingClass} ${
+                              modeDropdownOpen
+                                ? "bg-quill-border text-quill-text"
+                                : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                            }`}
+                          >
+                            <span className={showControlLabels ? "hidden sm:inline" : "inline text-[11px] sm:inline"}>
+                              {showControlLabels ? currentModeLabel : currentModeLabel}
+                            </span>
+                            <ChevronDownIcon
+                              className="h-2.5 w-2.5 transition-transform duration-150"
+                              aria-hidden="true"
+                              style={{ transform: modeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Flash: fastest | Think: deeper | Pro: highest quality</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">
+                        Mode
+                      </DropdownMenuLabel>
+                      {visibleModes.map((m) => {
+                        const isEnabled = enabledModes.has(m.id);
+                        return (
+                          <DropdownMenuItem
+                            key={m.id}
+                            onClick={() => {
+                              if (!isEnabled) {
+                                setModeDropdownOpen(false);
+                                router.push("/pricing");
+                                return;
+                              }
+                              onModeChange(m.id);
+                              setModeDropdownOpen(false);
+                            }}
+                            className="items-start gap-3 py-2"
+                          >
+                            <span className="flex flex-1 flex-col gap-0.5">
+                              <span
+                                className={
+                                  !isEnabled ? "text-quill-muted" : mode === m.id ? "text-[#F87171]" : "text-[#A1A7B0]"
+                                }
+                              >
+                                {m.label}
+                              </span>
+                              <span className="text-[11px] text-quill-muted">{m.desc}</span>
+                            </span>
+                            {!isEnabled ? (
+                              <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
+                                Paid
+                              </span>
+                            ) : mode === m.id ? (
+                              <CheckIcon className="h-3.25 w-3.25 shrink-0 text-[#F87171]" aria-hidden="true" />
+                            ) : null}
+                          </DropdownMenuItem>
+                        );
+                      })}
+
+                      {hasLockedModes && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <div className="mx-1 rounded-xl border border-quill-accent-glow bg-[rgba(239,68,68,0.05)] p-3">
+                            <p className="text-xs text-[#c7c7d8]">Think and Pro require a paid plan.</p>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setModeDropdownOpen(false);
+                                router.push("/pricing");
+                              }}
+                              className="mt-2 inline-flex h-auto items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-[#DC2626]"
+                            >
+                              Upgrade
+                              <ArrowRightIcon className="h-2.75 w-2.75" aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+
+              {canStop ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onStop}
+                      type="button"
+                      size="icon"
+                      aria-label="Stop generation"
+                      className="h-9 w-9 sm:h-9 sm:w-9 transition-all duration-150 active:scale-95 shadow-md bg-[#6b1f24] hover:bg-[#7f252b] shadow-[rgba(107,31,36,0.35)]"
+                    >
+                      <StopIcon className="h-3 w-3 text-white" aria-hidden="true" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Stop generation</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  onClick={handleSend}
+                  type="button"
+                  size="icon"
+                  disabled={!value.trim() || isDisabled}
+                  style={{ touchAction: "manipulation" }}
+                  className={`h-10 w-10 sm:h-10 sm:w-10 transition-all duration-150 disabled:opacity-35 active:scale-95 ring-1 ring-white/10 shadow-lg ${
+                    imageMode
+                      ? "bg-[#F87171] hover:bg-[#ef4444] shadow-[0_10px_22px_rgba(248,113,113,0.42)]"
+                      : "bg-[#EF4444] hover:bg-[#DC2626] shadow-[0_10px_22px_rgba(239,68,68,0.45)]"
+                  }`}
+                >
+                  {isGeneratingImage ? (
+                    <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-white" aria-hidden="true" />
+                  ) : imageMode ? (
+                    <SparklesIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
+                  ) : (
+                    <PaperAirplaneIcon className="h-3.25 w-3.25 text-white" aria-hidden="true" />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
         </TooltipProvider>
       </div>
 
@@ -736,13 +808,15 @@ export function TaskInput({
       {/* Hint */}
       <div className="keyboard-hint hidden items-center justify-between gap-3 px-1 text-[11px] text-[#AAB1BC] sm:flex">
         <p>
-          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Enter</kbd>{" "}
-          send &middot;{" "}
+          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Enter</kbd> send
+          &middot;{" "}
           <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Shift+Enter</kbd>{" "}
           new line
         </p>
         <p className="truncate text-right">
-          {attachedFiles?.length ? `${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""} attached` : "Artifacts and modes stay local to this thread"}
+          {attachedFiles?.length
+            ? `${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""} attached`
+            : "Artifacts and modes stay local to this thread"}
         </p>
       </div>
     </div>

@@ -233,6 +233,15 @@ function getBundleEntry(files: Record<string, string>, preferred?: string): stri
   return fallbackSource ?? null;
 }
 
+function createReactPreviewCacheKey(files: Record<string, string>, entry?: string): string {
+  const normalizedFiles = Object.keys(files)
+    .sort()
+    .map((path) => `${path}\n${files[path]}`)
+    .join("\n---\n");
+
+  return `${entry ?? ""}\n===\n${normalizedFiles}`;
+}
+
 function toEmbeddedJson(value: unknown): string {
   return JSON.stringify(value).replace(/<\//g, "<\\/");
 }
@@ -545,6 +554,8 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     output?: string;
   }>({ running: false, ok: null });
   const previewUrlRef = useRef<string | null>(null);
+  const previewCacheRef = useRef<Map<string, string>>(new Map());
+  const previewDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // When the content changes and resolves to a react-app artifact, POST the
   // files to /api/preview and load the returned HTML via a blob: URL.  Blob-URL
@@ -556,69 +567,105 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     if (!bundle) return;
 
     let cancelled = false;
+    const cacheKey = createReactPreviewCacheKey(bundle.payload.files, bundle.payload.entry);
+    const cachedUrl = previewCacheRef.current.get(cacheKey);
+
+    if (cachedUrl) {
+      previewUrlRef.current = cachedUrl;
+      dispatchPreview({ type: "success", url: cachedUrl });
+      return;
+    }
 
     dispatchPreview({ type: "loading" });
+    if (previewDebounceRef.current) {
+      clearTimeout(previewDebounceRef.current);
+      previewDebounceRef.current = null;
+    }
 
-    fetch("/api/preview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        files: bundle.payload.files,
-        entry: bundle.payload.entry,
-      }),
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          const data = (await r.json().catch(() => null)) as { error?: string } | null;
-          const error = new Error(data?.error ?? "Preview generation failed") as Error & { status?: number };
-          error.status = r.status;
-          throw error;
-        }
-        return r.text();
+    previewDebounceRef.current = setTimeout(() => {
+      fetch("/api/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          files: bundle.payload.files,
+          entry: bundle.payload.entry,
+        }),
       })
-      .then((html) => {
-        if (cancelled) return;
-        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-        previewUrlRef.current = blobUrl;
-        dispatchPreview({ type: "success", url: blobUrl });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
+        .then(async (r) => {
+          if (!r.ok) {
+            const data = (await r.json().catch(() => null)) as { error?: string } | null;
+            const error = new Error(data?.error ?? "Preview generation failed") as Error & { status?: number };
+            error.status = r.status;
+            throw error;
+          }
+          return r.text();
+        })
+        .then((html) => {
+          if (cancelled) return;
 
-        if (previewUrlRef.current) {
-          URL.revokeObjectURL(previewUrlRef.current);
-          previewUrlRef.current = null;
-        }
+          const alreadyCachedUrl = previewCacheRef.current.get(cacheKey);
+          if (alreadyCachedUrl) {
+            previewUrlRef.current = alreadyCachedUrl;
+            dispatchPreview({ type: "success", url: alreadyCachedUrl });
+            return;
+          }
 
-        const message = error instanceof Error ? error.message : "Preview unavailable right now.";
-        const status =
-          typeof error === "object" &&
-          error !== null &&
-          "status" in error &&
-          typeof (error as { status?: number }).status === "number"
-            ? (error as { status: number }).status
-            : null;
+          const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+          previewCacheRef.current.set(cacheKey, blobUrl);
+          previewUrlRef.current = blobUrl;
+          dispatchPreview({ type: "success", url: blobUrl });
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
 
-        if (status === 401) {
-          dispatchPreview({ type: "auth-required", message });
-          setPreferredTab("preview");
-        } else {
+          const message = error instanceof Error ? error.message : "Preview unavailable right now.";
+          const status =
+            typeof error === "object" &&
+            error !== null &&
+            "status" in error &&
+            typeof (error as { status?: number }).status === "number"
+              ? (error as { status: number }).status
+              : null;
+
+          if (status === 401) {
+            dispatchPreview({ type: "auth-required", message });
+            setPreferredTab("preview");
+            return;
+          }
+
+          if (previewUrlRef.current) {
+            dispatchPreview({ type: "success", url: previewUrlRef.current });
+            return;
+          }
+
           dispatchPreview({ type: "error", message });
-        }
-      });
+        });
+    }, 250);
 
     return () => {
       cancelled = true;
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+        previewDebounceRef.current = null;
+      }
     };
   }, [content]);
 
-  // Revoke blob URL on unmount to prevent memory leaks.
+  // Revoke cached blob URLs on unmount to prevent memory leaks.
   useEffect(() => {
+    const previewCache = previewCacheRef.current;
     return () => {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+        previewDebounceRef.current = null;
       }
+
+      for (const url of previewCache.values()) {
+        URL.revokeObjectURL(url);
+      }
+
+      previewCache.clear();
+      previewUrlRef.current = null;
     };
   }, []);
 

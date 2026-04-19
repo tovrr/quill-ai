@@ -89,14 +89,7 @@ interface SidebarProps {
   mobileCompact?: boolean;
 }
 
-const COMMAND_CENTER_LINKS: CommandLink[] = [
-  {
-    id: "overview",
-    label: "Overview",
-    subtitle: "Home, docs, and product context",
-    href: "/",
-    icon: HomeIcon,
-  },
+const PRIMARY_WORKSPACE_LINKS: CommandLink[] = [
   {
     id: "workspace",
     label: "Workspace",
@@ -118,6 +111,23 @@ const COMMAND_CENTER_LINKS: CommandLink[] = [
     href: "/artifacts",
     icon: ArchiveBoxIcon,
   },
+];
+
+const EXPLORE_LINKS: CommandLink[] = [
+  {
+    id: "overview",
+    label: "Overview",
+    subtitle: "Home, docs, and product context",
+    href: "/",
+    icon: HomeIcon,
+  },
+  {
+    id: "docs",
+    label: "Docs",
+    subtitle: "Patterns, canvas rules, and builder guides",
+    href: "/docs",
+    icon: BookOpenIcon,
+  },
   {
     id: "mcp",
     label: "MCP Catalog",
@@ -132,19 +142,12 @@ const COMMAND_CENTER_LINKS: CommandLink[] = [
     href: "/workspace",
     icon: GlobeAltIcon,
   },
-    {
-      id: "skills",
-      label: "Skills",
-      subtitle: "Install and manage agent skills",
-      href: "/skills",
-      icon: CpuChipIcon,
-    },
-    {
-    id: "docs",
-    label: "Docs",
-    subtitle: "Patterns, canvas rules, and builder guides",
-    href: "/docs",
-    icon: BookOpenIcon,
+  {
+    id: "skills",
+    label: "Skills",
+    subtitle: "Install and manage agent skills",
+    href: "/skills",
+    icon: CpuChipIcon,
   },
   {
     id: "pricing",
@@ -340,7 +343,8 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [pendingDeleteChat, setPendingDeleteChat] = useState<Chat | null>(null);
-  const [commandOpen, setCommandOpen] = useState(!mobileCompact);
+  const [workspaceOpen, setWorkspaceOpen] = useState(true);
+  const [exploreOpen, setExploreOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(true);
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -481,8 +485,10 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
     ...recentChats.filter((c) => pinned.includes(c.id)),
     ...recentChats.filter((c) => !pinned.includes(c.id)),
   ];
-  const filteredCommandLinks = COMMAND_CENTER_LINKS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
-  const compactCommandLinks = filteredCommandLinks.filter((item) => item.id === "overview" || item.id === "workspace");
+  const filteredPrimaryLinks = PRIMARY_WORKSPACE_LINKS.filter((item) =>
+    matchesQuery(normalizedQuery, item.label, item.subtitle),
+  );
+  const filteredExploreLinks = EXPLORE_LINKS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
   const filteredAgents = KILLERS.filter((killer) => matchesQuery(normalizedQuery, killer.name, killer.shortName, killer.tagline, killer.description));
   const filteredMemoryShortcuts = MEMORY_SHORTCUTS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
   const filteredSkillShortcuts = SKILL_SHORTCUTS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
@@ -491,9 +497,9 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
     items: group.items.filter((item) => matchesQuery(normalizedQuery, group.label, group.subtitle, item.label, item.subtitle)),
   })).filter((group) => group.items.length > 0 || matchesQuery(normalizedQuery, group.label, group.subtitle));
   const filteredChats = sortedChats.filter((chat) => matchesQuery(normalizedQuery, chat.title));
-  const visibleCommandLinks = mobileCompact ? compactCommandLinks : filteredCommandLinks;
   const hasMatches =
-    visibleCommandLinks.length > 0 ||
+    filteredPrimaryLinks.length > 0 ||
+    (!mobileCompact && filteredExploreLinks.length > 0) ||
     filteredAgents.length > 0 ||
     (!mobileCompact && filteredMemoryShortcuts.length > 0) ||
     (!mobileCompact && filteredSkillShortcuts.length > 0) ||
@@ -586,26 +592,26 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setCommandOpen((value) => !value)}
+            onClick={() => setWorkspaceOpen((value) => !value)}
             className={sidebarSectionToggleClass}
           >
             <span className="flex items-center gap-1.5">
-              <HomeIcon className="h-2.5 w-2.5" aria-hidden="true" />
-              Command Center
+              <Squares2X2Icon className="h-2.5 w-2.5" aria-hidden="true" />
+              Workspace
             </span>
             <ChevronDownIcon
               className="h-2.75 w-2.75 transition-transform"
               aria-hidden="true"
-              style={{ transform: commandOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+              style={{ transform: workspaceOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
             />
           </Button>
 
           <div
             className="overflow-hidden transition-all duration-200"
-            style={{ maxHeight: commandOpen ? "420px" : "0px", opacity: commandOpen ? 1 : 0 }}
+            style={{ maxHeight: workspaceOpen ? "320px" : "0px", opacity: workspaceOpen ? 1 : 0 }}
           >
             <div className="flex flex-col gap-1 pb-2 pt-1">
-              {visibleCommandLinks.map((item) => {
+              {filteredPrimaryLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Button
@@ -626,6 +632,53 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
             </div>
           </div>
         </div>
+
+        {!mobileCompact && (
+        <div className="space-y-1 pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setExploreOpen((value) => !value)}
+            className={sidebarSectionToggleClass}
+          >
+            <span className="flex items-center gap-1.5">
+              <HomeIcon className="h-2.5 w-2.5" aria-hidden="true" />
+              Explore
+            </span>
+            <ChevronDownIcon
+              className="h-2.75 w-2.75 transition-transform"
+              aria-hidden="true"
+              style={{ transform: exploreOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+            />
+          </Button>
+
+          <div
+            className="overflow-hidden transition-all duration-200"
+            style={{ maxHeight: exploreOpen ? "640px" : "0px", opacity: exploreOpen ? 1 : 0 }}
+          >
+            <div className="flex flex-col gap-1 pb-2 pt-1">
+              {filteredExploreLinks.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.id}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => navigateTo(item.href)}
+                    className={sidebarRowButtonClass}
+                  >
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
+                      <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        )}
 
         <div className="space-y-1 pt-1">
           <Button

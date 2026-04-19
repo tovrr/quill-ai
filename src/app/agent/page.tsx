@@ -48,6 +48,8 @@ const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 const ASSISTANT_STREAM_WATCHDOG_MS = 90000;
 const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
 const GUEST_CHAT_TITLE_PREFIX = "quill_guest_chat_title_v1:";
+const MESSAGE_WINDOW_SIZE = 40;
+const MESSAGE_WINDOW_INCREMENT = 40;
 
 const CanvasPanel = dynamicImport(
   () => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel),
@@ -372,6 +374,10 @@ export default function AgentPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [uiSettings, setUiSettings] = useState<AppSettings>(() => loadAppSettings());
+  const [historyWindowState, setHistoryWindowState] = useState<{ chatId: string; expandedCount: number }>({
+    chatId,
+    expandedCount: 0,
+  });
   const activeKiller = isMounted ? killer : null;
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
@@ -396,6 +402,7 @@ export default function AgentPage() {
   const awaitingAssistantRef = useRef(false);
   const pendingAssistantSinceRef = useRef<number | null>(null);
   const chatTitleInputRef = useRef<HTMLInputElement>(null);
+  const historyExpansionScrollRef = useRef<{ previousScrollHeight: number; previousScrollTop: number } | null>(null);
   const streamTelemetryRef = useRef<{
     startedAt: number | null;
     firstAssistantAt: number | null;
@@ -613,6 +620,17 @@ export default function AgentPage() {
         ),
     [messages],
   );
+  const expandedHistoryCount = historyWindowState.chatId === chatId ? historyWindowState.expandedCount : 0;
+  const visibleMessageCount = Math.min(displayMessages.length, MESSAGE_WINDOW_SIZE + expandedHistoryCount);
+  const hiddenMessageCount = Math.max(0, displayMessages.length - visibleMessageCount);
+  const visibleMessages = useMemo(
+    () => (hiddenMessageCount > 0 ? displayMessages.slice(hiddenMessageCount) : displayMessages),
+    [displayMessages, hiddenMessageCount],
+  );
+  const lastAssistantMessageId = useMemo(() => {
+    const lastAssistant = [...displayMessages].reverse().find((message) => message.role === "assistant");
+    return lastAssistant?.id ?? null;
+  }, [displayMessages]);
   const hasActiveAssistantMessage = Boolean(messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant");
   const isLoading = status === "streaming" || status === "submitted";
   const activeToolNames = useMemo(() => {
@@ -641,6 +659,23 @@ export default function AgentPage() {
 
     return names;
   }, [displayMessages]);
+
+  useEffect(() => {
+    const pendingExpansion = historyExpansionScrollRef.current;
+    if (!pendingExpansion) return;
+
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const frame = requestAnimationFrame(() => {
+      const nextScrollHeight = container.scrollHeight;
+      const scrollDelta = nextScrollHeight - pendingExpansion.previousScrollHeight;
+      container.scrollTop = pendingExpansion.previousScrollTop + scrollDelta;
+      historyExpansionScrollRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [visibleMessages]);
 
   const sendMessageTracked = useCallback(
     (payload: { text: string; files?: FileList }) => {
@@ -1047,6 +1082,24 @@ export default function AgentPage() {
     shouldAutoScrollRef.current = distanceFromBottom < 80;
   }, []);
 
+  const handleLoadOlderMessages = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      historyExpansionScrollRef.current = {
+        previousScrollHeight: container.scrollHeight,
+        previousScrollTop: container.scrollTop,
+      };
+    }
+
+    setHistoryWindowState((current) => ({
+      chatId,
+      expandedCount:
+        current.chatId === chatId
+          ? current.expandedCount + MESSAGE_WINDOW_INCREMENT
+          : MESSAGE_WINDOW_INCREMENT,
+    }));
+  }, [chatId]);
+
   // Auto-scroll with RAF+timeout debounce — prevents scroll conflicts while streaming
   // and respects the user's read position when they scroll up.
   useEffect(() => {
@@ -1428,20 +1481,6 @@ export default function AgentPage() {
           </div>
 
           <div className="ml-auto flex items-center gap-1.5 md:gap-2">
-            <Button
-              onClick={() => {
-                const next = { ...uiSettings, focusMode: !uiSettings.focusMode };
-                setUiSettings(next);
-                saveAppSettings(next);
-                trackUiEvent("focus_mode_toggle", { enabled: next.focusMode });
-              }}
-              type="button"
-              variant="outline"
-              aria-label={uiSettings.focusMode ? "Exit focus mode" : "Enable focus mode"}
-              className="hidden h-auto rounded-lg px-2.5 py-1 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2 md:inline-flex"
-            >
-              {uiSettings.focusMode ? "Exit focus" : "Focus"}
-            </Button>
             {/* New chat */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1545,10 +1584,22 @@ export default function AgentPage() {
                 </div>
               )}
 
-              {displayMessages.map((msg: UIMessage, idx: number) => {
-                const isLastAssistant =
-                  msg.role === "assistant" &&
-                  !displayMessages.slice(idx + 1).some((m) => m.role === "assistant");
+              {hiddenMessageCount > 0 && (
+                <div className="flex justify-center pb-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleLoadOlderMessages}
+                    className="h-auto rounded-full border-quill-border bg-quill-surface px-3 py-1.5 text-[11px] text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
+                  >
+                    Show {Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount)} older message{Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount) === 1 ? "" : "s"}
+                    <span className="ml-1 text-[10px] text-quill-muted/70">({hiddenMessageCount} hidden)</span>
+                  </Button>
+                </div>
+              )}
+
+              {visibleMessages.map((msg: UIMessage) => {
+                const isLastAssistant = msg.role === "assistant" && msg.id === lastAssistantMessageId;
                 return (
                   <RealMessageBubble
                     key={msg.id}
