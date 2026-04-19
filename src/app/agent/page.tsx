@@ -373,6 +373,7 @@ export default function AgentPage() {
     chatId,
     expandedCount: 0,
   });
+  const [statusBarCollapsed, setStatusBarCollapsed] = useState(false);
   const activeKiller = isMounted ? killer : null;
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
@@ -1640,14 +1641,66 @@ export default function AgentPage() {
         {uiSettings.statusSurface === "hybrid" &&
           (agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
             <>
-              <div className="md:hidden">
-                <AgentStatusBar
-                  status={agentStatus}
-                  compact
-                  stepCount={statusStepCount}
-                  totalSteps={statusStepCount !== undefined ? 3 : undefined}
-                />
+              <div className="md:hidden border-b border-quill-border bg-quill-bg">
+                {/* Mobile: Collapsible status bar header */}
+                <button
+                  onClick={() => setStatusBarCollapsed(!statusBarCollapsed)}
+                  type="button"
+                  className="w-full px-3 py-2 flex items-center justify-between hover:bg-quill-surface transition-colors text-[11px] font-medium text-quill-muted"
+                  aria-label={statusBarCollapsed ? "Show status" : "Hide status"}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        agentStatus === "running" || agentStatus === "thinking" ? "animate-pulse" : ""
+                      }`}
+                      style={{
+                        background:
+                          agentStatus === "idle"
+                            ? "#838387"
+                            : agentStatus === "thinking"
+                              ? "#F87171"
+                              : agentStatus === "running"
+                                ? "#EF4444"
+                                : agentStatus === "done"
+                                  ? "#34d399"
+                                  : "#f87171",
+                      }}
+                    />
+                    Agent{" "}
+                    {agentStatus === "idle"
+                      ? "Ready"
+                      : agentStatus === "thinking"
+                        ? "Planning..."
+                        : agentStatus === "running"
+                          ? "Building..."
+                          : agentStatus === "done"
+                            ? "Done"
+                            : "Error"}
+                  </span>
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${statusBarCollapsed ? "" : "rotate-180"}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7-7m0 0L5 14m7-7v12" />
+                  </svg>
+                </button>
+
+                {/* Mobile: Expanded status details */}
+                {!statusBarCollapsed && (
+                  <div className="px-3 py-2 border-t border-quill-border bg-quill-surface text-[10px] text-quill-muted space-y-1">
+                    {activeTaskTitle && <div className="truncate">Task: {activeTaskTitle}</div>}
+                    {statusStepCount !== undefined && (
+                      <div>
+                        Progress: {statusStepCount}/{statusStepCount !== undefined ? 3 : 0}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+
               <div className="hidden md:block">
                 <AgentStatusBar
                   status={agentStatus}
