@@ -1,60 +1,101 @@
-# Claude Integration Guide
+# AGENTS
 
-Purpose: document how Quill AI integrates with Anthropic Claude models (or OpenRouter-backed Anthropic proxies), required env vars, usage examples, and security/cost guidance.
+## ⚠️ HALLUCINATION RISK — Next.js 16
 
-Quick notes
+This project uses **Next.js 16**. Most AI training data covers Next.js 13/14/15. Do NOT generate code based on older version assumptions for:
 
-- Preferred env var: `ANTHROPIC_API_KEY` for direct Anthropic access. If using OpenRouter, use `OPENROUTER_API_KEY` and set provider to an Anthropic-backed model.
-- Keep keys out of source control; use `.env` and secrets in CI.
+- `middleware.ts` patterns and matchers
+- Proxy / rewrites in `next.config.ts`
+- `next/headers`, `next/cookies`, async APIs
+- API route conventions (`route.ts` App Router only — no `pages/api/`)
+- Turbopack-specific behavior
+- Metadata / viewport export signatures
 
-Environment
+Always read the existing files in this repo to understand the actual patterns in use before writing new code.
 
-- `ANTHROPIC_API_KEY` — your Anthropic API key (recommended when calling Anthropic directly).
-- `OPENROUTER_API_KEY` — optional, when routing through OpenRouter.
-- `CLAUDE_MODEL` — optional, model id to use (e.g., `claude-2.1`, `claude-instant-1`). Default: `claude-2.1`.
+---
 
-Example: simple curl (Anthropic)
+## Regression Guardrails (AI Agent)
 
-```bash
-curl https://api.anthropic.com/v1/complete \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"claude-2.1","prompt":"Say hello","max_tokens":200}'
-```
+Before finishing any coding task, run and pass:
 
-Example: Node fetch (OpenRouter)
+1. `npm run guardrails:check`
+2. `npm run typecheck`
+3. `npm run lint`
+4. `npm run build`
 
-```js
-const res = await fetch("https://api.openrouter.ai/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ model: "anthropic/claude-2.1", messages: [{ role: "user", content: "Hello" }] }),
-});
-const data = await res.json();
-```
+Additional non-negotiable rules:
 
-Integration tips for this repo
+1. Do not modify `node_modules/`.
+2. Treat `postcss.config.mjs`, `next.config.ts`, `package.json`, and `src/app/globals.css` as high-risk files; change only when directly required by the task.
+3. Keep AI edits narrowly scoped to requested files/feature; avoid opportunistic refactors in unrelated areas.
+4. Temporary debug hooks/scripts must be removed before completion.
 
-- Add a light wrapper at `src/lib/integrations/claude.ts` that normalises request/response shapes with other provider wrappers (OpenAI, Gemini, etc.).
-- Wire the wrapper into `src/lib/chat/model-selection.ts` so `CLAUDE_MODEL` maps correctly and quota/cost attribution uses `modelUsage` records.
-- Respect the project's streaming and two-pass builder patterns: support both streaming and non-streaming completions and apply the same prompt-sanitization used elsewhere.
+---
 
-Cost controls & rate limits
+## Builder Behavior (Artifact Discipline)
 
-- Configure per-model rate limiting and monetary budget alerts in infra (GCP/AWS billing or third-party). Treat Claude calls as billable — guard with `qualityRetryThreshold` and max retry caps set in builder runtime.
+For app-builder requests in this repository:
 
-Security & policy
+1. Always return typed artifact envelopes first (`<quill-artifact>...</quill-artifact>`) before any optional explanation text.
+2. Respect builder targets explicitly (`auto`, `page`, `react-app`, `nextjs-bundle`) and do not drift between output formats.
+3. Prefer complete runnable outputs over partial snippets for `react-app` and `nextjs-bundle` targets.
+4. For `nextjs-bundle`, generate export-first App Router structures (no `pages/api`) and include realistic project files.
+5. Preserve active iteration locks (layout/colors/section order/copy) unless user explicitly requests changes.
 
-- Sanitize web search and third-party content before interpolation into system prompts (same rules applied across providers).
-- Never log full prompts that contain user-provided secrets or API keys.
-- For PII-sensitive usages, consider post-generation PII redaction before persisting responses.
+---
 
-References
+## Chat Backend Guardrails (Anti-Hallucination)
 
-- Anthropic API docs: https://www.anthropic.com/docs/
-- OpenRouter: https://docs.openrouter.ai/
+The chat backend was intentionally decomposed from one large route into focused modules. Do not re-inline these responsibilities into `src/app/api/chat/route.ts`.
 
-If you want, I can scaffold `src/lib/integrations/claude.ts` with a minimal wrapper and add it to `model-selection` mapping.
+Current module boundaries:
+
+1. `src/lib/chat/request-utils.ts`
+   - Request parsing/validation (`parseChatRequestBody`)
+   - Message extraction/normalization (`extractModelMessages`, `extractTextMessages`)
+   - Last-user helpers (`summarizeLastUserInput`, `getLastUserParts`)
+2. `src/lib/chat/model-selection.ts`
+   - Mode typing (`ChatMode`)
+   - Daily mode limits (`getDailyLimitForMode`)
+   - Provider/model resolution (`resolveModelForMode`)
+3. `src/lib/chat/access-gates.ts`
+   - Entitlement and quota enforcement (`evaluateChatAccess`)
+   - Guest-mode restrictions, paid-tier checks, web search gates
+4. `src/lib/chat/policy-runtime.ts`
+   - Killer policy/runtime derivation (`evaluatePolicyRuntime`)
+   - Permission decisions, sandbox status, `canRunCode`, policy warnings
+5. `src/lib/chat/two-pass-builder.ts`
+   - Two-pass builder orchestration and persistence path
+
+Required workflow before modifying chat behavior:
+
+1. Read `src/app/api/chat/route.ts` and the relevant module(s) above before coding.
+2. Prefer adding logic to the owning module instead of adding new branches in the route.
+3. Keep the route orchestration-first: parse -> derive runtime -> enforce access -> build prompt -> stream.
+4. Run both `npm run typecheck` and `npm run build` after chat changes.
+
+---
+
+## Optional Feature Guides
+
+When users request features beyond the base template, check for available recipes in `.kilocode/recipes/`.
+
+### Available Recipes
+
+| Recipe       | File                                | When to Use                                           |
+| ------------ | ----------------------------------- | ----------------------------------------------------- |
+| Add Database | `.kilocode/recipes/add-database.md` | When user needs data persistence (users, posts, etc.) |
+
+### How to Use Recipes
+
+1. Read the recipe file when the user requests the feature
+2. Follow the step-by-step instructions
+3. Update the memory bank after implementing the feature
+
+## Memory Bank Maintenance
+
+After completing the user's request, update the relevant memory bank files in `.agents/memory-bank/`:
+
+- `.agents/memory-bank/context.md` - Current state and recent changes
+- Other memory bank files as needed when architecture, tech stack, or project goals change
