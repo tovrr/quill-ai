@@ -11,7 +11,15 @@
 - Run npm run typecheck
 - Run npm run lint
 - Run npm run build
+- Run npm run test:cli
 - Confirm CI Smoke passes on main
+
+## 2b. Multi-Surface Smoke
+
+- Verify terminal CLI auth key is configured (`QUILL_CLI_KEY`)
+- Run one-shot CLI smoke: `npm run cli -- "Reply with PONG"`
+- If desktop shipping is included, run `npm run desktop:build` on target OS
+- Confirm desktop app launches and loads hosted Quill URL
 
 ## 3. Social Preview Validation
 

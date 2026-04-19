@@ -99,6 +99,10 @@ Optional AI routing keys:
 - `AI_GATEWAY_BASE_URL` (default: `https://ai-gateway.vercel.sh/v1`)
 - `AI_GATEWAY_MODEL_PREFIX` (optional prefix for gateway model ids, for example `openrouter/`)
 
+CLI and desktop keys:
+
+- `QUILL_CLI_KEY` (required for `/api/cli/chat` and CLI client auth)
+
 Operational safety keys:
 
 - `ALLOW_INMEMORY_RATELIMIT_FALLBACK` (defaults to enabled outside production; keep disabled in production)
@@ -141,9 +145,15 @@ When changing chat behavior, update the owning module first and keep route logic
 - `npm run lint` - Run lint checks
 - `npm run typecheck` - Run TypeScript checks
 - `npm run test -- --run` - Run unit tests in non-watch mode (CI-friendly)
+- `npm run test:cli` - Run CLI/API contract checks for `/api/cli/chat`
 - `npm run bundle:check` - Enforce bundle budgets
 - `npm run audit:ui-standards` - Generate UI standards debt report
 - `npm run enforce:ui-standards` - Enforce UI no-regression guardrails
+- `npm run cli` - Launch the terminal CLI client
+- `npm run cli:setup` - Create `~/.quillrc` starter config for CLI usage
+- `npm run desktop:icons` - Generate Tauri desktop icons from `public/favicon.svg`
+- `npm run desktop:dev` - Start the Tauri desktop shell in development mode
+- `npm run desktop:build` - Build desktop bundles (`.exe`, `.dmg`, Linux targets)
 
 Current focused unit coverage includes:
 
@@ -155,6 +165,58 @@ Database scripts:
 - `npm run db:generate`
 - `npm run db:push`
 - `npm run db:studio`
+
+## Terminal CLI
+
+Quill includes a terminal client in `cli/index.mjs` backed by `POST /api/cli/chat`.
+
+Quick usage:
+
+```bash
+# one-shot
+npm run cli -- "What is 2+2?"
+
+# REPL
+npm run cli
+```
+
+The CLI endpoint requires `QUILL_CLI_KEY` on server and client.
+
+Supported config sources:
+
+- `--url`, `--key`, `--mode` flags
+- env vars: `QUILL_URL`, `QUILL_CLI_KEY`, `QUILL_MODE`
+- `~/.quillrc` JSON file (generated via `npm run cli:setup`)
+
+Run regression checks:
+
+```bash
+npm run test:cli
+```
+
+## Desktop App (Tauri v2)
+
+Quill includes a desktop shell under `desktop/`.
+
+Current behavior:
+
+- Loads the hosted app URL in a native webview
+- System tray controls (Open/Hide/Quit)
+- Single-instance behavior
+- Global hotkey toggle (`Ctrl+Shift+Q`)
+
+Build prerequisites:
+
+- Rust toolchain (`rustup`, `cargo`)
+- Tauri CLI dependencies (`cd desktop && npm install`)
+
+Build commands:
+
+```bash
+npm run desktop:icons
+npm run desktop:dev
+npm run desktop:build
+```
 
 ## Reliability
 

@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Terminal CLI interface (`cli/index.mjs`) with one-shot and REPL modes, plus `/api/cli/chat` authenticated SSE endpoint (`QUILL_CLI_KEY`)
+- CLI regression suite `scripts/test-cli.mjs` with coverage for auth, validation, streaming events, and multi-turn context
+- Tauri v2 desktop app scaffold under `desktop/` with system tray, single-instance behavior, and global hotkey toggle
+- Desktop icon generation workflow via `scripts/desktop-icons.mjs` and root scripts (`desktop:icons`, `desktop:dev`, `desktop:build`)
 - Phase 2 batch 1 migration: AI domain modules moved to `src/lib/ai/` (`assistant-message-utils.ts`, `killer-autonomy.ts`, `killers.ts`) with import rewiring across app/components/lib
 - Phase 2 batch 2 migration: execution modules moved to `src/lib/execution/` (`service.ts`, `docker.ts`, `providers.ts`) with import rewiring across chat/runtime/sandbox routes
 - Phase 2 batch 3 migration: data modules moved to `src/lib/data/` (`db-helpers.ts`, `audit-log.ts`) with import rewiring across API routes, share page, and lib callers
@@ -14,6 +18,7 @@ All notable changes to this project are documented in this file.
 - Phase 2 batch 7 migration: remaining domain files moved (`builder/artifacts.ts`, `builder/metrics.ts`, `auth/security.ts`, `models/openrouter.ts`) with import rewiring across agent/chat/components/me/mcp/google routes
 
 ### Validated
+- `npm run test:cli` (10/10 pass)
 - `npm run typecheck`
 - `npm run build`
 - `npm run test:agent-remediation` (pass)

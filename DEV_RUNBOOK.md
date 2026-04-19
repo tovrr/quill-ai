@@ -46,6 +46,7 @@ npm run dev
 | `AI_GATEWAY_API_KEY` | Vercel AI Gateway key for OpenAI-compatible model routing (optional) |
 | `AI_GATEWAY_BASE_URL` | Gateway base URL (optional; defaults to `https://ai-gateway.vercel.sh/v1`) |
 | `AI_GATEWAY_MODEL_PREFIX` | Optional model-id prefix for gateway routing, e.g. `openrouter/` |
+| `QUILL_CLI_KEY` | Required for `/api/cli/chat` and terminal CLI auth |
 | `ALLOW_INMEMORY_RATELIMIT_FALLBACK` | Allows local rate-limit fallback when Upstash is unavailable (`true` by default outside production) |
 | `ENABLE_IN_MEMORY_METRICS` | Enables `/api/metrics` in production (`false` by default in production) |
 
@@ -147,6 +148,59 @@ E2B_API_KEY=your_api_key
 Then restart: `npm run dev`
 
 See [TESTING_EXECUTION_SERVICE.md](./TESTING_EXECUTION_SERVICE.md) for full details and troubleshooting.
+
+---
+
+## Testing Terminal CLI
+
+After `npm run dev` is running:
+
+```powershell
+# Ensure client auth key is set locally
+$env:QUILL_CLI_KEY = "quill-dev-local-key"
+$env:QUILL_URL = "http://localhost:3000"
+
+# Endpoint regression suite
+npm run test:cli
+
+# CLI one-shot smoke
+npm run cli -- "Reply with the single word PONG"
+```
+
+Expected:
+
+- `npm run test:cli` reports all checks passing
+- one-shot CLI returns a valid model response
+
+---
+
+## Desktop Shell (Tauri) Quick Check
+
+Prereqs (one-time):
+
+```powershell
+winget install Rustlang.Rustup
+rustup default stable
+cd desktop
+npm install
+cd ..
+```
+
+Run desktop shell:
+
+```powershell
+npm run desktop:icons
+npm run desktop:dev
+```
+
+Expected:
+
+- native window opens and loads Quill
+- tray icon exists with Open/Hide/Quit
+- `Ctrl+Shift+Q` toggles visibility
+
+### Acceptance Criteria
+
 - [ ] `localhost:3000` opens and responds
 - [ ] `/agent` route loads without 404
 - [ ] `/api/health` returns `{ "status": "ok" }`
