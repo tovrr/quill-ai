@@ -82,7 +82,11 @@ function renderReasoningPreview(raw: string): React.ReactNode[] {
   let key = 0;
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
-    parts.push(<strong key={key++} className="font-semibold not-italic">{match[1]}</strong>);
+    parts.push(
+      <strong key={key++} className="font-semibold not-italic">
+        {match[1]}
+      </strong>,
+    );
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) parts.push(text.slice(lastIndex));
@@ -103,9 +107,7 @@ function ReasoningBlock({ text }: { text: string }) {
       >
         <span className="text-[11px] font-medium uppercase tracking-wide text-quill-muted shrink-0">Reasoning</span>
         {!expanded && (
-          <span className="text-[11px] text-quill-muted/60 truncate flex-1 min-w-0 italic">
-            {previewNodes}
-          </span>
+          <span className="text-[11px] text-quill-muted/60 truncate flex-1 min-w-0 italic">{previewNodes}</span>
         )}
         <ChevronDownIcon
           className={`ml-auto h-3.5 w-3.5 text-quill-muted shrink-0 transition-transform ${
@@ -163,10 +165,10 @@ function ToolCallBadge({
     isRunning
       ? "border-[rgba(239,68,68,0.26)] bg-[rgba(239,68,68,0.08)]"
       : isDone
-      ? "border-[rgba(52,211,153,0.22)] bg-[rgba(52,211,153,0.06)]"
-      : isError
-      ? "border-[rgba(248,113,113,0.28)] bg-[rgba(248,113,113,0.08)]"
-      : "border-quill-border bg-[rgba(17,17,24,0.8)]"
+        ? "border-[rgba(52,211,153,0.22)] bg-[rgba(52,211,153,0.06)]"
+        : isError
+          ? "border-[rgba(248,113,113,0.28)] bg-[rgba(248,113,113,0.08)]"
+          : "border-quill-border bg-[rgba(17,17,24,0.8)]"
   }`;
 
   const header = (
@@ -193,10 +195,10 @@ function ToolCallBadge({
               isRunning
                 ? "border-[rgba(239,68,68,0.16)] bg-[rgba(239,68,68,0.12)] text-[#F87171]"
                 : isDone
-                ? "border-[rgba(52,211,153,0.16)] bg-[rgba(52,211,153,0.1)] text-quill-green"
-                : isError
-                ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#fca5a5]"
-                : "text-quill-muted"
+                  ? "border-[rgba(52,211,153,0.16)] bg-[rgba(52,211,153,0.1)] text-quill-green"
+                  : isError
+                    ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#fca5a5]"
+                    : "text-quill-muted"
             }`}
           >
             {statusLabel}
@@ -207,10 +209,10 @@ function ToolCallBadge({
           {isRunning
             ? "Quill is waiting for this tool to finish."
             : isDone
-            ? "Tool result is ready."
-            : isError
-            ? "Tool returned an error."
-            : "Tool queued."}
+              ? "Tool result is ready."
+              : isError
+                ? "Tool returned an error."
+                : "Tool queued."}
         </p>
       </div>
     </div>
@@ -226,7 +228,10 @@ function ToolCallBadge({
         <div className="flex w-full items-start gap-3 text-left">
           <div className="flex-1">{header}</div>
           <div className="px-4 py-3">
-            <ChevronDownIcon className="mt-0.5 h-3.5 w-3.5 text-quill-muted transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
+            <ChevronDownIcon
+              className="mt-0.5 h-3.5 w-3.5 text-quill-muted transition-transform group-data-[state=open]:rotate-180"
+              aria-hidden="true"
+            />
           </div>
         </div>
       </CollapsibleTrigger>
@@ -235,19 +240,25 @@ function ToolCallBadge({
           {inputText && (
             <div className="grid gap-1">
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-quill-muted">Input</span>
-              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">{inputText}</pre>
+              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">
+                {inputText}
+              </pre>
             </div>
           )}
           {outputText && (
             <div className="grid gap-1">
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-quill-muted">Output</span>
-              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">{outputText}</pre>
+              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">
+                {outputText}
+              </pre>
             </div>
           )}
           {errorOutput && (
             <div className="grid gap-1">
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#fca5a5]">Error</span>
-              <pre className="overflow-x-auto rounded-xl border border-[rgba(248,113,113,0.24)] bg-[rgba(248,113,113,0.08)] p-3 font-mono text-[11px] leading-relaxed text-[#f6b1b1]">{errorOutput}</pre>
+              <pre className="overflow-x-auto rounded-xl border border-[rgba(248,113,113,0.24)] bg-[rgba(248,113,113,0.08)] p-3 font-mono text-[11px] leading-relaxed text-[#f6b1b1]">
+                {errorOutput}
+              </pre>
             </div>
           )}
         </div>
@@ -268,10 +279,7 @@ function renderInline(text: string) {
     }
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code
-          key={i}
-          className="px-1 py-0.5 rounded bg-quill-border text-[#F87171] text-[12px] font-mono"
-        >
+        <code key={i} className="px-1 py-0.5 rounded bg-quill-border text-[#F87171] text-[12px] font-mono">
           {part.slice(1, -1)}
         </code>
       );
@@ -311,10 +319,18 @@ function MarkdownText({ text }: { text: string }) {
               {lang}
             </div>
           )}
-          <pre className="p-4 bg-[#0d0d15] overflow-x-auto text-[12px] font-mono text-[#c8c8e0] leading-relaxed">
-            <code>{codeLines.join("\n")}</code>
-          </pre>
-        </div>
+          <div className="relative bg-[#0d0d15]">
+            <pre className="p-4 md:p-4 overflow-x-auto text-[11px] md:text-[12px] font-mono text-[#c8c8e0] leading-relaxed">
+              <code>{codeLines.join("\n")}</code>
+            </pre>
+            {/* Mobile scroll hint */}
+            <div className="md:hidden absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0d0d15] to-transparent pointer-events-none flex items-center justify-end pr-1">
+              <svg className="w-3 h-3 text-quill-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>,
       );
       i++;
       continue;
@@ -332,10 +348,8 @@ function MarkdownText({ text }: { text: string }) {
             alt={alt || "Generated image"}
             className="rounded-xl max-w-full max-h-100 object-contain border border-quill-border"
           />
-          {alt && (
-            <p className="text-[11px] text-quill-muted mt-1.5 italic">{alt}</p>
-          )}
-        </div>
+          {alt && <p className="text-[11px] text-quill-muted mt-1.5 italic">{alt}</p>}
+        </div>,
       );
       i++;
       continue;
@@ -345,26 +359,26 @@ function MarkdownText({ text }: { text: string }) {
       elements.push(
         <h1 key={i} className="text-base font-bold text-quill-text mt-3 mb-1">
           {renderInline(line.slice(2))}
-        </h1>
+        </h1>,
       );
     } else if (line.startsWith("## ")) {
       elements.push(
         <h2 key={i} className="text-sm font-bold text-quill-text mt-2.5 mb-0.5">
           {renderInline(line.slice(3))}
-        </h2>
+        </h2>,
       );
     } else if (line.startsWith("### ")) {
       elements.push(
         <h3 key={i} className="text-sm font-semibold text-[#c8c8e0] mt-2 mb-0.5">
           {renderInline(line.slice(4))}
-        </h3>
+        </h3>,
       );
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
         <div key={i} className="flex gap-2 pl-2">
           <span className="text-[#EF4444] mt-0.5 shrink-0">â€¢</span>
           <span>{renderInline(line.slice(2))}</span>
-        </div>
+        </div>,
       );
     } else if (/^\d+\. /.test(line)) {
       const match = line.match(/^(\d+)\. (.*)/);
@@ -373,17 +387,14 @@ function MarkdownText({ text }: { text: string }) {
           <div key={i} className="flex gap-2 pl-2">
             <span className="text-[#EF4444] shrink-0 tabular-nums">{match[1]}.</span>
             <span>{renderInline(match[2])}</span>
-          </div>
+          </div>,
         );
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote
-          key={i}
-          className="pl-3 border-l-2 border-[#EF4444] text-[#a8a8c0] italic my-1"
-        >
+        <blockquote key={i} className="pl-3 border-l-2 border-[#EF4444] text-[#a8a8c0] italic my-1">
           {renderInline(line.slice(2))}
-        </blockquote>
+        </blockquote>,
       );
     } else if (line === "" || line === "---" || line === "***") {
       elements.push(<div key={i} className="h-2" />);
@@ -394,9 +405,7 @@ function MarkdownText({ text }: { text: string }) {
     i++;
   }
 
-  return (
-    <div className="text-[15px] leading-[1.65] space-y-1.5">{elements}</div>
-  );
+  return <div className="text-[15px] leading-[1.65] space-y-1.5">{elements}</div>;
 }
 
 function hasMarkdownSyntax(text: string): boolean {
@@ -423,9 +432,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
   if (artifact.type === "page") {
     return (
       <div className="flex items-start justify-between gap-3">
-        <div className="text-sm text-quill-text">
-          Built page artifact ready in Canvas preview.
-        </div>
+        <div className="text-sm text-quill-text">Built page artifact ready in Canvas preview.</div>
         {action}
       </div>
     );
@@ -436,7 +443,8 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
     return (
       <div className="flex items-start justify-between gap-3">
         <div className="text-sm text-quill-text">
-          Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open Canvas to inspect code.
+          Built {artifact.type === "react-app" ? "React app" : "Next.js bundle"} artifact with {fileCount} files. Open
+          Canvas to inspect code.
         </div>
         {action}
       </div>
@@ -446,9 +454,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
   if (artifact.type === "document") {
     return (
       <div className="flex items-start justify-between gap-3">
-        <div className="text-sm text-quill-text">
-          Built document artifact. Open Canvas to read and export.
-        </div>
+        <div className="text-sm text-quill-text">Built document artifact. Open Canvas to read and export.</div>
         {action}
       </div>
     );
@@ -492,7 +498,8 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         .join("\n\n")
     : "";
   const canReact = isAssistant && hasRenderableTextValue(assistantPlainText);
-  const actionButtonBaseClass = "flex h-[30px] w-[30px] items-center justify-center rounded-full border border-transparent transition-all sm:h-8 sm:w-8";
+  const actionButtonBaseClass =
+    "flex h-[30px] w-[30px] items-center justify-center rounded-full border border-transparent transition-all sm:h-8 sm:w-8";
   const actionIconClass = "h-[15px] w-[15px] sm:h-4 sm:w-4";
   const speakerLabel = isUser ? "You" : "Quill";
   const useWorkspaceStyle = layoutMode === "workspace";
@@ -513,53 +520,51 @@ export const RealMessageBubble = memo(function RealMessageBubble({
     }
   };
 
-  const renderedPartEntries = parts
-    .map((part, i) => {
-      // Text part
-      if (part.type === "text") {
-        const text = normalizeVisibleText(part.text);
-        if (!hasRenderableTextValue(text)) return { kind: "text" as const, node: null };
+  const renderedPartEntries = parts.map((part, i) => {
+    // Text part
+    if (part.type === "text") {
+      const text = normalizeVisibleText(part.text);
+      if (!hasRenderableTextValue(text)) return { kind: "text" as const, node: null };
 
-        const hasArtifact = !isUser && Boolean(parseBuilderArtifact(text));
+      const hasArtifact = !isUser && Boolean(parseBuilderArtifact(text));
 
-        const node = isUser ? (
-          <div
-            key={i}
-            className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-[15px] leading-[1.65]"
-          >
-            {text}
-          </div>
-        ) : (
-          <div
-            key={i}
-            className={showAssistantBubble
+      const node = isUser ? (
+        <div key={i} className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-[15px] leading-[1.65]">
+          {text}
+        </div>
+      ) : (
+        <div
+          key={i}
+          className={
+            showAssistantBubble
               ? "px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full"
-              : "w-full text-quill-text"}
-          >
-            {hasArtifact ? (
-              <ArtifactSummary text={text} onOpenCanvas={onOpenCanvasFromMessage} />
-            ) : hasMarkdownSyntax(text) ? (
-              <MarkdownText text={text} />
-            ) : (
-              <p className="text-[15px] leading-[1.65] whitespace-pre-wrap wrap-break-word">{text}</p>
-            )}
-          </div>
-        );
+              : "w-full text-quill-text"
+          }
+        >
+          {hasArtifact ? (
+            <ArtifactSummary text={text} onOpenCanvas={onOpenCanvasFromMessage} />
+          ) : hasMarkdownSyntax(text) ? (
+            <MarkdownText text={text} />
+          ) : (
+            <p className="text-[15px] leading-[1.65] whitespace-pre-wrap wrap-break-word">{text}</p>
+          )}
+        </div>
+      );
 
-        return { kind: "text" as const, node };
-      }
+      return { kind: "text" as const, node };
+    }
 
-      if (part.type === "reasoning") {
-        return { kind: "reasoning" as const, node: null };
-      }
+    if (part.type === "reasoning") {
+      return { kind: "reasoning" as const, node: null };
+    }
 
-      // File part (user attachments + generated images)
-      if (part.type === "file") {
-        const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
-        if (filePart.mediaType.startsWith("image/")) {
-          return {
-            kind: "file" as const,
-            node: (
+    // File part (user attachments + generated images)
+    if (part.type === "file") {
+      const filePart = part as { type: "file"; mediaType: string; url: string; filename?: string };
+      if (filePart.mediaType.startsWith("image/")) {
+        return {
+          kind: "file" as const,
+          node: (
             <div key={i} className="rounded-xl overflow-hidden border border-quill-border max-w-70">
               <Image
                 src={filePart.url}
@@ -570,13 +575,13 @@ export const RealMessageBubble = memo(function RealMessageBubble({
                 unoptimized
               />
             </div>
-            ),
-          };
-        }
+          ),
+        };
+      }
 
-        return {
-          kind: "file" as const,
-          node: (
+      return {
+        kind: "file" as const,
+        node: (
           <a
             key={i}
             href={filePart.url}
@@ -587,50 +592,54 @@ export const RealMessageBubble = memo(function RealMessageBubble({
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
           >
             <PaperClipIcon className="h-3.25 w-3.25 text-[#EF4444]" aria-hidden="true" />
-            <span className="max-w-40 truncate">
-              {filePart.filename ?? "Attached file"}
-            </span>
+            <span className="max-w-40 truncate">{filePart.filename ?? "Attached file"}</span>
           </a>
-          ),
-        };
+        ),
+      };
+    }
+
+    if (part.type === "dynamic-tool" || (typeof part.type === "string" && part.type.startsWith("tool-"))) {
+      if (!isRenderableMessagePart(part)) {
+        return { kind: "tool" as const, node: null };
       }
 
-      if (
-        part.type === "dynamic-tool" ||
-        (typeof part.type === "string" && part.type.startsWith("tool-"))
-      ) {
-        if (!isRenderableMessagePart(part)) {
-          return { kind: "tool" as const, node: null };
-        }
+      const toolPart = part as {
+        type: string;
+        toolName?: string;
+        state: string;
+        input?: unknown;
+        output?: unknown;
+        errorText?: unknown;
+        error?: unknown;
+        result?: unknown;
+      };
+      const name =
+        normalizeVisibleText(toolPart.toolName) || normalizeVisibleText(part.type.replace(/^tool-/, "")) || "Tool";
+      const state = normalizeVisibleText(toolPart.state) || "output-available";
+      const output = toolPart.output ?? toolPart.result;
+      const errorText = toolPart.errorText ?? toolPart.error;
 
-        const toolPart = part as {
-          type: string;
-          toolName?: string;
-          state: string;
-          input?: unknown;
-          output?: unknown;
-          errorText?: unknown;
-          error?: unknown;
-          result?: unknown;
-        };
-        const name =
-          normalizeVisibleText(toolPart.toolName) || normalizeVisibleText(part.type.replace(/^tool-/, "")) || "Tool";
-        const state = normalizeVisibleText(toolPart.state) || "output-available";
-        const output = toolPart.output ?? toolPart.result;
-        const errorText = toolPart.errorText ?? toolPart.error;
+      return {
+        kind: "tool" as const,
+        node: (
+          <ToolCallBadge
+            key={i}
+            toolName={name}
+            state={state}
+            input={toolPart.input}
+            output={output}
+            errorText={errorText}
+          />
+        ),
+      };
+    }
 
-        return {
-          kind: "tool" as const,
-          node: <ToolCallBadge key={i} toolName={name} state={state} input={toolPart.input} output={output} errorText={errorText} />,
-        };
-      }
-
-      if (part.type === "step-start") {
-        return { kind: "other" as const, node: null };
-      }
-
+    if (part.type === "step-start") {
       return { kind: "other" as const, node: null };
-    });
+    }
+
+    return { kind: "other" as const, node: null };
+  });
 
   const reasoningParts = hasRenderableTextValue(reasoningSummaryText)
     ? [<ReasoningBlock key="reasoning-summary" text={reasoningSummaryText} />]
@@ -644,9 +653,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
   const renderedParts = [...reasoningParts, ...primaryParts];
 
   const hasPrimaryAssistantContent = renderedPartEntries.some(
-    (entry) =>
-      Boolean(entry.node) &&
-      (entry.kind === "text" || entry.kind === "reasoning" || entry.kind === "file"),
+    (entry) => Boolean(entry.node) && (entry.kind === "text" || entry.kind === "reasoning" || entry.kind === "file"),
   );
 
   if (renderedParts.length === 0) {
@@ -666,7 +673,9 @@ export const RealMessageBubble = memo(function RealMessageBubble({
           )}
           <div className="flex max-w-[min(100%,52rem)] flex-col gap-2 items-start">
             {showSpeakerLabel && (
-              <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">{speakerLabel}</div>
+              <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">
+                {speakerLabel}
+              </div>
             )}
             <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
               <MarkdownText text={fallbackText} />
@@ -695,7 +704,9 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         )}
         <div className="flex max-w-[min(100%,52rem)] flex-col gap-2 items-start">
           {showSpeakerLabel && (
-            <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">{speakerLabel}</div>
+            <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">
+              {speakerLabel}
+            </div>
           )}
           <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text w-full">
             <MarkdownText text={fallbackText} />
@@ -706,11 +717,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
   }
 
   return (
-      <div
-        className={`group flex items-start gap-3 animate-fade-in ${
-        isUser ? "flex-row-reverse" : ""
-      }`}
-    >
+    <div className={`group flex items-start gap-3 animate-fade-in ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       {isUser && !hideUserAvatar ? (
         <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
@@ -731,68 +738,72 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         }`}
       >
         {showSpeakerLabel && (
-          <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">{speakerLabel}</div>
+          <div className="px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-quill-muted">
+            {speakerLabel}
+          </div>
         )}
         {reasoningParts}
         {primaryParts}
         {showResponseActions && (
-          <div className={`relative mt-1 flex items-center gap-px rounded-full border border-quill-border bg-[rgba(17,17,24,0.75)] px-1 py-1 transition-opacity sm:gap-0.5 ${
-            contextualActions ? "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" : "opacity-100"
-          }`}>
-              {/* Like */}
+          <div
+            className={`relative mt-1 flex items-center gap-px rounded-full border border-quill-border bg-[rgba(17,17,24,0.75)] px-1 py-1 transition-opacity sm:gap-0.5 ${
+              contextualActions ? "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" : "opacity-100"
+            }`}
+          >
+            {/* Like */}
+            <button
+              onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
+              className={`${actionButtonBaseClass} ${
+                reaction === "like"
+                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title="Good response"
+              aria-label="Like assistant message"
+            >
+              <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
+            </button>
+            {/* Dislike */}
+            <button
+              onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
+              className={`${actionButtonBaseClass} ${
+                reaction === "dislike"
+                  ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title="Bad response"
+              aria-label="Dislike assistant message"
+            >
+              <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
+            </button>
+            {/* Regenerate */}
+            {onRegenerate && (
               <button
-                onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
-                className={`${actionButtonBaseClass} ${
-                  reaction === "like"
-                    ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
-                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-                }`}
-                title="Good response"
-                aria-label="Like assistant message"
+                onClick={onRegenerate}
+                className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
+                title="Regenerate response"
+                aria-label="Regenerate response"
               >
-                <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
+                <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
               </button>
-              {/* Dislike */}
-              <button
-                onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
-                className={`${actionButtonBaseClass} ${
-                  reaction === "dislike"
-                    ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
-                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-                }`}
-                title="Bad response"
-                aria-label="Dislike assistant message"
-              >
-                <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
-              </button>
-              {/* Regenerate */}
-              {onRegenerate && (
-                <button
-                  onClick={onRegenerate}
-                  className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
-                  title="Regenerate response"
-                  aria-label="Regenerate response"
-                >
-                  <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
-                </button>
+            )}
+            {/* Copy */}
+            <button
+              onClick={handleCopy}
+              className={`${actionButtonBaseClass} ${
+                copied
+                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+              }`}
+              title={copied ? "Copied!" : "Copy"}
+              aria-label="Copy assistant message"
+            >
+              {copied ? (
+                <CheckIcon className={actionIconClass} aria-hidden="true" />
+              ) : (
+                <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
               )}
-              {/* Copy */}
-              <button
-                onClick={handleCopy}
-                className={`${actionButtonBaseClass} ${
-                  copied
-                    ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
-                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-                }`}
-                title={copied ? "Copied!" : "Copy"}
-                aria-label="Copy assistant message"
-              >
-                {copied ? (
-                  <CheckIcon className={actionIconClass} aria-hidden="true" />
-                ) : (
-                  <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
-                )}
-              </button>
+            </button>
             {copied && (
               <span
                 className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-quill-green whitespace-nowrap pointer-events-none"
@@ -809,4 +820,3 @@ export const RealMessageBubble = memo(function RealMessageBubble({
 });
 
 RealMessageBubble.displayName = "RealMessageBubble";
-
