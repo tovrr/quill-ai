@@ -51,16 +51,13 @@ const GUEST_CHAT_TITLE_PREFIX = "quill_guest_chat_title_v1:";
 const MESSAGE_WINDOW_SIZE = 40;
 const MESSAGE_WINDOW_INCREMENT = 40;
 
-const CanvasPanel = dynamicImport(
-  () => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel),
-  {
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center border-l border-quill-border bg-quill-bg text-sm text-quill-muted">
-        Loading canvas...
-      </div>
-    ),
-  },
-);
+const CanvasPanel = dynamicImport(() => import("@/components/agent/CanvasPanel").then((mod) => mod.CanvasPanel), {
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center border-l border-quill-border bg-quill-bg text-sm text-quill-muted">
+      Loading canvas...
+    </div>
+  ),
+});
 
 type StoredGuestSession = {
   chatId: string;
@@ -206,9 +203,7 @@ function toImportableMessages(messages: UIMessage[]): ImportableMessage[] {
       }
 
       const normalizedMessage =
-        role === "assistant"
-          ? normalizeAssistantMessage(message)
-          : { ...message, parts: getMessageParts(message) };
+        role === "assistant" ? normalizeAssistantMessage(message) : { ...message, parts: getMessageParts(message) };
 
       const content = extractTextFromMessageParts(normalizedMessage.parts as unknown[]);
 
@@ -382,9 +377,7 @@ export default function AgentPage() {
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
   const canUsePageRefineActions =
-    builderTarget === "page" ||
-    artifact?.type === "page" ||
-    (builderTarget === "auto" && isHTMLContent(canvasContent));
+    builderTarget === "page" || artifact?.type === "page" || (builderTarget === "auto" && isHTMLContent(canvasContent));
 
   const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
   const isTrialPlan = planLabel.toLowerCase().startsWith("trial") || trialDaysLeft !== null;
@@ -421,11 +414,21 @@ export default function AgentPage() {
   const killerRef = useRef<string | null>(killer?.id ?? null);
   const userProfileRef = useRef<UserInstructionProfile>(DEFAULT_USER_PROFILE);
   const webSearchRef = useRef(webSearchEnabled);
-  useEffect(() => { modeRef.current = selectedMode; }, [selectedMode]);
-  useEffect(() => { builderTargetRef.current = builderTarget; }, [builderTarget]);
-  useEffect(() => { builderLocksRef.current = builderLocks; }, [builderLocks]);
-  useEffect(() => { webSearchRef.current = webSearchEnabled; }, [webSearchEnabled]);
-  useEffect(() => { killerRef.current = killer?.id ?? null; }, [killer]);
+  useEffect(() => {
+    modeRef.current = selectedMode;
+  }, [selectedMode]);
+  useEffect(() => {
+    builderTargetRef.current = builderTarget;
+  }, [builderTarget]);
+  useEffect(() => {
+    builderLocksRef.current = builderLocks;
+  }, [builderLocks]);
+  useEffect(() => {
+    webSearchRef.current = webSearchEnabled;
+  }, [webSearchEnabled]);
+  useEffect(() => {
+    killerRef.current = killer?.id ?? null;
+  }, [killer]);
 
   useEffect(() => {
     const id = getSearchParam("killer");
@@ -552,7 +555,7 @@ export default function AgentPage() {
           },
         }),
       }),
-    []
+    [],
   );
 
   const { messages, sendMessage, status, setMessages, stop } = useChat({
@@ -580,10 +583,7 @@ export default function AgentPage() {
           const last = prev[prev.length - 1];
           if (hasRenderableAssistantContent(last)) return prev;
 
-          return replaceOrAppendAssistantFallback(
-            prev,
-            "Request interrupted before completion. Please retry.",
-          );
+          return replaceOrAppendAssistantFallback(prev, "Request interrupted before completion. Please retry.");
         });
         setAgentStatus("idle");
         return;
@@ -601,10 +601,7 @@ export default function AgentPage() {
         const shouldAppend = !hasRenderableAssistantContent(last);
         if (!shouldAppend) return prev;
 
-        return replaceOrAppendAssistantFallback(
-          prev,
-          `I hit an error while responding: ${userFacingError}`,
-        );
+        return replaceOrAppendAssistantFallback(prev, `I hit an error while responding: ${userFacingError}`);
       });
       setAgentStatus("error");
     },
@@ -631,7 +628,9 @@ export default function AgentPage() {
     const lastAssistant = [...displayMessages].reverse().find((message) => message.role === "assistant");
     return lastAssistant?.id ?? null;
   }, [displayMessages]);
-  const hasActiveAssistantMessage = Boolean(messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant");
+  const hasActiveAssistantMessage = Boolean(
+    messages[messages.length - 1] && messages[messages.length - 1]?.role === "assistant",
+  );
   const isLoading = status === "streaming" || status === "submitted";
   const activeToolNames = useMemo(() => {
     const latestAssistant = [...displayMessages].reverse().find((message) => message.role === "assistant");
@@ -645,13 +644,11 @@ export default function AgentPage() {
       const isToolPart = type === "dynamic-tool" || type.startsWith("tool-");
       if (!isToolPart) continue;
 
-      const state =
-        typeof candidate.state === "string" ? candidate.state.trim().toLowerCase() : "";
+      const state = typeof candidate.state === "string" ? candidate.state.trim().toLowerCase() : "";
       const isActive = state === "input-streaming" || state === "input-available" || state === "call";
       if (!isActive) continue;
 
-      const rawName =
-        typeof candidate.toolName === "string" ? candidate.toolName : type.replace(/^tool-/, "");
+      const rawName = typeof candidate.toolName === "string" ? candidate.toolName : type.replace(/^tool-/, "");
       const label = rawName.trim();
       if (!label || names.includes(label)) continue;
       names.push(label);
@@ -689,7 +686,7 @@ export default function AgentPage() {
       };
       sendMessage(payload);
     },
-    [sendMessage]
+    [sendMessage],
   );
 
   useEffect(() => {
@@ -737,7 +734,7 @@ export default function AgentPage() {
       setAgentStatus("thinking");
       sendMessageTracked({ text: q });
     }, 120);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Resolve client entitlements to gate mode options for guest/free users.
@@ -752,7 +749,9 @@ export default function AgentPage() {
           setTrialDaysLeft(null);
           setWebSearchState("coming-soon");
           if (res.status >= 500) {
-            setPageError("Could not verify your account status. Paid features may be shown conservatively until retry.");
+            setPageError(
+              "Could not verify your account status. Paid features may be shown conservatively until retry.",
+            );
           }
           return;
         }
@@ -990,13 +989,9 @@ export default function AgentPage() {
         if (telemetry.startedAt !== null) {
           const now = performance.now();
           const firstAssistantMs =
-            telemetry.firstAssistantAt !== null
-              ? Math.round(telemetry.firstAssistantAt - telemetry.startedAt)
-              : null;
+            telemetry.firstAssistantAt !== null ? Math.round(telemetry.firstAssistantAt - telemetry.startedAt) : null;
           const firstRenderableMs =
-            telemetry.firstRenderableAt !== null
-              ? Math.round(telemetry.firstRenderableAt - telemetry.startedAt)
-              : null;
+            telemetry.firstRenderableAt !== null ? Math.round(telemetry.firstRenderableAt - telemetry.startedAt) : null;
           const totalMs = Math.round(now - telemetry.startedAt);
 
           console.info(
@@ -1059,7 +1054,9 @@ export default function AgentPage() {
     const text = extractMessageText(lastAssistantWithText);
     const renderableNow = isCanvasRenderableContent(text);
     const looksLikeArtifactStream =
-      /<quill-artifact>|artifactVersion|"type"\s*:\s*"(page|document|react-app|nextjs-bundle)"|```(?:json|html)/i.test(text);
+      /<quill-artifact>|artifactVersion|"type"\s*:\s*"(page|document|react-app|nextjs-bundle)"|```(?:json|html)/i.test(
+        text,
+      );
     const looksCodeLike = looksLikeCodeStream(text);
     const shouldTrackInCanvas =
       renderableNow ||
@@ -1094,9 +1091,7 @@ export default function AgentPage() {
     setHistoryWindowState((current) => ({
       chatId,
       expandedCount:
-        current.chatId === chatId
-          ? current.expandedCount + MESSAGE_WINDOW_INCREMENT
-          : MESSAGE_WINDOW_INCREMENT,
+        current.chatId === chatId ? current.expandedCount + MESSAGE_WINDOW_INCREMENT : MESSAGE_WINDOW_INCREMENT,
     }));
   }, [chatId]);
 
@@ -1116,7 +1111,12 @@ export default function AgentPage() {
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = true;
         bottomRef.current?.scrollIntoView({ behavior });
-        setTimeout(() => { isScrollingRef.current = false; }, behavior === "smooth" ? 300 : 50);
+        setTimeout(
+          () => {
+            isScrollingRef.current = false;
+          },
+          behavior === "smooth" ? 300 : 50,
+        );
       }, 16);
     });
   }, [displayMessages, isLoading]);
@@ -1165,7 +1165,7 @@ export default function AgentPage() {
         sendMessageTracked({ text });
       }
     },
-    [sendMessageTracked, builderTarget, selectedMode]
+    [sendMessageTracked, builderTarget, selectedMode],
   );
 
   const handleQuickPageRefine = useCallback(
@@ -1186,7 +1186,7 @@ export default function AgentPage() {
         ].join("\n"),
       });
     },
-    [sendMessageTracked]
+    [sendMessageTracked],
   );
 
   const toggleBuilderLock = useCallback((lock: keyof BuilderLocks) => {
@@ -1202,10 +1202,26 @@ export default function AgentPage() {
   }, []);
 
   const pageRefineActions = [
-    { id: "premium", label: "More premium", instruction: "Increase visual polish with stronger hierarchy and refined spacing." },
-    { id: "mobile", label: "Improve mobile", instruction: "Optimize spacing, typography, and tap targets for small screens." },
-    { id: "cta", label: "Stronger CTA", instruction: "Make the primary call-to-action clearer and more conversion-focused." },
-    { id: "motion", label: "Softer motion", instruction: "Reduce motion intensity and keep only subtle, meaningful transitions." },
+    {
+      id: "premium",
+      label: "More premium",
+      instruction: "Increase visual polish with stronger hierarchy and refined spacing.",
+    },
+    {
+      id: "mobile",
+      label: "Improve mobile",
+      instruction: "Optimize spacing, typography, and tap targets for small screens.",
+    },
+    {
+      id: "cta",
+      label: "Stronger CTA",
+      instruction: "Make the primary call-to-action clearer and more conversion-focused.",
+    },
+    {
+      id: "motion",
+      label: "Softer motion",
+      instruction: "Reduce motion intensity and keep only subtle, meaningful transitions.",
+    },
   ] as const;
 
   const sectionRefineActions = [
@@ -1249,7 +1265,12 @@ export default function AgentPage() {
 
       setMessages((msgs: UIMessage[]) => [
         ...msgs,
-        { id: crypto.randomUUID(), role: "user" as const, parts: [{ type: "text" as const, text: prompt }], metadata: {} },
+        {
+          id: crypto.randomUUID(),
+          role: "user" as const,
+          parts: [{ type: "text" as const, text: prompt }],
+          metadata: {},
+        },
       ]);
 
       try {
@@ -1263,7 +1284,12 @@ export default function AgentPage() {
 
         setMessages((msgs: UIMessage[]) => [
           ...msgs,
-          { id: crypto.randomUUID(), role: "assistant" as const, parts: [{ type: "text" as const, text: `![${prompt}](${data.url})` }], metadata: {} },
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            parts: [{ type: "text" as const, text: `![${prompt}](${data.url})` }],
+            metadata: {},
+          },
         ]);
         setAgentStatus("done");
         setTimeout(() => setAgentStatus("idle"), 3000);
@@ -1272,7 +1298,12 @@ export default function AgentPage() {
         setPageError(`Image generation failed: ${msg}`);
         setMessages((msgs: UIMessage[]) => [
           ...msgs,
-          { id: crypto.randomUUID(), role: "assistant" as const, parts: [{ type: "text" as const, text: `Image generation failed: ${msg}.` }], metadata: {} },
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            parts: [{ type: "text" as const, text: `Image generation failed: ${msg}.` }],
+            metadata: {},
+          },
         ]);
         setAgentStatus("error");
         setTimeout(() => setAgentStatus("idle"), 3000);
@@ -1280,7 +1311,7 @@ export default function AgentPage() {
         setIsGeneratingImage(false);
       }
     },
-    [setMessages]
+    [setMessages],
   );
 
   const handleNewChat = useCallback(() => {
@@ -1358,31 +1389,51 @@ export default function AgentPage() {
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
   const trustIndicators = [
-    webSearchState === "available" ? (webSearchEnabled ? "Web enabled" : "No web") : webSearchState === "auth-required" ? "Web needs sign in" : "Web unavailable",
+    webSearchState === "available"
+      ? webSearchEnabled
+        ? "Web enabled"
+        : "No web"
+      : webSearchState === "auth-required"
+        ? "Web needs sign in"
+        : "Web unavailable",
     selectedMode === "advanced" ? "Can run code" : "Code tools limited",
     isAuthenticated ? `Plan: ${planLabel}` : "Guest limits",
     isLoading ? "Executing now" : "Ready",
   ];
+  const hasCanvasContent = canvasContent.trim().length > 0;
+  const mobileWorkspaceView: "menu" | "chat" | "canvas" = mobileSidebarOpen ? "menu" : canvasMode ? "canvas" : "chat";
   const sidebarFallback = <div className="h-full w-full bg-quill-bg" aria-hidden="true" />;
+
+  const handleOpenMobileMenu = useCallback(() => {
+    setCanvasMode(false);
+    setMobileSidebarOpen(true);
+  }, []);
+
+  const handleShowMobileChat = useCallback(() => {
+    setMobileSidebarOpen(false);
+    setCanvasMode(false);
+  }, []);
+
+  const handleShowMobileCanvas = useCallback(() => {
+    if (!hasCanvasContent) return;
+    setMobileSidebarOpen(false);
+    setCanvasMode(true);
+  }, [hasCanvasContent]);
 
   return (
     <div className="agent-screen relative flex h-screen bg-quill-bg overflow-hidden">
-
       {/* Desktop: always-visible sidebar */}
       {!uiSettings.focusMode && (
-      <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
-        <Suspense fallback={sidebarFallback}>
-          <Sidebar />
-        </Suspense>
-      </aside>
+        <aside className="hidden md:block w-64 h-full shrink-0 border-r border-quill-border">
+          <Suspense fallback={sidebarFallback}>
+            <Sidebar />
+          </Suspense>
+        </aside>
       )}
 
       {/* Mobile backdrop */}
       {mobileSidebarOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-40 bg-black/60"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
+        <div className="md:hidden fixed inset-0 z-40 bg-black/60" onClick={() => setMobileSidebarOpen(false)} />
       )}
 
       {/* Mobile: fixed full-screen sidebar drawer */}
@@ -1398,7 +1449,9 @@ export default function AgentPage() {
       {/* ── Main content ─────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <header className={`flex items-center gap-2 border-b border-quill-border bg-quill-bg shrink-0 ${uiSettings.focusMode ? "px-2 py-2 md:px-3" : "px-3 py-2 md:gap-3 md:px-4 md:py-3"}`}>
+        <header
+          className={`flex items-center gap-2 border-b border-quill-border bg-quill-bg shrink-0 ${uiSettings.focusMode ? "px-2 py-2 md:px-3" : "px-3 py-2 md:gap-3 md:px-4 md:py-3"}`}
+        >
           {/* Hamburger: mobile drawer toggle */}
           <Button
             onClick={() => {
@@ -1437,119 +1490,174 @@ export default function AgentPage() {
           )}
 
           <TooltipProvider delayDuration={500}>
-          <div className="ml-1 hidden min-w-0 flex-1 md:block">
-            {isEditingChatTitle ? (
-              <Input
-                ref={chatTitleInputRef}
-                value={chatTitleDraft}
-                onChange={(e) => setChatTitleDraft(e.target.value)}
-                onBlur={() => {
-                  void saveChatTitle();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
+            <div className="ml-1 hidden min-w-0 flex-1 md:block">
+              {isEditingChatTitle ? (
+                <Input
+                  ref={chatTitleInputRef}
+                  value={chatTitleDraft}
+                  onChange={(e) => setChatTitleDraft(e.target.value)}
+                  onBlur={() => {
                     void saveChatTitle();
-                  }
-                  if (e.key === "Escape") {
-                    setChatTitleDraft(chatTitle);
-                    setIsEditingChatTitle(false);
-                  }
-                }}
-                disabled={isSavingChatTitle}
-                className="h-auto max-w-md rounded-lg py-1.5 focus-visible:ring-0"
-                aria-label="Edit active chat name"
-              />
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    onClick={() => setIsEditingChatTitle(true)}
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Rename chat"
-                    className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
-                  >
-                    <span className="truncate">{chatTitle}</span>
-                    <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Rename chat</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-
-          <div className="ml-auto flex items-center gap-1.5 md:gap-2">
-            {/* New chat */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleNewChat}
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="New chat"
-                  className="size-8 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
-                >
-                  <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">New chat</TooltipContent>
-            </Tooltip>
-
-            {/* Unified auth slot: same header position, switches by auth state */}
-            <div className="flex items-center justify-center min-w-8 min-h-8">
-              {isAuthenticated ? (
-                <Suspense
-                  fallback={
-                    <div className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse" aria-hidden="true" />
-                  }
-                >
-                  <AccountMenu compact />
-                </Suspense>
-              ) : authResolved ? (
-                <Button
-                  onClick={() => router.push("/login")}
-                  type="button"
-                  variant="outline"
-                  aria-label="Sign in"
-                  className="h-auto rounded-full px-3.5 py-1.5 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
-                >
-                  Sign in
-                </Button>
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void saveChatTitle();
+                    }
+                    if (e.key === "Escape") {
+                      setChatTitleDraft(chatTitle);
+                      setIsEditingChatTitle(false);
+                    }
+                  }}
+                  disabled={isSavingChatTitle}
+                  className="h-auto max-w-md rounded-lg py-1.5 focus-visible:ring-0"
+                  aria-label="Edit active chat name"
+                />
               ) : (
-                <div className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse" aria-hidden="true" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      onClick={() => setIsEditingChatTitle(true)}
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Rename chat"
+                      className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
+                    >
+                      <span className="truncate">{chatTitle}</span>
+                      <PencilSquareIcon
+                        className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Rename chat</TooltipContent>
+                </Tooltip>
               )}
             </div>
 
-            {guestImportStatus === "importing" && (
-              <span className="hidden md:inline text-[11px] text-quill-muted">Importing...</span>
-            )}
-          </div>
+            <div className="ml-auto flex items-center gap-1.5 md:gap-2">
+              {/* New chat */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleNewChat}
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="New chat"
+                    className="size-8 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
+                  >
+                    <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">New chat</TooltipContent>
+              </Tooltip>
+
+              {/* Unified auth slot: same header position, switches by auth state */}
+              <div className="flex items-center justify-center min-w-8 min-h-8">
+                {isAuthenticated ? (
+                  <Suspense
+                    fallback={
+                      <div
+                        className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse"
+                        aria-hidden="true"
+                      />
+                    }
+                  >
+                    <AccountMenu compact />
+                  </Suspense>
+                ) : authResolved ? (
+                  <Button
+                    onClick={() => router.push("/login")}
+                    type="button"
+                    variant="outline"
+                    aria-label="Sign in"
+                    className="h-auto rounded-full px-3.5 py-1.5 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
+                  >
+                    Sign in
+                  </Button>
+                ) : (
+                  <div
+                    className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+
+              {guestImportStatus === "importing" && (
+                <span className="hidden md:inline text-[11px] text-quill-muted">Importing...</span>
+              )}
+            </div>
           </TooltipProvider>
         </header>
 
-        {uiSettings.statusSurface === "hybrid" && (agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
-          <>
-            <div className="md:hidden">
-              <AgentStatusBar
-                status={agentStatus}
-                compact
-                stepCount={statusStepCount}
-                totalSteps={statusStepCount !== undefined ? 3 : undefined}
-              />
-            </div>
-            <div className="hidden md:block">
-              <AgentStatusBar
-                status={agentStatus}
-                taskTitle={activeTaskTitle}
-                stepCount={statusStepCount}
-                totalSteps={statusStepCount !== undefined ? 3 : undefined}
-              />
-            </div>
-          </>
-        )}
+        <div className="md:hidden border-b border-quill-border bg-quill-bg px-3 py-2">
+          <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-quill-border bg-quill-surface p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleOpenMobileMenu}
+              aria-pressed={mobileWorkspaceView === "menu"}
+              className={`h-9 rounded-lg text-[11px] font-medium transition-all ${
+                mobileWorkspaceView === "menu"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  : "text-quill-muted"
+              }`}
+            >
+              Menu
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleShowMobileChat}
+              aria-pressed={mobileWorkspaceView === "chat"}
+              className={`h-9 rounded-lg text-[11px] font-medium transition-all ${
+                mobileWorkspaceView === "chat"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  : "text-quill-muted"
+              }`}
+            >
+              Chat
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleShowMobileCanvas}
+              disabled={!hasCanvasContent}
+              aria-pressed={mobileWorkspaceView === "canvas"}
+              className={`h-9 rounded-lg text-[11px] font-medium transition-all disabled:opacity-45 ${
+                mobileWorkspaceView === "canvas"
+                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]"
+                  : "text-quill-muted"
+              }`}
+            >
+              Canvas
+            </Button>
+          </div>
+        </div>
+
+        {uiSettings.statusSurface === "hybrid" &&
+          (agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
+            <>
+              <div className="md:hidden">
+                <AgentStatusBar
+                  status={agentStatus}
+                  compact
+                  stepCount={statusStepCount}
+                  totalSteps={statusStepCount !== undefined ? 3 : undefined}
+                />
+              </div>
+              <div className="hidden md:block">
+                <AgentStatusBar
+                  status={agentStatus}
+                  taskTitle={activeTaskTitle}
+                  stepCount={statusStepCount}
+                  totalSteps={statusStepCount !== undefined ? 3 : undefined}
+                />
+              </div>
+            </>
+          )}
 
         {/* Content */}
         <div className="relative flex flex-1 min-h-0">
@@ -1564,7 +1672,11 @@ export default function AgentPage() {
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={activeKiller ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` } : { background: "#171A20", border: "1px solid #272B33" }}
+                    style={
+                      activeKiller
+                        ? { background: `${activeKiller.accent}15`, border: `1px solid ${activeKiller.accent}30` }
+                        : { background: "#171A20", border: "1px solid #272B33" }
+                    }
                   >
                     {activeKiller ? (
                       <span className="w-5 h-5 rounded-full" style={{ background: activeKiller.accent }} />
@@ -1577,9 +1689,13 @@ export default function AgentPage() {
                       {activeKiller ? activeKiller.name : <span className="gradient-text">Quill AI</span>}
                     </h2>
                     <p className="text-sm text-quill-muted mt-1 max-w-sm">
-                      {activeKiller ? activeKiller.description : "Your personal AI agent. Ask anything, attach files, generate images, or build a page."}
+                      {activeKiller
+                        ? activeKiller.description
+                        : "Your personal AI agent. Ask anything, attach files, generate images, or build a page."}
                     </p>
-                    {activeKiller && <p className="text-xs text-quill-muted mt-2">Active assistant selected from the sidebar.</p>}
+                    {activeKiller && (
+                      <p className="text-xs text-quill-muted mt-2">Active assistant selected from the sidebar.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1592,7 +1708,8 @@ export default function AgentPage() {
                     onClick={handleLoadOlderMessages}
                     className="h-auto rounded-full border-quill-border bg-quill-surface px-3 py-1.5 text-[11px] text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
                   >
-                    Show {Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount)} older message{Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount) === 1 ? "" : "s"}
+                    Show {Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount)} older message
+                    {Math.min(MESSAGE_WINDOW_INCREMENT, hiddenMessageCount) === 1 ? "" : "s"}
                     <span className="ml-1 text-[10px] text-quill-muted/70">({hiddenMessageCount} hidden)</span>
                   </Button>
                 </div>
@@ -1623,21 +1740,23 @@ export default function AgentPage() {
                   </div>
                   <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-border px-4 py-3 flex flex-col gap-2">
                     <div className="flex items-center gap-2">
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot" style={{ animationDelay: `${i * 0.15}s` }} />
-                    ))}
-                    <span className="text-xs text-quill-muted">
-                      {activeToolNames.length > 0
-                        ? `Running ${activeToolNames.length} tool${activeToolNames.length > 1 ? "s" : ""}...`
-                        : hasActiveAssistantMessage
-                        ? "Streaming response..."
-                        : "Thinking..."}
-                    </span>
-                    {streamClockMs > 500 && (
-                      <span className="text-[10px] text-quill-muted/60 ml-1">
-                        {formatElapsed(streamClockMs)}
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot"
+                          style={{ animationDelay: `${i * 0.15}s` }}
+                        />
+                      ))}
+                      <span className="text-xs text-quill-muted">
+                        {activeToolNames.length > 0
+                          ? `Running ${activeToolNames.length} tool${activeToolNames.length > 1 ? "s" : ""}...`
+                          : hasActiveAssistantMessage
+                            ? "Streaming response..."
+                            : "Thinking..."}
                       </span>
-                    )}
+                      {streamClockMs > 500 && (
+                        <span className="text-[10px] text-quill-muted/60 ml-1">{formatElapsed(streamClockMs)}</span>
+                      )}
                     </div>
                     {activeToolNames.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -1679,17 +1798,20 @@ export default function AgentPage() {
                 {pageError && (
                   <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 animate-fade-in">
                     <div className="flex items-start gap-2.5">
-                      <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]" aria-hidden="true" />
+                      <ExclamationCircleIcon
+                        className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]"
+                        aria-hidden="true"
+                      />
                       <p className="text-[12px] leading-relaxed text-[#f7b0b0]">{pageError}</p>
                     </div>
-                      <Button
+                    <Button
                       type="button"
                       onClick={() => setPageError(null)}
-                        variant="outline"
-                        className="h-auto shrink-0 rounded-lg border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.12)]"
+                      variant="outline"
+                      className="h-auto shrink-0 rounded-lg border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.12)]"
                     >
                       Dismiss
-                      </Button>
+                    </Button>
                   </div>
                 )}
                 <TaskInput
@@ -1722,19 +1844,29 @@ export default function AgentPage() {
                   isGeneratingImage={isGeneratingImage}
                   isWorking={isLoading || isGeneratingImage}
                   placeholder={activeKiller ? `Ask ${activeKiller.name}...` : "Give Quill a task to execute..."}
-                  workingLabel={isGeneratingImage ? "Generating image..." : activeKiller ? `${activeKiller.name} is working...` : "Quill is working..."}
+                  workingLabel={
+                    isGeneratingImage
+                      ? "Generating image..."
+                      : activeKiller
+                        ? `${activeKiller.name} is working...`
+                        : "Quill is working..."
+                  }
                   initialDraft={initialComposerDraft}
                   initialAttachedFile={initialHomepageFile}
                   sendOnEnter={uiSettings.sendOnEnter}
                   showActionLabels={uiSettings.showComposerLabels}
                   trustIndicators={trustIndicators}
-                  reviewSummary={isDraftReview && messages.length === 0 && !isLoading ? {
-                    label: "Draft review",
-                    additions: initialComposerDraft.trim().length > 0 ? 1 : undefined,
-                    deletions: 0,
-                    keepLabel: "Keep",
-                    undoLabel: "Undo",
-                  } : undefined}
+                  reviewSummary={
+                    isDraftReview && messages.length === 0 && !isLoading
+                      ? {
+                          label: "Draft review",
+                          additions: initialComposerDraft.trim().length > 0 ? 1 : undefined,
+                          deletions: 0,
+                          keepLabel: "Keep",
+                          undoLabel: "Undo",
+                        }
+                      : undefined
+                  }
                   onReviewKeep={() => {
                     setIsDraftReview(false);
                   }}
@@ -1791,12 +1923,14 @@ export default function AgentPage() {
                       <span className="text-[11px]">Lock layout, colors, order, and copy</span>
                     </summary>
                     <div className="border-t border-quill-border px-3 py-3 flex flex-wrap gap-2">
-                      {([
-                        ["layout", "Lock layout"],
-                        ["colors", "Lock colors"],
-                        ["sectionOrder", "Lock sections"],
-                        ["copy", "Lock copy"],
-                      ] as Array<[keyof BuilderLocks, string]>).map(([key, label]) => {
+                      {(
+                        [
+                          ["layout", "Lock layout"],
+                          ["colors", "Lock colors"],
+                          ["sectionOrder", "Lock sections"],
+                          ["copy", "Lock copy"],
+                        ] as Array<[keyof BuilderLocks, string]>
+                      ).map(([key, label]) => {
                         const active = builderLocks[key];
                         return (
                           <Button
