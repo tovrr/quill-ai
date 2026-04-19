@@ -1,0 +1,17 @@
+{
+  "name": "@quill-ai/desktop",
+  "version": "1.0.0",
+  "description": "Quill AI desktop app (Tauri v2 — wraps the hosted web app)",
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "node ../scripts/desktop-icons.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  }
+}
