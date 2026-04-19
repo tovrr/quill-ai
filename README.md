@@ -37,6 +37,7 @@ Recommended validation before opening PRs:
 npm run typecheck
 npm run lint
 npm run build
+npm run test -- --run test/prompt-sanitizer.test.ts test/agent-status-bar.test.ts
 npm run test:execution   # Verify code execution is working
 ```
 
@@ -139,9 +140,15 @@ When changing chat behavior, update the owning module first and keep route logic
 - `npm run start` - Start production server
 - `npm run lint` - Run lint checks
 - `npm run typecheck` - Run TypeScript checks
+- `npm run test -- --run` - Run unit tests in non-watch mode (CI-friendly)
 - `npm run bundle:check` - Enforce bundle budgets
 - `npm run audit:ui-standards` - Generate UI standards debt report
 - `npm run enforce:ui-standards` - Enforce UI no-regression guardrails
+
+Current focused unit coverage includes:
+
+- `test/prompt-sanitizer.test.ts` (prompt sanitization)
+- `test/agent-status-bar.test.ts` (agent status message/color regression)
 
 Database scripts:
 
