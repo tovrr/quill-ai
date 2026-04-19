@@ -593,6 +593,11 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     phase?: string;
     output?: string;
   }>({ running: false, ok: null });
+  const [livePreview, setLivePreview] = useState<{
+    status: "idle" | "booting" | "ready" | "error";
+    url?: string;
+    error?: string;
+  }>({ status: "idle" });
   const previewUrlRef = useRef<string | null>(null);
   const previewCacheRef = useRef<Map<string, string>>(new Map());
   const previewDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -788,6 +793,36 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     a.download = `quill-${artifactType}.${downloadExt}`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleLivePreview = async () => {
+    if (!fileBundle || fileBundle.type !== "nextjs-bundle") return;
+    if (livePreview.status === "booting") return;
+    setLivePreview({ status: "booting" });
+    try {
+      const response = await fetch("/api/sandbox/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artifactType: "nextjs-bundle",
+          files: fileBundle.payload.files,
+        }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        previewUrl?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.previewUrl) {
+        setLivePreview({ status: "error", error: data?.error ?? "Preview sandbox failed." });
+        return;
+      }
+      setLivePreview({ status: "ready", url: data.previewUrl });
+    } catch (err) {
+      setLivePreview({
+        status: "error",
+        error: err instanceof Error ? err.message : "Preview sandbox request failed.",
+      });
+    }
   };
 
   const handleDownloadSetupScript = () => {
@@ -1041,6 +1076,28 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
 
             {fileBundle?.type === "nextjs-bundle" && (
               <Button
+                onClick={handleLivePreview}
+                type="button"
+                variant="ghost"
+                disabled={livePreview.status === "booting"}
+                aria-label="Launch live preview sandbox"
+                className="hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all disabled:opacity-40"
+              >
+                {livePreview.status === "booting" ? (
+                  <>
+                    <ArrowPathIcon className="h-3 w-3 animate-spin" aria-hidden="true" />
+                    Booting&hellip;
+                  </>
+                ) : livePreview.status === "ready" ? (
+                  "Reload Preview"
+                ) : (
+                  "Live Preview"
+                )}
+              </Button>
+            )}
+
+            {fileBundle?.type === "nextjs-bundle" && (
+              <Button
                 onClick={handleDownloadSetupScript}
                 type="button"
                 variant="ghost"
@@ -1188,6 +1245,36 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 type={fileBundle.type}
               />
             )
+          ) : fileBundle?.type === "nextjs-bundle" && livePreview.status === "ready" && livePreview.url ? (
+            <iframe
+              key={livePreview.url}
+              src={livePreview.url}
+              className="w-full h-full border-0 bg-[#0d0d15]"
+              title="Next.js live preview"
+            />
+          ) : fileBundle?.type === "nextjs-bundle" && livePreview.status === "booting" ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-[#9b9bb7]">
+              <ArrowPathIcon className="h-5 w-5 animate-spin" aria-hidden="true" />
+              <p className="text-sm">Booting preview sandbox&hellip;</p>
+              <p className="text-xs text-quill-muted max-w-64 text-center">
+                Installing dependencies and starting the dev server. This takes about 30&ndash;60 s.
+              </p>
+            </div>
+          ) : fileBundle?.type === "nextjs-bundle" && livePreview.status === "error" ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 px-6">
+              <div className="max-w-md rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-4 text-center space-y-2">
+                <p className="text-sm font-semibold text-[#f7b0b0]">Preview sandbox failed</p>
+                <p className="text-xs text-[#d2d2e6]">{livePreview.error}</p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setLivePreview({ status: "idle" })}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-quill-border text-quill-muted hover:text-quill-text"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
           ) : fileBundle ? (
             <div className="h-full flex flex-col">
               {fileBundle.type === "nextjs-bundle" && bundleReadiness && (

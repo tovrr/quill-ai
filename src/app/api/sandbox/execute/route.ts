@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import { executeCode, isSandboxEnabled, SUPPORTED_LANGUAGES } from "@/lib/execution/docker";
+import { executeCode, isExecutionAvailable, SUPPORTED_LANGUAGES } from "@/lib/execution/service";
 
 export const maxDuration = 35;
 
@@ -24,11 +24,8 @@ export async function POST(req: Request) {
     return jsonResponse({ error: "Authentication required to execute code." }, 401);
   }
 
-  if (!isSandboxEnabled()) {
-    return jsonResponse(
-      { error: "Code execution sandbox is not enabled on this server." },
-      503,
-    );
+  if (!isExecutionAvailable()) {
+    return jsonResponse({ error: "Code execution sandbox is not enabled on this server." }, 503);
   }
 
   let body: Record<string, unknown>;
@@ -40,8 +37,7 @@ export async function POST(req: Request) {
 
   const code = typeof body.code === "string" ? body.code : null;
   const language = typeof body.language === "string" ? body.language.toLowerCase() : null;
-  const timeoutMs =
-    typeof body.timeoutMs === "number" && body.timeoutMs > 0 ? body.timeoutMs : undefined;
+  const timeoutMs = typeof body.timeoutMs === "number" && body.timeoutMs > 0 ? body.timeoutMs : undefined;
 
   if (!code || !code.trim()) {
     return jsonResponse({ error: "Missing or empty 'code' field." }, 400);

@@ -1,5 +1,5 @@
 import type { KillerExecutionPolicy, SandboxExecutionRequest, SandboxExecutionResult, SandboxProviderHook } from "@/lib/ai/killer-autonomy";
-import { executeCode } from "@/lib/execution/docker";
+import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution/service";
 
 export type SandboxProviderStatus = {
   provider: SandboxProviderHook | null;
@@ -8,11 +8,17 @@ export type SandboxProviderStatus = {
   reason: string | null;
 };
 
-const SANDBOX_PROVIDER_REGISTRY: Record<string, SandboxProviderHook> = {
-  "docker-executor": {
-    id: "docker-executor",
+/**
+ * Unified executor that routes to whichever backend is active
+ * (Docker locally, E2B/Modal/custom on hosted). Registered for
+ * both "docker-executor" (legacy) and "e2b-executor" IDs so
+ * existing killer policies don't break.
+ */
+function makeUnifiedExecutorHook(id: string): SandboxProviderHook {
+  return {
+    id,
     kind: "container",
-    isAvailable: () => process.env.QUILL_SANDBOX_CONTAINER_ENABLED === "true",
+    isAvailable: () => isExecutionAvailable(),
     execute: async (request: SandboxExecutionRequest): Promise<SandboxExecutionResult> => {
       const language = request.commands?.[0] ?? "python";
       const code = request.files?.[0] ?? "";
@@ -20,12 +26,17 @@ const SANDBOX_PROVIDER_REGISTRY: Record<string, SandboxProviderHook> = {
       return {
         ok: result.ok,
         summary: result.ok
-          ? `Exited 0 in ${result.durationMs}ms.`
+          ? `Exited 0 in ${result.durationMs}ms (backend: ${getExecutionBackend()}).`
           : `Exited ${result.exitCode} in ${result.durationMs}ms${result.error ? `: ${result.error}` : ""}.`,
         logs: [result.stdout, result.stderr].filter(Boolean).join("\n"),
       };
     },
-  },
+  };
+}
+
+const SANDBOX_PROVIDER_REGISTRY: Record<string, SandboxProviderHook> = {
+  "docker-executor": makeUnifiedExecutorHook("docker-executor"),
+  "e2b-executor": makeUnifiedExecutorHook("e2b-executor"),
 };
 
 export function resolveSandboxProviderHook(providerHookId: string | null | undefined): SandboxProviderHook | null {

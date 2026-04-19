@@ -64,9 +64,9 @@ import { evaluatePolicyRuntime } from "@/lib/chat/policy-runtime";
 function buildRunCodeTool() {
   return tool({
     description:
-      "Execute Python code in an isolated Docker sandbox and return stdout, stderr, and exit code. " +
+      "Execute Python code in a sandboxed environment and return stdout, stderr, and exit code. " +
       "Use this to run computations, test logic, or validate code. " +
-      "The sandbox has no network access and no filesystem persistence between calls.",
+      "The sandbox has no filesystem persistence between calls.",
     inputSchema: jsonSchema<{ code: string; language: "python" }>({
       type: "object",
       properties: {
