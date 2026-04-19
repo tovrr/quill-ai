@@ -44,4 +44,6 @@ export function sanitizeSnippet(snippet: string): string {
   return s;
 }
 
-export default { sanitizeForPrompt, sanitizeSnippet };
+const promptSanitizer = { sanitizeForPrompt, sanitizeSnippet };
+
+export default promptSanitizer;

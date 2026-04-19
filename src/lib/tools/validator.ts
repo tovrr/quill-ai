@@ -41,7 +41,7 @@ export async function validateGeneratedModule(
     }
 
     for (const file of jsFiles) {
-      const res = spawnSync("node", ["--check", file], { shell: true, encoding: "utf8" });
+      const res = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
       if (res.status !== 0) return { success: false, exitCode: res.status ?? 1, details: res.stderr || res.stdout };
     }
 
@@ -53,4 +53,6 @@ export async function validateGeneratedModule(
   }
 }
 
-export default { validateGeneratedModule };
+const validator = { validateGeneratedModule };
+
+export default validator;

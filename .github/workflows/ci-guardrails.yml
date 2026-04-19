@@ -1,0 +1,78 @@
+name: CI Guardrails
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: postgresql://user:password@127.0.0.1:5432/quill?sslmode=require
+      BETTER_AUTH_SECRET: test_test_test_test_test_test_test_test
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      GOOGLE_GENERATIVE_AI_API_KEY: test-key
+      API_METRICS_TOKEN: guardrails-token
+      ALLOW_INMEMORY_RATELIMIT_FALLBACK: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run guardrail invariants
+        run: npm run guardrails:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Start Turbopack dev server for homepage smoke
+        run: |
+          npm run dev -- --turbo --port 3100 > dev.log 2>&1 &
+          echo $! > dev.pid
+
+      - name: Wait for dev server
+        run: |
+          for i in {1..90}; do
+            if curl -fsS http://127.0.0.1:3100/ > /tmp/homepage.html; then
+              echo "Dev server is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Dev server failed to start"
+          cat dev.log || true
+          exit 1
+
+      - name: Validate homepage smoke response
+        run: |
+          test -s /tmp/homepage.html
+          grep -qi "quill" /tmp/homepage.html
+
+      - name: Print dev log on failure
+        if: failure()
+        run: |
+          cat dev.log || true
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          if [ -f dev.pid ]; then
+            kill $(cat dev.pid) || true
+          fi

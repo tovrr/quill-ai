@@ -1,0 +1,6 @@
+{
+  "name": "refactor",
+  "scope": "src/lib/chat",
+  "style": "conservative",
+  "goals": ["extract request-utils from chat route", "add shims for backwards compatibility"]
+}

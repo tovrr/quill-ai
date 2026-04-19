@@ -1,0 +1,5 @@
+{
+  "name": "api-docs",
+  "route": "src/app/api/chat/route.ts",
+  "format": "openapi"
+}

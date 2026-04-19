@@ -52,9 +52,11 @@ export function estimateNextRunAt(): Date {
  */
 export function computeNextRunAt(cronExpression: string, timezone = "UTC", after = new Date()): Date {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const parser = require("cron-parser") as {
-      parseExpression: (expr: string, opts?: { currentDate?: Date; tz?: string }) => {
+      parseExpression: (
+        expr: string,
+        opts?: { currentDate?: Date; tz?: string },
+      ) => {
         next(): { toDate(): Date };
       };
     };

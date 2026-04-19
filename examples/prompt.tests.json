@@ -1,0 +1,6 @@
+{
+  "name": "tests",
+  "target": "src/lib/prompt-sanitizer.ts",
+  "framework": "vitest",
+  "coverageGoal": 80
+}

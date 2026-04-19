@@ -163,10 +163,10 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
   } = params;
 
   const safeUserInput = userInput ? sanitizeForPrompt(userInput) : null;
-  const safeModelMessages: ModelMessage[] = (modelMessages || []).map((m) => ({
-    ...m,
-    content: typeof m.content === "string" ? sanitizeForPrompt(m.content) : m.content,
-  }));
+  const safeModelMessages: ModelMessage[] = (modelMessages || []).map((m) => {
+    const content = typeof m.content === "string" ? sanitizeForPrompt(m.content) : m.content;
+    return { ...m, content } as ModelMessage;
+  });
 
   return createUIMessageStream({
     originalMessages,

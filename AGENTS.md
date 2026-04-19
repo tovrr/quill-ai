@@ -15,6 +15,24 @@ Always read the existing files in this repo to understand the actual patterns in
 
 ---
 
+## Regression Guardrails (AI Agent)
+
+Before finishing any coding task, run and pass:
+
+1. `npm run guardrails:check`
+2. `npm run typecheck`
+3. `npm run lint`
+4. `npm run build`
+
+Additional non-negotiable rules:
+
+1. Do not modify `node_modules/`.
+2. Treat `postcss.config.mjs`, `next.config.ts`, `package.json`, and `src/app/globals.css` as high-risk files; change only when directly required by the task.
+3. Keep AI edits narrowly scoped to requested files/feature; avoid opportunistic refactors in unrelated areas.
+4. Temporary debug hooks/scripts must be removed before completion.
+
+---
+
 ## Builder Behavior (Artifact Discipline)
 
 For app-builder requests in this repository:

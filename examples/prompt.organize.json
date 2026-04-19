@@ -1,0 +1,11 @@
+{
+  "name": "organize",
+  "scope": "repo",
+  "style": "conservative",
+  "goals": [
+    "consolidate integrations into src/lib/integrations",
+    "ensure builder artifacts live under src/lib/builder",
+    "add validator hooks"
+  ],
+  "constraints": ["no runtime API changes"]
+}

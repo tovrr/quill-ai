@@ -31,6 +31,12 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability/logging";
+import {
+  trackChatEvent,
+  trackArtifactEvent,
+  trackFeatureUsage,
+  trackError,
+} from "@/lib/observability/analytics";
 import { parseBuilderArtifact } from "@/lib/builder/artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder/artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder/artifacts";
@@ -597,6 +603,7 @@ export async function POST(req: Request) {
       const existing = await getChatById(id);
       if (existing && existing.userId !== userId) {
         logApiCompletion(requestContext, { status: 403, error: "chat_forbidden" });
+        trackError(userId, "Access denied to chat", { route: "/api/chat", chatId: id });
         return jsonResponse({ error: "You do not have access to this chat." }, 403, {
           "x-request-id": requestContext.requestId,
         });
@@ -604,6 +611,8 @@ export async function POST(req: Request) {
 
       if (!existing) {
         await createChat(userId, "New chat", id);
+        // Track new chat creation
+        trackChatEvent(userId, id, "started", { mode: selectedMode });
       }
 
       // Save user message
@@ -719,6 +728,10 @@ export async function POST(req: Request) {
             artifactType: artifact?.type,
             requestedTarget: requestedBuilderTarget,
           });
+          // Track artifact generation
+          if (shouldPersist && artifact?.type) {
+            trackArtifactEvent(userId, id, "generated", artifact.type);
+          }
         }
 
         const persistedText = (text ?? "").trim();

@@ -32,7 +32,11 @@ export const dynamic = "force-dynamic";
 
 export default function WorkspacePage() {
   return (
-    <Suspense fallback={<div className="flex h-screen bg-quill-bg text-quill-muted items-center justify-center text-sm">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-screen bg-quill-bg text-quill-muted items-center justify-center text-sm">Loading…</div>
+      }
+    >
       <WorkspaceContent />
     </Suspense>
   );
@@ -103,12 +107,18 @@ function snapshotLabel(s: Snapshot): string {
   const kind = s.resourceType === "google-doc" ? "Doc" : "Folder";
   const name = s.afterPayload?.name ?? s.beforePayload?.name ?? s.resourceId.slice(0, 8);
   switch (s.operation) {
-    case "create": return `Created ${kind}: ${name}`;
-    case "update": return `Edited ${kind}: ${name}`;
-    case "rename": return `Renamed ${kind}: ${s.beforePayload?.name ?? "?"} → ${s.afterPayload?.name ?? "?"}`;
-    case "move":   return `Moved ${kind}: ${name}`;
-    case "delete": return `Deleted ${kind}: ${name}`;
-    default:       return `${s.operation} ${kind}: ${name}`;
+    case "create":
+      return `Created ${kind}: ${name}`;
+    case "update":
+      return `Edited ${kind}: ${name}`;
+    case "rename":
+      return `Renamed ${kind}: ${s.beforePayload?.name ?? "?"} → ${s.afterPayload?.name ?? "?"}`;
+    case "move":
+      return `Moved ${kind}: ${name}`;
+    case "delete":
+      return `Deleted ${kind}: ${name}`;
+    default:
+      return `${s.operation} ${kind}: ${name}`;
   }
 }
 
@@ -149,7 +159,6 @@ function WorkspaceContent() {
     const error = searchParams.get("error");
     if (connected === "1") showToast("Google account connected successfully!");
     if (error) showToast(`Connection failed: ${error.replace(/_/g, " ")}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const loadStatus = useCallback(async () => {
@@ -157,33 +166,38 @@ function WorkspaceContent() {
     if (res.ok) setStatus(await res.json());
   }, []);
 
-  useEffect(() => { loadStatus(); }, [loadStatus]);
+  useEffect(() => {
+    loadStatus();
+  }, [loadStatus]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 5000);
   }
 
-  const loadTab = useCallback(async (t: Tab, q = "") => {
-    if (!status?.connected) return;
-    setLoading(true);
-    try {
-      let url = "";
-      if (t === "docs") url = `/api/google/docs?pageSize=30${q ? `&query=${encodeURIComponent(q)}` : ""}`;
-      if (t === "drive") url = `/api/google/drive?pageSize=30${q ? `&query=${encodeURIComponent(q)}` : ""}`;
-      if (t === "calendar") url = `/api/google/calendar/events?maxResults=20`;
+  const loadTab = useCallback(
+    async (t: Tab, q = "") => {
+      if (!status?.connected) return;
+      setLoading(true);
+      try {
+        let url = "";
+        if (t === "docs") url = `/api/google/docs?pageSize=30${q ? `&query=${encodeURIComponent(q)}` : ""}`;
+        if (t === "drive") url = `/api/google/drive?pageSize=30${q ? `&query=${encodeURIComponent(q)}` : ""}`;
+        if (t === "calendar") url = `/api/google/calendar/events?maxResults=20`;
 
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const data = await res.json();
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
 
-      if (t === "docs") setDocs(data.files ?? []);
-      if (t === "drive") setDriveFiles(data.files ?? []);
-      if (t === "calendar") setEvents(data.items ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }, [status?.connected]);
+        if (t === "docs") setDocs(data.files ?? []);
+        if (t === "drive") setDriveFiles(data.files ?? []);
+        if (t === "calendar") setEvents(data.items ?? []);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [status?.connected],
+  );
 
   useEffect(() => {
     if (status?.connected) loadTab(tab);
@@ -228,7 +242,7 @@ function WorkspaceContent() {
         body: JSON.stringify({ title: modalTitle.trim(), text: modalText || undefined }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         showToast(`Failed to create document: ${err.error ?? res.status}`);
         return;
       }
@@ -249,8 +263,14 @@ function WorkspaceContent() {
     try {
       const res = await fetch(`/api/google/docs/${file.id}`);
       if (res.ok) {
-        const data = await res.json() as { text?: string; revisionId?: string };
-        setModal({ type: "edit-doc", fileId: file.id, fileName: file.name, initialText: data.text ?? "", revisionId: data.revisionId });
+        const data = (await res.json()) as { text?: string; revisionId?: string };
+        setModal({
+          type: "edit-doc",
+          fileId: file.id,
+          fileName: file.name,
+          initialText: data.text ?? "",
+          revisionId: data.revisionId,
+        });
         setModalText(data.text ?? "");
       } else {
         showToast("Could not load document content");
@@ -270,12 +290,12 @@ function WorkspaceContent() {
         body: JSON.stringify({ documentId: fileId, text: modalText, requiredRevisionId: revisionId }),
       });
       if (res.status === 409) {
-        const err = await res.json().catch(() => ({})) as { currentRevisionId?: string };
+        const err = (await res.json().catch(() => ({}))) as { currentRevisionId?: string };
         showToast(`Conflict: document edited elsewhere (revision ${err.currentRevisionId ?? "?"}). Reload to retry.`);
         return;
       }
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         showToast(`Failed to save: ${err.error ?? res.status}`);
         return;
       }
@@ -293,7 +313,7 @@ function WorkspaceContent() {
     if (!confirm(`Delete "${file.name}"? This cannot be undone easily.`)) return;
     const res = await fetch(`/api/google/docs/write?documentId=${encodeURIComponent(file.id)}`, { method: "DELETE" });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as { error?: string };
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
       showToast(`Failed to delete: ${err.error ?? res.status}`);
       return;
     }
@@ -314,7 +334,7 @@ function WorkspaceContent() {
         body: JSON.stringify({ name: modalTitle.trim() }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         showToast(`Failed to create folder: ${err.error ?? res.status}`);
         return;
       }
@@ -342,7 +362,7 @@ function WorkspaceContent() {
         return;
       }
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         showToast(`Failed to rename: ${err.error ?? res.status}`);
         return;
       }
@@ -360,7 +380,7 @@ function WorkspaceContent() {
     if (!confirm(`Delete "${file.name}"?`)) return;
     const res = await fetch(`/api/google/drive/write?fileId=${encodeURIComponent(file.id)}`, { method: "DELETE" });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as { error?: string };
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
       showToast(`Failed to delete: ${err.error ?? res.status}`);
       return;
     }
@@ -377,7 +397,7 @@ function WorkspaceContent() {
     try {
       const res = await fetch(`/api/google/workspace/snapshots/${snapshotId}/rollback`, { method: "POST" });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         showToast(`Rollback failed: ${err.error ?? res.status}`);
         return;
       }
@@ -426,10 +446,19 @@ function WorkspaceContent() {
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-quill-border px-4 py-3">
-          <Button type="button" variant="ghost" size="icon" className="lg:hidden rounded-lg" onClick={() => setSidebarOpen(true)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="lg:hidden rounded-lg"
+            onClick={() => setSidebarOpen(true)}
+          >
             <Bars3Icon className="h-5 w-5" />
           </Button>
-          <Link href="/agent" className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors">
+          <Link
+            href="/agent"
+            className="rounded-lg p-2 hover:bg-quill-surface text-quill-muted hover:text-quill-text transition-colors"
+          >
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
           <div className="flex-1 min-w-0">
@@ -451,8 +480,8 @@ function WorkspaceContent() {
               <div>
                 <h2 className="text-base font-semibold">Connect Google Workspace</h2>
                 <p className="text-sm text-quill-muted mt-2">
-                  Give Quill access to your Google Docs, Drive files, and Calendar events.
-                  Your data is only used to answer your questions.
+                  Give Quill access to your Google Docs, Drive files, and Calendar events. Your data is only used to
+                  answer your questions.
                 </p>
               </div>
               <a
@@ -536,7 +565,9 @@ function WorkspaceContent() {
                     <Input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") loadTab(tab, query); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") loadTab(tab, query);
+                      }}
                       className="w-full rounded-lg border-quill-border bg-quill-bg pl-9 pr-3 py-2 text-sm"
                       placeholder={`Search ${tab === "docs" ? "documents" : "files"}…`}
                     />
@@ -554,7 +585,10 @@ function WorkspaceContent() {
                   ) : (
                     <ul className="space-y-2">
                       {events.map((ev) => (
-                        <li key={ev.id} className="flex items-start gap-3 rounded-lg border border-quill-border p-3 hover:bg-quill-surface transition-colors">
+                        <li
+                          key={ev.id}
+                          className="flex items-start gap-3 rounded-lg border border-quill-border p-3 hover:bg-quill-surface transition-colors"
+                        >
                           <CalendarIcon className="h-4 w-4 text-quill-muted mt-0.5 shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{ev.summary}</p>
@@ -562,7 +596,12 @@ function WorkspaceContent() {
                             {ev.location && <p className="text-xs text-quill-muted truncate">{ev.location}</p>}
                           </div>
                           {ev.htmlLink && (
-                            <a href={ev.htmlLink} target="_blank" rel="noopener noreferrer" className="text-quill-muted hover:text-quill-text shrink-0">
+                            <a
+                              href={ev.htmlLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-quill-muted hover:text-quill-text shrink-0"
+                            >
                               <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                             </a>
                           )}
@@ -576,7 +615,10 @@ function WorkspaceContent() {
                   ) : (
                     <ul className="space-y-1">
                       {docs.map((f) => (
-                        <li key={f.id} className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors">
+                        <li
+                          key={f.id}
+                          className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors"
+                        >
                           <DocumentTextIcon className="h-4 w-4 text-quill-muted shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm truncate">{f.name}</p>
@@ -621,7 +663,10 @@ function WorkspaceContent() {
                 ) : (
                   <ul className="space-y-1">
                     {driveFiles.map((f) => (
-                      <li key={f.id} className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors">
+                      <li
+                        key={f.id}
+                        className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-quill-surface transition-colors"
+                      >
                         {f.iconLink ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={f.iconLink} alt="" className="h-4 w-4 shrink-0" />
@@ -696,7 +741,12 @@ function WorkspaceContent() {
                           <li key={s.id} className="flex items-center gap-2 text-xs py-1">
                             <span className="flex-1 text-quill-muted truncate">{snapshotLabel(s)}</span>
                             <span className="text-quill-muted shrink-0">
-                              {new Date(s.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              {new Date(s.createdAt).toLocaleString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                             <Button
                               onClick={() => handleRollback(s.id)}
@@ -736,7 +786,9 @@ function WorkspaceContent() {
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleCreateDoc(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) handleCreateDoc();
+                  }}
                   className="mb-3 w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="Document title"
                 />
@@ -749,7 +801,14 @@ function WorkspaceContent() {
                   placeholder="Start writing…"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeModal}
+                    className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text"
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={handleCreateDoc}
                     type="button"
@@ -779,7 +838,14 @@ function WorkspaceContent() {
                   />
                 )}
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeModal}
+                    className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text"
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={() => handleSaveEditDoc(modal.fileId, modal.revisionId)}
                     type="button"
@@ -800,12 +866,21 @@ function WorkspaceContent() {
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreateFolder();
+                  }}
                   className="w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="Folder name"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeModal}
+                    className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text"
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={handleCreateFolder}
                     type="button"
@@ -826,12 +901,21 @@ function WorkspaceContent() {
                   autoFocus
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleRenameFile(modal.fileId, modalTitle); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRenameFile(modal.fileId, modalTitle);
+                  }}
                   className="w-full rounded-lg border-quill-border bg-quill-surface px-3 py-2 text-sm"
                   placeholder="New name"
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button type="button" variant="ghost" onClick={closeModal} className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text">Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeModal}
+                    className="h-auto rounded-lg px-4 py-2 text-sm text-quill-muted hover:bg-transparent hover:text-quill-text"
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={() => handleRenameFile(modal.fileId, modalTitle)}
                     type="button"
@@ -855,4 +939,3 @@ function WorkspaceContent() {
     </div>
   );
 }
-

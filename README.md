@@ -170,6 +170,19 @@ Database scripts:
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening pull requests.
 
+## AI Prompt Templates
+
+This repository includes reusable prompt templates for local agents and tooling under files named `.prompt.*.md`.
+
+Quick commands (from repo root):
+
+- List prompts: `node scripts/prompts.mjs --list`
+- Show prompt: `node scripts/prompts.mjs --show .prompt` (replace name)
+- Show example invocation: `node scripts/prompts.mjs --example organize`
+- Validate examples present: `node scripts/prompts.mjs --run-examples`
+
+Examples for each prompt live in the `examples/` folder as `prompt.<name>.json`.
+
 ## Security
 
 Please read [SECURITY.md](SECURITY.md) to report vulnerabilities responsibly.

@@ -9,5 +9,11 @@
   "editor.detectIndentation": false,
   "editor.rulers": [80, 120],
   "typescript.tsdk": "node_modules/typescript/lib",
-  "search.useIgnoreFiles": true
+  "search.useIgnoreFiles": true,
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "Codegeex.SidebarUI.LanguagePreference": "English",
+  "privy.autocomplete.model": "qwen3:1.7b",
+  "privy.customModel": "qwen3:1.7b"
 }

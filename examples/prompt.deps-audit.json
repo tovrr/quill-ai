@@ -1,0 +1,5 @@
+{
+  "name": "deps-audit",
+  "packageFile": "package.json",
+  "policy": "conservative"
+}

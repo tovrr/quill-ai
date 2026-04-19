@@ -396,6 +396,38 @@ export const userSkills = pgTable(
   ]
 );
 
+// ─── Analytics Events ────────────────────────────────────────────────────────
+
+export const analyticsEvents = pgTable(
+  "analytics_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sessionId: varchar("sessionId").notNull(),
+    chatId: text("chatId").references(() => chats.id, { onDelete: "set null" }),
+    eventType: varchar("eventType").notNull(),
+    properties: jsonb("properties"),
+    mode: varchar("mode"),
+    provider: varchar("provider"),
+    model: varchar("model"),
+    artifactType: varchar("artifactType"),
+    duration: integer("duration"),
+    error: text("error"),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("analytics_event_user_id_idx").on(table.userId),
+    index("analytics_event_session_id_idx").on(table.sessionId),
+    index("analytics_event_chat_id_idx").on(table.chatId),
+    index("analytics_event_type_idx").on(table.eventType),
+    index("analytics_event_created_at_idx").on(table.createdAt),
+  ]
+);
+
 // ─── RAG (Retrieval-Augmented Generation) ────────────────────────────────────
 
 // pgvector type for Drizzle ORM

@@ -11,7 +11,7 @@ function buildCspReportOnlyPolicy(): string {
   const connectSrc = isDev
     ? "'self' ws: wss: http://localhost:* https://vitals.vercel-insights.com https://*.vercel-insights.com"
     : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
-  
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -33,7 +33,7 @@ function buildCspEnforcedPolicy(): string {
   const connectSrc = isDev
     ? "'self' ws: wss: http://localhost:* https://vitals.vercel-insights.com https://*.vercel-insights.com"
     : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
-  
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -56,7 +56,16 @@ const nextConfig: NextConfig = {
 
   // Strict image optimization — only allow known external domains via remotePatterns
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
+  // Turbopack root directory (fixes workspace root inference on some setups)
+  turbopack: {
+    root: process.cwd(),
   },
 
   async headers() {

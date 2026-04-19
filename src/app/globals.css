@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-quill-bg: #0E1015;
-  --color-quill-surface: #171A20;
-  --color-quill-surface-2: #1D2128;
-  --color-quill-border: #272B33;
+  --color-quill-bg: #0e1015;
+  --color-quill-surface: #171a20;
+  --color-quill-surface-2: #1d2128;
+  --color-quill-border: #272b33;
   --color-quill-border-2: #343944;
-  --color-quill-accent: #EF4444;
-  --color-quill-accent-2: #F87171;
+  --color-quill-accent: #ef4444;
+  --color-quill-accent-2: #f87171;
   --color-quill-accent-glow: rgba(239, 68, 68, 0.15);
-  --color-quill-text: #D4D4D8;
+  --color-quill-text: #d4d4d8;
   --color-quill-muted: #838387;
   --color-quill-green: #34d399;
   --color-quill-yellow: #fbbf24;
-  --color-quill-red: #EF4444;
-  --color-quill-orange: #F87171;
+  --color-quill-red: #ef4444;
+  --color-quill-orange: #f87171;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -28,7 +28,10 @@
 }
 
 /* Fast tap — eliminates 300ms click delay on mobile */
-button, a, [role="button"], [role="switch"] {
+button,
+a,
+[role="button"],
+[role="switch"] {
   touch-action: manipulation;
 }
 
@@ -39,8 +42,8 @@ html {
 
 html,
 body {
-  background-color: #0E1015;
-  color: #D4D4D8;
+  background-color: #0e1015;
+  color: #d4d4d8;
   height: 100%;
   /* iOS text rendering */
   -webkit-font-smoothing: antialiased;
@@ -79,65 +82,131 @@ body {
 
 /* ── Animations ──────────────────────────────────────────────────────────────── */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.22); }
-  50%       { box-shadow: 0 0 20px rgba(239, 68, 68, 0.44); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.44);
+  }
 }
 
 @keyframes typing-dot {
-  0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
-  30%           { opacity: 1;   transform: translateY(-4px); }
+  0%,
+  60%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 
 @keyframes quill-writing {
-  0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); }
-  30% { transform: translateY(-1px) rotate(2deg) scale(1.04); }
-  60% { transform: translateY(1px) rotate(-2deg) scale(1.02); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg) scale(1);
+  }
+  30% {
+    transform: translateY(-1px) rotate(2deg) scale(1.04);
+  }
+  60% {
+    transform: translateY(1px) rotate(-2deg) scale(1.02);
+  }
 }
 
 @keyframes composer-working-glow {
-  0%, 100% {
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.10), inset 0 0 10px rgba(239, 68, 68, 0.05);
+  0%,
+  100% {
+    box-shadow:
+      0 0 12px rgba(239, 68, 68, 0.1),
+      inset 0 0 10px rgba(239, 68, 68, 0.05);
   }
   50% {
-    box-shadow: 0 0 24px rgba(239, 68, 68, 0.22), inset 0 0 16px rgba(239, 68, 68, 0.10);
+    box-shadow:
+      0 0 24px rgba(239, 68, 68, 0.22),
+      inset 0 0 16px rgba(239, 68, 68, 0.1);
   }
 }
 
-.animate-fade-in        { animation: fade-in 0.25s ease-out forwards; }
-.animate-slide-in-left  { animation: slide-in-left 0.25s ease-out forwards; }
-.animate-slide-up       { animation: slide-up 0.25s ease-out forwards; }
-.animate-pulse-glow     { animation: pulse-glow 2s ease-in-out infinite; }
-.animate-typing-dot     { animation: typing-dot 1.2s ease-in-out infinite; }
-.animate-spin-slow      { animation: spin-slow 2s linear infinite; }
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out forwards;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s ease-out forwards;
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out forwards;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-typing-dot {
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
 
 .animate-shimmer {
   background: linear-gradient(
-    90deg, transparent 0%, rgba(239, 68, 68, 0.1) 50%, transparent 100%
+    90deg,
+    transparent 0%,
+    rgba(239, 68, 68, 0.1) 50%,
+    transparent 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
@@ -168,7 +237,7 @@ body {
   --color-quill-border-2: #d6d3cd;
   --color-quill-accent: #dc2626;
   --color-quill-accent-2: #ef4444;
-  --color-quill-accent-glow: rgba(220, 38, 38, 0.10);
+  --color-quill-accent-glow: rgba(220, 38, 38, 0.1);
   --color-quill-text: #1a1a1a;
   --color-quill-muted: #5c5c5c;
   --color-quill-green: #16a34a;
@@ -188,7 +257,7 @@ body {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -197,8 +266,9 @@ body {
 /* Accent glow border */
 .glow-border {
   border: 1px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.1),
-              inset 0 0 16px rgba(239, 68, 68, 0.05);
+  box-shadow:
+    0 0 16px rgba(239, 68, 68, 0.1),
+    inset 0 0 16px rgba(239, 68, 68, 0.05);
 }
 
 /* Homepage hero effects */
@@ -208,7 +278,10 @@ body {
 
 /* ── Mobile: minimum tap target 44×44px ──────────────────────────────────────── */
 @media (max-width: 768px) {
-  button, a, [role="button"], [role="switch"] {
+  button,
+  a,
+  [role="button"],
+  [role="switch"] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -254,14 +327,22 @@ html.is-mobile .agent-composer-shell {
 html.os-ios.is-mobile .agent-composer-shell {
   border-top-color: rgba(248, 113, 113, 0.2);
   box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(180deg, rgba(10, 10, 15, 0.78), rgba(10, 10, 15, 0.94));
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 15, 0.78),
+    rgba(10, 10, 15, 0.94)
+  );
 }
 
 /* Android profile: denser spacing and stronger separation from feed */
 html.os-android.is-mobile .agent-composer-shell {
   border-top-color: rgba(239, 68, 68, 0.24);
   box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.28);
-  background: linear-gradient(180deg, rgba(10, 10, 15, 0.84), rgba(10, 10, 15, 0.97));
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 15, 0.84),
+    rgba(10, 10, 15, 0.97)
+  );
 }
 
 /* Safari-specific optimization to avoid UI jump with dynamic bars */

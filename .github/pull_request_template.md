@@ -27,6 +27,18 @@ Add before/after screenshots if relevant.
 
 Describe any migration, compatibility, or operational risks.
 
+## AI Agent Guardrails
+
+- [ ] I used a focused file scope (no broad unrelated edits)
+- [ ] I did not modify `node_modules/` or generated vendor files
+- [ ] If I changed `postcss.config.mjs`, `next.config.ts`, `package.json`, or `src/app/globals.css`, I explain why below
+- [ ] I ran `npm run guardrails:check`
+- [ ] I ran `npm run typecheck && npm run lint && npm run build`
+
+### High-Risk Config Changes (required if applicable)
+
+List each changed high-risk file and the reason for the change.
+
 ## Checklist
 
 - [ ] Scope is focused
