@@ -54,8 +54,7 @@ async function persistDurableFileParts(chatId: string, rawParts: unknown[] | und
       continue;
     }
 
-    const url = typeof rawPart.url === "string" ? rawPart.url : 
-                typeof rawPart.image === "string" ? rawPart.image : "";
+    const url = typeof rawPart.url === "string" ? rawPart.url : typeof rawPart.image === "string" ? rawPart.image : "";
     if (!url || url.startsWith("/api/files/")) {
       nextParts.push(rawPart);
       continue;
@@ -130,7 +129,7 @@ export async function getMessagesByChatId(chatId: string) {
 
   return rows.map((row) => ({
     ...row,
-    partsJson: row.partsJson && typeof row.partsJson === "string" ? JSON.parse(row.partsJson) : row.partsJson
+    partsJson: row.partsJson && typeof row.partsJson === "string" ? JSON.parse(row.partsJson) : row.partsJson,
   }));
 }
 
@@ -168,9 +167,7 @@ export async function saveMessage({
 
   return {
     ...msg,
-    partsJson: msg.partsJson && typeof msg.partsJson === "string" 
-      ? JSON.parse(msg.partsJson) 
-      : msg.partsJson
+    partsJson: msg.partsJson && typeof msg.partsJson === "string" ? JSON.parse(msg.partsJson) : msg.partsJson,
   };
 }
 
@@ -195,13 +192,7 @@ export async function countUserMessagesToday(userId: string) {
     .select({ value: count() })
     .from(messages)
     .innerJoin(chats, eq(messages.chatId, chats.id))
-    .where(
-      and(
-        eq(chats.userId, userId),
-        eq(messages.role, "user"),
-        gte(messages.createdAt, startOfDay)
-      )
-    );
+    .where(and(eq(chats.userId, userId), eq(messages.role, "user"), gte(messages.createdAt, startOfDay)));
 
   return result[0]?.value ?? 0;
 }
@@ -221,12 +212,17 @@ export async function getUserEntitlementByUserId(userId: string) {
 
 export async function createUserEntitlement(input: {
   userId: string;
-  plan: "free" | "trial" | "paid";
-  status?: "active" | "expired" | "canceled";
+  plan: "free" | "trial" | "pro" | "team";
+  status?: "active" | "expired" | "canceled" | "past_due";
   trialStartedAt?: Date;
   trialEndsAt?: Date;
   paidStartsAt?: Date;
   paidEndsAt?: Date;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
+  stripeInvoiceId?: string | null;
+  webhookProcessedAt?: Date | null;
 }) {
   const [row] = await db
     .insert(userEntitlements)
@@ -238,6 +234,11 @@ export async function createUserEntitlement(input: {
       trialEndsAt: input.trialEndsAt,
       paidStartsAt: input.paidStartsAt,
       paidEndsAt: input.paidEndsAt,
+      stripeCustomerId: input.stripeCustomerId,
+      stripeSubscriptionId: input.stripeSubscriptionId,
+      stripePriceId: input.stripePriceId,
+      stripeInvoiceId: input.stripeInvoiceId,
+      webhookProcessedAt: input.webhookProcessedAt,
     })
     .returning();
 
@@ -247,13 +248,18 @@ export async function createUserEntitlement(input: {
 export async function updateUserEntitlement(
   userId: string,
   updates: Partial<{
-    plan: "free" | "trial" | "paid";
-    status: "active" | "expired" | "canceled";
+    plan: "free" | "trial" | "pro" | "team";
+    status: "active" | "expired" | "canceled" | "past_due";
     trialStartedAt: Date | null;
     trialEndsAt: Date | null;
     paidStartsAt: Date | null;
     paidEndsAt: Date | null;
-  }>
+    stripeCustomerId: string | null;
+    stripeSubscriptionId: string | null;
+    stripePriceId: string | null;
+    stripeInvoiceId: string | null;
+    webhookProcessedAt: Date | null;
+  }>,
 ) {
   const [row] = await db
     .update(userEntitlements)
@@ -312,7 +318,7 @@ export async function updateAutopilotWorkflowByUserId(
     lastRunAt: Date | null;
     nextRunAt: Date | null;
     lastRunStatus: "success" | "failed" | null;
-  }>
+  }>,
 ) {
   const [row] = await db
     .update(autopilotWorkflows)
@@ -484,7 +490,7 @@ export async function updateMcpServerByUserId(
     status: "connected" | "error" | "disconnected";
     toolCount: number;
     lastConnectedAt: Date | null;
-  }>
+  }>,
 ) {
   const [row] = await db
     .update(mcpServers)
@@ -514,7 +520,7 @@ export async function getMcpToolsByServerId(serverId: string) {
 export async function replaceMcpToolsForServer(
   serverId: string,
   userId: string,
-  tools: { toolName: string; toolDescription?: string; inputSchema?: unknown }[]
+  tools: { toolName: string; toolDescription?: string; inputSchema?: unknown }[],
 ) {
   await db.delete(mcpServerTools).where(eq(mcpServerTools.serverId, serverId));
   if (tools.length === 0) return [];
@@ -527,7 +533,7 @@ export async function replaceMcpToolsForServer(
         toolName: t.toolName,
         toolDescription: t.toolDescription,
         inputSchema: t.inputSchema as Record<string, unknown> | null,
-      }))
+      })),
     )
     .returning();
   return rows;
@@ -649,16 +655,18 @@ export async function installUserSkill(userId: string, skillId: string, config?:
     })
     .onConflictDoUpdate({
       target: [userSkills.userId, userSkills.skillId],
-      set: { enabled: true, config: (config ?? null) as Record<string, unknown> | null, updatedAt: sql`CURRENT_TIMESTAMP` },
+      set: {
+        enabled: true,
+        config: (config ?? null) as Record<string, unknown> | null,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      },
     })
     .returning();
   return row;
 }
 
 export async function uninstallUserSkill(userId: string, skillId: string) {
-  await db
-    .delete(userSkills)
-    .where(and(eq(userSkills.userId, userId), eq(userSkills.skillId, skillId)));
+  await db.delete(userSkills).where(and(eq(userSkills.userId, userId), eq(userSkills.skillId, skillId)));
 }
 
 export async function updateUserSkillConfig(userId: string, skillId: string, config: unknown) {

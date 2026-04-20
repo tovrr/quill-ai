@@ -6,6 +6,7 @@ import { QuillLogo } from "@/components/ui/QuillLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import Link from "next/link";
 
 type Tab = "signin" | "signup";
@@ -179,6 +180,22 @@ function LoginContent() {
                 required
                 minLength={8}
                 className="w-full rounded-xl border-quill-border bg-quill-surface px-4 py-2.5 text-sm text-quill-text placeholder-quill-muted"
+              />
+            </div>
+
+            {/* Google OAuth Button */}
+            <div className="mt-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-quill-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-quill-bg px-2 text-quill-muted">Or continue with</span>
+                </div>
+              </div>
+              <GoogleSignInButton 
+                className="mt-4" 
+                redirectPath={callbackUrl}
               />
             </div>
 

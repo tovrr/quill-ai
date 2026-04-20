@@ -39,7 +39,7 @@ export const sessions = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("session_user_id_idx").on(table.userId)]
+  (table) => [index("session_user_id_idx").on(table.userId)],
 );
 
 export const accounts = pgTable(
@@ -61,7 +61,7 @@ export const accounts = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("account_user_id_idx").on(table.userId)]
+  (table) => [index("account_user_id_idx").on(table.userId)],
 );
 
 export const verifications = pgTable("verification", {
@@ -88,7 +88,7 @@ export const chats = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("chat_user_id_idx").on(table.userId)]
+  (table) => [index("chat_user_id_idx").on(table.userId)],
 );
 
 export const messages = pgTable(
@@ -108,7 +108,7 @@ export const messages = pgTable(
   (table) => [
     index("message_chat_id_idx").on(table.chatId),
     index("message_role_created_chat_idx").on(table.role, table.createdAt, table.chatId),
-  ]
+  ],
 );
 
 export const messageFiles = pgTable(
@@ -126,7 +126,7 @@ export const messageFiles = pgTable(
     dataBase64: text("dataBase64").notNull(),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("message_file_chat_id_idx").on(table.chatId)]
+  (table) => [index("message_file_chat_id_idx").on(table.chatId)],
 );
 
 export const userEntitlements = pgTable(
@@ -139,16 +139,30 @@ export const userEntitlements = pgTable(
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: "cascade" }),
-    plan: varchar("plan", { enum: ["free", "trial", "paid"] }).notNull().default("free"),
-    status: varchar("status", { enum: ["active", "expired", "canceled"] }).notNull().default("active"),
+    plan: varchar("plan", { enum: ["free", "trial", "pro", "team"] })
+      .notNull()
+      .default("free"),
+    status: varchar("status", { enum: ["active", "expired", "canceled", "past_due"] })
+      .notNull()
+      .default("active"),
     trialStartedAt: timestamp("trialStartedAt", { mode: "date" }),
     trialEndsAt: timestamp("trialEndsAt", { mode: "date" }),
     paidStartsAt: timestamp("paidStartsAt", { mode: "date" }),
     paidEndsAt: timestamp("paidEndsAt", { mode: "date" }),
+    stripeCustomerId: text("stripeCustomerId"),
+    stripeSubscriptionId: text("stripeSubscriptionId"),
+    stripePriceId: text("stripePriceId"),
+    stripeInvoiceId: text("stripeInvoiceId"),
+    webhookProcessedAt: timestamp("webhookProcessedAt", { mode: "date" }),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("user_entitlement_user_id_idx").on(table.userId), index("user_entitlement_plan_idx").on(table.plan)]
+  (table) => [
+    index("user_entitlement_user_id_idx").on(table.userId),
+    index("user_entitlement_plan_idx").on(table.plan),
+    index("user_entitlement_stripe_customer_id_idx").on(table.stripeCustomerId),
+    index("user_entitlement_stripe_subscription_id_idx").on(table.stripeSubscriptionId),
+  ],
 );
 
 export const modelUsageEvents = pgTable(
@@ -180,7 +194,7 @@ export const modelUsageEvents = pgTable(
     index("model_usage_event_chat_id_idx").on(table.chatId),
     index("model_usage_event_model_idx").on(table.model),
     index("model_usage_event_created_at_idx").on(table.createdAt),
-  ]
+  ],
 );
 
 export const autopilotWorkflows = pgTable(
@@ -196,7 +210,9 @@ export const autopilotWorkflows = pgTable(
     prompt: text("prompt").notNull(),
     cronExpression: varchar("cronExpression").notNull(),
     timezone: varchar("timezone").notNull().default("UTC"),
-    status: varchar("status", { enum: ["active", "paused"] }).notNull().default("active"),
+    status: varchar("status", { enum: ["active", "paused"] })
+      .notNull()
+      .default("active"),
     lastRunAt: timestamp("lastRunAt", { mode: "date" }),
     nextRunAt: timestamp("nextRunAt", { mode: "date" }),
     lastRunStatus: varchar("lastRunStatus", { enum: ["success", "failed"] }),
@@ -207,7 +223,7 @@ export const autopilotWorkflows = pgTable(
     index("autopilot_workflow_user_id_idx").on(table.userId),
     index("autopilot_workflow_status_idx").on(table.status),
     index("autopilot_workflow_next_run_idx").on(table.nextRunAt),
-  ]
+  ],
 );
 
 export const autopilotRuns = pgTable(
@@ -232,7 +248,7 @@ export const autopilotRuns = pgTable(
     index("autopilot_run_workflow_id_idx").on(table.workflowId),
     index("autopilot_run_user_id_idx").on(table.userId),
     index("autopilot_run_started_at_idx").on(table.startedAt),
-  ]
+  ],
 );
 
 // ─── Artifact version history ────────────────────────────────────────────────
@@ -258,7 +274,7 @@ export const artifactVersions = pgTable(
     index("artifact_version_user_id_idx").on(table.userId),
     index("artifact_version_chat_id_idx").on(table.chatId),
     index("artifact_version_created_at_idx").on(table.createdAt),
-  ]
+  ],
 );
 
 // ─── MCP server catalog ──────────────────────────────────────────────────────
@@ -299,7 +315,7 @@ export const mcpServers = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("mcp_server_user_id_idx").on(table.userId)]
+  (table) => [index("mcp_server_user_id_idx").on(table.userId)],
 );
 
 export const mcpServerTools = pgTable(
@@ -322,7 +338,7 @@ export const mcpServerTools = pgTable(
   (table) => [
     index("mcp_server_tool_server_id_idx").on(table.serverId),
     index("mcp_server_tool_user_id_idx").on(table.userId),
-  ]
+  ],
 );
 
 // ─── Google Workspace connection ─────────────────────────────────────────────
@@ -346,7 +362,7 @@ export const googleConnections = pgTable(
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("google_connection_user_id_idx").on(table.userId)]
+  (table) => [index("google_connection_user_id_idx").on(table.userId)],
 );
 
 export const googleWorkspaceSnapshots = pgTable(
@@ -369,7 +385,7 @@ export const googleWorkspaceSnapshots = pgTable(
     index("google_workspace_snapshot_user_id_idx").on(table.userId),
     index("google_workspace_snapshot_resource_id_idx").on(table.resourceId),
     index("google_workspace_snapshot_created_at_idx").on(table.createdAt),
-  ]
+  ],
 );
 
 // ─── Skills marketplace ───────────────────────────────────────────────────────
@@ -393,7 +409,7 @@ export const userSkills = pgTable(
     index("user_skill_user_id_idx").on(table.userId),
     index("user_skill_skill_id_idx").on(table.skillId),
     unique("user_skill_user_skill_uniq").on(table.userId, table.skillId),
-  ]
+  ],
 );
 
 // ─── Analytics Events ────────────────────────────────────────────────────────
@@ -425,7 +441,7 @@ export const analyticsEvents = pgTable(
     index("analytics_event_chat_id_idx").on(table.chatId),
     index("analytics_event_type_idx").on(table.eventType),
     index("analytics_event_created_at_idx").on(table.createdAt),
-  ]
+  ],
 );
 
 // ─── RAG (Retrieval-Augmented Generation) ────────────────────────────────────
@@ -464,7 +480,7 @@ export const ragDocuments = pgTable(
   (table) => [
     index("rag_document_user_id_idx").on(table.userId),
     index("rag_document_created_at_idx").on(table.createdAt),
-  ]
+  ],
 );
 
 export const ragChunks = pgTable(
@@ -485,8 +501,29 @@ export const ragChunks = pgTable(
     metadata: jsonb("metadata"),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
   },
+  (table) => [index("rag_chunk_document_id_idx").on(table.documentId), index("rag_chunk_user_id_idx").on(table.userId)],
+);
+
+export const metrics = pgTable(
+  "metric",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    metricType: varchar("metric_type", { length: 50 }).notNull(),
+    userId: text("userId").references(() => users.id, { onDelete: "set null" }),
+    route: varchar("route", { length: 255 }),
+    feature: varchar("feature", { length: 100 }),
+    value: doublePrecision("value").notNull(),
+    metadata: jsonb("metadata"),
+    timestamp: timestamp("timestamp", { mode: "date" }).notNull(),
+    createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  },
   (table) => [
-    index("rag_chunk_document_id_idx").on(table.documentId),
-    index("rag_chunk_user_id_idx").on(table.userId),
-  ]
+    index("metric_user_id_idx").on(table.userId),
+    index("metric_type_idx").on(table.metricType),
+    index("metric_timestamp_idx").on(table.timestamp),
+    index("metric_route_idx").on(table.route),
+    index("metric_feature_idx").on(table.feature),
+  ],
 );

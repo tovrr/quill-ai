@@ -1,8 +1,4 @@
-import {
-  createUserEntitlement,
-  getUserEntitlementByUserId,
-  updateUserEntitlement,
-} from "@/lib/data/db-helpers";
+import { createUserEntitlement, getUserEntitlementByUserId, updateUserEntitlement } from "@/lib/data/db-helpers";
 
 type ResolvedEntitlement = {
   canUsePaidModes: boolean;
@@ -17,7 +13,7 @@ function parseCsvEnv(value: string | undefined): Set<string> {
     (value ?? "")
       .split(",")
       .map((v) => v.trim().toLowerCase())
-      .filter(Boolean)
+      .filter(Boolean),
   );
 }
 
@@ -47,10 +43,7 @@ function resolveFromEnv(userId: string, email?: string): ResolvedEntitlement {
   };
 }
 
-export async function resolveUserEntitlements(input: {
-  userId: string;
-  email?: string;
-}): Promise<ResolvedEntitlement> {
+export async function resolveUserEntitlements(input: { userId: string; email?: string }): Promise<ResolvedEntitlement> {
   const envEntitlement = resolveFromEnv(input.userId, input.email);
 
   if (envEntitlement.canUsePaidModes) {
@@ -87,10 +80,10 @@ export async function resolveUserEntitlements(input: {
       };
     }
 
-    if (record.plan === "paid" && record.status === "active") {
+    if ((record.plan === "pro" || record.plan === "team") && record.status === "active") {
       return {
         canUsePaidModes: true,
-        planLabel: "Paid",
+        planLabel: record.plan === "team" ? "Team" : "Pro",
         source: "db",
       };
     }
@@ -134,7 +127,7 @@ export async function resolveUserEntitlements(input: {
         userId: input.userId,
         strict: strictEntitlementsEnabled(),
         message: error instanceof Error ? error.message : "unknown",
-      })
+      }),
     );
 
     if (strictEntitlementsEnabled()) {
