@@ -1436,18 +1436,7 @@ export default function AgentPage() {
   }, [messages, setMessages, sendMessage, isLoading]);
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
-  const trustIndicators = [
-    webSearchState === "available"
-      ? webSearchEnabled
-        ? "Web enabled"
-        : "No web"
-      : webSearchState === "auth-required"
-        ? "Web needs sign in"
-        : "Web unavailable",
-    selectedMode === "advanced" ? "Can run code" : "Code tools limited",
-    isAuthenticated ? `Plan: ${planLabel}` : "Guest limits",
-    isLoading ? "Executing now" : "Ready",
-  ];
+  // trustIndicators removed for minimal UI
   const hasCanvasContent = canvasContent.trim().length > 0;
   const mobileWorkspaceView: "menu" | "chat" | "canvas" = mobileSidebarOpen ? "menu" : canvasMode ? "canvas" : "chat";
   const sidebarFallback = <div className="h-full w-full bg-quill-bg" aria-hidden="true" />;
@@ -1517,18 +1506,7 @@ export default function AgentPage() {
             <Bars3Icon className="h-4.25 w-4.25" aria-hidden="true" />
           </Button>
 
-          {/* Active mode badge */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-quill-surface border border-quill-border">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] shrink-0" />
-            <span className="text-[11px] font-medium text-[#A1A7B0]">{modeLabels[selectedMode]}</span>
-          </div>
-
-          {isTrialPlan && (
-            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-quill-border text-[11px] text-quill-muted">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] shrink-0" />
-              <span>{trialDaysLeft !== null ? `Trial ${trialDaysLeft}d left` : planLabel}</span>
-            </div>
-          )}
+          {/* Active mode badge and trial plan removed for minimal UI */}
 
           {/* Mobile-only: truncated chat title in header center */}
           {chatTitle && (
@@ -1537,107 +1515,8 @@ export default function AgentPage() {
             </span>
           )}
 
-          <TooltipProvider delayDuration={500}>
-            <div className="ml-1 hidden min-w-0 flex-1 md:block">
-              {isEditingChatTitle ? (
-                <Input
-                  ref={chatTitleInputRef}
-                  value={chatTitleDraft}
-                  onChange={(e) => setChatTitleDraft(e.target.value)}
-                  onBlur={() => {
-                    void saveChatTitle();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void saveChatTitle();
-                    }
-                    if (e.key === "Escape") {
-                      setChatTitleDraft(chatTitle);
-                      setIsEditingChatTitle(false);
-                    }
-                  }}
-                  disabled={isSavingChatTitle}
-                  className="h-auto max-w-md rounded-lg py-1.5 focus-visible:ring-0"
-                  aria-label="Edit active chat name"
-                />
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      onClick={() => setIsEditingChatTitle(true)}
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Rename chat"
-                      className="group inline-flex h-auto max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm text-quill-muted transition-colors hover:bg-quill-surface hover:text-quill-text"
-                    >
-                      <span className="truncate">{chatTitle}</span>
-                      <PencilSquareIcon
-                        className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100"
-                        aria-hidden="true"
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Rename chat</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-
-            <div className="ml-auto flex items-center gap-1.5 md:gap-2">
-              {/* New chat */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleNewChat}
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="New chat"
-                    className="size-8 rounded-full text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
-                  >
-                    <PlusIcon className="h-4.5 w-4.5" aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">New chat</TooltipContent>
-              </Tooltip>
-
-              {/* Unified auth slot: same header position, switches by auth state */}
-              <div className="flex items-center justify-center min-w-8 min-h-8">
-                {isAuthenticated ? (
-                  <Suspense
-                    fallback={
-                      <div
-                        className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse"
-                        aria-hidden="true"
-                      />
-                    }
-                  >
-                    <AccountMenu compact />
-                  </Suspense>
-                ) : authResolved ? (
-                  <Button
-                    onClick={() => router.push("/login")}
-                    type="button"
-                    variant="outline"
-                    aria-label="Sign in"
-                    className="h-auto rounded-full px-3.5 py-1.5 text-xs text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
-                  >
-                    Sign in
-                  </Button>
-                ) : (
-                  <div
-                    className="size-8 rounded-lg border border-quill-border bg-quill-surface/60 animate-pulse"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-
-              {guestImportStatus === "importing" && (
-                <span className="hidden md:inline text-[11px] text-quill-muted">Importing...</span>
-              )}
-            </div>
-          </TooltipProvider>
+          {/* Chat title editing and tooltip removed for minimal UI */}
+          {/* Header right controls (new chat, auth, importing) removed for minimal UI */}
         </header>
 
         <div className="md:hidden border-b border-quill-border bg-quill-bg px-3 py-2">
@@ -2001,7 +1880,7 @@ export default function AgentPage() {
                   initialAttachedFile={initialHomepageFile}
                   sendOnEnter={uiSettings.sendOnEnter}
                   showActionLabels={uiSettings.showComposerLabels}
-                  trustIndicators={trustIndicators}
+                  // trustIndicators prop removed for minimal UI
                   reviewSummary={
                     isDraftReview && messages.length === 0 && !isLoading
                       ? {
