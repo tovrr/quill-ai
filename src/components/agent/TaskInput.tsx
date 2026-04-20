@@ -1,10 +1,3 @@
-// Agent/source options for anchoring
-const AGENT_SOURCES = [
-  { id: "quill", label: "Quill Agent" },
-  { id: "openclaw", label: "OpenClaw" },
-  { id: "hermes", label: "Hermes Agent" },
-  { id: "custom", label: "Custom Agent" },
-];
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -37,6 +30,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+// Agent/source options for anchoring
+const AGENT_SOURCES = [
+  { id: "quill", label: "Quill Agent" },
+  { id: "openclaw", label: "OpenClaw" },
+  { id: "hermes", label: "Hermes Agent" },
+  { id: "custom", label: "Custom Agent" },
+];
 
 export type Mode = "fast" | "thinking" | "advanced";
 
