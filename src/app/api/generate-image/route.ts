@@ -10,10 +10,14 @@ import {
   logApiStart,
 } from "@/lib/observability/logging";
 import { recordModelUsage } from "@/lib/observability/metrics";
+import { resolveUserEntitlements } from "@/lib/auth/entitlements";
+import { db } from "@/db";
+import { sql } from "drizzle-orm";
+import { modelUsageEvents } from "@/db/schema";
 
 export const maxDuration = 60;
 
-function jsonResponse(payload: Record<string, string>, status: number, headers?: HeadersInit) {
+function jsonResponse(payload: Record<string, unknown>, status: number, headers?: HeadersInit) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
@@ -38,7 +42,44 @@ export async function POST(req: Request) {
   requestContext.userId = sessionData.user.id;
   logApiStart(requestContext);
 
-  const perMinute = Number(process.env.API_IMAGE_REQUESTS_PER_MINUTE ?? "6");
+  // Check daily image limits (cost control)
+  const today = new Date().toISOString().split("T")[0];
+  const IMAGE_LIMITS = {
+    free: { perDay: 5, perMinute: 2 },
+    pro: { perDay: 50, perMinute: 6 },
+  };
+
+  const entitlement = await resolveUserEntitlements({
+    userId: sessionData.user.id,
+    email: sessionData.user.email ?? undefined,
+  });
+  const userTier: "free" | "pro" = entitlement.canUsePaidModes ? "pro" : "free";
+  const userLimit = IMAGE_LIMITS[userTier];
+
+  const [dailyImageCount] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(modelUsageEvents)
+    .where(sql`user_id = ${sessionData.user.id} AND feature = 'image' AND DATE(created_at) = ${today}`);
+
+  const imagesToday = dailyImageCount?.count || 0;
+
+  if (imagesToday >= userLimit.perDay) {
+    logApiCompletion(requestContext, { status: 429, error: "daily_image_limit_reached" });
+    return jsonResponse(
+      {
+        error: "Daily image limit reached",
+        message:
+          userTier === "free"
+            ? `You've used your ${userLimit.perDay} free images today. Upgrade to Pro for ${IMAGE_LIMITS.pro.perDay} images/day.`
+            : "You've reached your daily limit. Try again tomorrow.",
+        usage: { today: imagesToday, limit: userLimit.perDay },
+      },
+      429,
+      { "x-request-id": requestContext.requestId },
+    );
+  }
+
+  const perMinute = Number(process.env.API_IMAGE_REQUESTS_PER_MINUTE ?? String(userLimit.perMinute));
   const rateLimit = await checkRateLimit({
     key: `image:user:${sessionData.user.id}`,
     max: perMinute,
@@ -96,12 +137,11 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
           "x-request-id": requestContext.requestId,
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Image generation error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to generate image";
+    const message = error instanceof Error ? error.message : "Failed to generate image";
     logApiCompletion(requestContext, { status: 500, error: message });
     return jsonResponse({ error: message }, 500, {
       "x-request-id": requestContext.requestId,

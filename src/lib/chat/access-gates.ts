@@ -12,6 +12,7 @@ export type ChatAccessFailure = {
 
 export type ChatAccessEvaluationResult = {
   hasPaidAccess: boolean;
+  userTier: "free" | "pro";
   failure?: ChatAccessFailure;
 };
 
@@ -26,15 +27,17 @@ type EvaluateChatAccessInput = {
 export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promise<ChatAccessEvaluationResult> {
   const { userId, userEmail, shouldPersist, selectedMode, effectiveWebSearchRequested } = input;
 
-  const entitlement = shouldPersist
-    ? await resolveUserEntitlements({ userId, email: userEmail })
-    : null;
+  const entitlement = shouldPersist ? await resolveUserEntitlements({ userId, email: userEmail }) : null;
   const hasPaidAccess = shouldPersist && Boolean(entitlement?.canUsePaidModes);
+
+  // Determine user tier early for all checks
+  const userTier: "free" | "pro" = hasPaidAccess ? "pro" : "free";
 
   // Guest users are limited to free mode; auth is required for think/pro tiers.
   if (!shouldPersist && selectedMode !== "fast") {
     return {
       hasPaidAccess,
+      userTier,
       failure: {
         status: 401,
         errorCode: "auth_required_mode",
@@ -46,6 +49,7 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
   if (effectiveWebSearchRequested && !shouldPersist) {
     return {
       hasPaidAccess,
+      userTier,
       failure: {
         status: 401,
         errorCode: "auth_required_web_search",
@@ -57,6 +61,7 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
   if (effectiveWebSearchRequested && !isWebSearchConfigured()) {
     return {
       hasPaidAccess,
+      userTier,
       failure: {
         status: 503,
         errorCode: "web_search_not_configured",
@@ -79,6 +84,7 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
     if (!searchQuota.allowed) {
       return {
         hasPaidAccess,
+        userTier,
         failure: {
           status: 429,
           errorCode: "web_search_daily_quota_reached",
@@ -92,6 +98,7 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
   if (shouldPersist && selectedMode !== "fast" && !hasPaidAccess) {
     return {
       hasPaidAccess,
+      userTier,
       failure: {
         status: 402,
         errorCode: "paid_mode_required",
@@ -106,6 +113,7 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
     if (usedToday >= dailyLimit) {
       return {
         hasPaidAccess,
+        userTier,
         failure: {
           status: 429,
           errorCode: "daily_quota_reached",
@@ -115,5 +123,5 @@ export async function evaluateChatAccess(input: EvaluateChatAccessInput): Promis
     }
   }
 
-  return { hasPaidAccess };
+  return { hasPaidAccess, userTier };
 }

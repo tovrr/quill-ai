@@ -1,26 +1,12 @@
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  streamText,
-  stepCountIs,
-  type UIMessage,
-} from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, streamText, stepCountIs, type UIMessage } from "ai";
 import { tool, jsonSchema } from "ai";
 import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution/service";
 import { embedText } from "@/lib/rag/embed";
 import { searchChunks } from "@/lib/rag/search";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
-import {
-  buildUserCustomizationPrompt,
-  normalizeUserProfile,
-} from "@/lib/extensions/customization";
-import {
-  createChat,
-  saveMessage,
-  updateChatTitle,
-  getChatById,
-} from "@/lib/data/db-helpers";
+import { buildUserCustomizationPrompt, normalizeUserProfile } from "@/lib/extensions/customization";
+import { createChat, saveMessage, updateChatTitle, getChatById } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/observability/metrics";
 import { checkRateLimit } from "@/lib/observability/rate-limit";
 import { buildWebSearchContext, searchWeb } from "@/lib/integrations/web-search";
@@ -31,12 +17,7 @@ import {
   logApiStart,
   withRequestHeaders,
 } from "@/lib/observability/logging";
-import {
-  trackChatEvent,
-  trackArtifactEvent,
-  trackFeatureUsage,
-  trackError,
-} from "@/lib/observability/analytics";
+import { trackChatEvent, trackArtifactEvent, trackFeatureUsage, trackError } from "@/lib/observability/analytics";
 import { parseBuilderArtifact } from "@/lib/builder/artifacts";
 import type { BuilderLocks, BuilderSessionContext, BuilderTarget } from "@/lib/builder/artifacts";
 import { DEFAULT_BUILDER_LOCKS } from "@/lib/builder/artifacts";
@@ -60,6 +41,7 @@ import {
 import { resolveModelForMode, type ChatMode } from "@/lib/chat/model-selection";
 import { evaluateChatAccess } from "@/lib/chat/access-gates";
 import { evaluatePolicyRuntime } from "@/lib/chat/policy-runtime";
+import { checkTokenBudget } from "@/lib/chat/token-budgets";
 
 function buildRunCodeTool() {
   return tool({
@@ -317,10 +299,7 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
     "table",
   ].some((token) => lower.includes(token));
   const wantsFrameworkCode =
-    lower.includes("next.js") ||
-    lower.includes("nextjs") ||
-    lower.includes("react") ||
-    lower.includes("tsx");
+    lower.includes("next.js") || lower.includes("nextjs") || lower.includes("react") || lower.includes("tsx");
 
   const targetHint =
     requestedTarget === "auto"
@@ -411,7 +390,7 @@ function buildCanvasArtifactPrompt(input: string | null, requestedTarget: Builde
   ].join("\n");
 }
 
-function jsonResponse(payload: Record<string, string>, status: number, headers?: HeadersInit) {
+function jsonResponse(payload: Record<string, unknown>, status: number, headers?: HeadersInit) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
@@ -419,6 +398,14 @@ function jsonResponse(payload: Record<string, string>, status: number, headers?:
       ...headers,
     },
   });
+}
+
+function estimateTokenBudgetForRequest(messages: unknown, mode: ChatMode): number {
+  const approxInputTokens = Math.ceil(JSON.stringify(messages).length / 4);
+  const expectedOutputTokens = mode === "fast" ? 800 : mode === "thinking" ? 1_600 : 2_800;
+
+  // Keep a bounded estimate to reduce false negatives while still preventing abuse.
+  return Math.max(800, Math.min(12_000, approxInputTokens + expectedOutputTokens));
 }
 
 export async function POST(req: Request) {
@@ -465,11 +452,9 @@ export async function POST(req: Request) {
     const parsedBody = parseChatRequestBody(rawBody);
     if (!parsedBody.success) {
       logApiCompletion(requestContext, { status: 400, error: "invalid_request_body" });
-      return jsonResponse(
-        { error: `Invalid request body at ${parsedBody.issuePath}: ${parsedBody.message}` },
-        400,
-        { "x-request-id": requestContext.requestId },
-      );
+      return jsonResponse({ error: `Invalid request body at ${parsedBody.issuePath}: ${parsedBody.message}` }, 400, {
+        "x-request-id": requestContext.requestId,
+      });
     }
 
     const body = parsedBody.data;
@@ -537,8 +522,28 @@ export async function POST(req: Request) {
       });
     }
 
+    // Check token budget (cost control)
+    const estimatedTokens = estimateTokenBudgetForRequest(modelMessages, selectedMode);
+    const userTier = access.userTier;
+    const budgetCheck = await checkTokenBudget(userId, userTier, estimatedTokens);
+
+    if (!budgetCheck.allowed) {
+      logApiCompletion(requestContext, { status: 429, error: "token_budget_exceeded" });
+      return jsonResponse(
+        {
+          error: budgetCheck.reason ?? "Token budget exceeded",
+          usage: {
+            dailyUsed: budgetCheck.dailyUsed,
+            monthlyUsed: budgetCheck.monthlyUsed,
+          },
+        },
+        429,
+        { "x-request-id": requestContext.requestId },
+      );
+    }
+
     const isApexProvider = process.env.APEX_CHAT_ENABLED === "true";
-    const baseSystemPrompt = killer ? killer.systemPrompt : (isApexProvider ? APEX_SYSTEM_PROMPT : SYSTEM_PROMPT);
+    const baseSystemPrompt = killer ? killer.systemPrompt : isApexProvider ? APEX_SYSTEM_PROMPT : SYSTEM_PROMPT;
     const systemPromptParts = [baseSystemPrompt, RESPONSE_STYLE_PROMPT];
 
     if (killer) {
@@ -561,7 +566,7 @@ export async function POST(req: Request) {
           "Execution policy notes:",
           ...policyWarnings.map((warning) => `- ${warning}`),
           "Do not claim that blocked actions were executed. Continue with the best answer possible within policy.",
-        ].join("\n")
+        ].join("\n"),
       );
     }
 
@@ -579,7 +584,7 @@ export async function POST(req: Request) {
               "Web search was requested but the retrieval step failed.",
               `Failure: ${message}`,
               "Be explicit that live search results were unavailable and answer from model knowledge only.",
-            ].join("\n")
+            ].join("\n"),
           );
         }
       }
@@ -587,7 +592,7 @@ export async function POST(req: Request) {
 
     if (canvasBuildIntent) {
       systemPromptParts.push(
-        buildCanvasArtifactPrompt(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null, requestedBuilderTarget)
+        buildCanvasArtifactPrompt(summarizedUserInput ?? textMsgs.at(-1)?.content ?? null, requestedBuilderTarget),
       );
 
       const iterationPrompt = buildIterationConstraintsPrompt(requestedBuilderLocks, builderSession);
@@ -652,10 +657,7 @@ export async function POST(req: Request) {
       });
 
       logApiCompletion(requestContext, { status: 200 });
-      return withRequestHeaders(
-        createUIMessageStreamResponse({ stream }),
-        requestContext.requestId,
-      );
+      return withRequestHeaders(createUIMessageStreamResponse({ stream }), requestContext.requestId);
     }
 
     const streamParams = {
@@ -712,10 +714,7 @@ export async function POST(req: Request) {
       });
 
       logApiCompletion(requestContext, { status: 200 });
-      return withRequestHeaders(
-        createUIMessageStreamResponse({ stream }),
-        requestContext.requestId,
-      );
+      return withRequestHeaders(createUIMessageStreamResponse({ stream }), requestContext.requestId);
     }
 
     const result = streamText({
@@ -763,7 +762,7 @@ export async function POST(req: Request) {
     return withRequestHeaders(
       result.toUIMessageStreamResponse({
         originalMessages,
-        onError: error => (error instanceof Error ? error.message : "Chat stream failed"),
+        onError: (error) => (error instanceof Error ? error.message : "Chat stream failed"),
       }),
       requestContext.requestId,
     );
@@ -779,8 +778,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
+    const message = error instanceof Error ? error.message : "Internal server error";
     console.error("[chat] error:", error instanceof Error ? error.stack : error);
     logApiCompletion(requestContext, { status: 500, error: message });
     return jsonResponse({ error: message }, 500, {
