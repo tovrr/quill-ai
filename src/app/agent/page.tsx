@@ -344,7 +344,9 @@ export default function AgentPage() {
 
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("idle");
   const [selectedMode, setSelectedMode] = useState<Mode>("fast");
-  const [builderTarget, setBuilderTarget] = useState<BuilderTarget>("auto");
+  // Always use 'auto' builder target for no/low-code users
+  const builderTarget: BuilderTarget = "auto";
+  const setBuilderTarget = () => {};
   const [builderLocks, setBuilderLocks] = useState<BuilderLocks>(DEFAULT_BUILDER_LOCKS);
   const [recentRefinements, setRecentRefinements] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -382,8 +384,8 @@ export default function AgentPage() {
   const activeKiller = isMounted ? killer : null;
 
   const artifact = useMemo(() => parseBuilderArtifact(canvasContent), [canvasContent]);
-  const canUsePageRefineActions =
-    builderTarget === "page" || artifact?.type === "page" || (builderTarget === "auto" && isHTMLContent(canvasContent));
+  // builderTarget is always 'auto', so only check for HTML content
+  const canUsePageRefineActions = isHTMLContent(canvasContent);
 
   const allowedModes: Mode[] = canUsePaidModes ? ["fast", "thinking", "advanced"] : ["fast"];
   const isTrialPlan = planLabel.toLowerCase().startsWith("trial") || trialDaysLeft !== null;
@@ -1352,15 +1354,7 @@ export default function AgentPage() {
     [setMessages],
   );
 
-  const handleStarterPrompt = useCallback(
-    (prompt: string, target: BuilderTarget) => {
-      setBuilderTarget(target);
-      setActiveTaskTitle(prompt.slice(0, 72));
-      setAgentStatus("thinking");
-      sendMessageTracked({ text: prompt });
-    },
-    [sendMessageTracked],
-  );
+  // handleStarterPrompt is not used anymore since builderTarget is always 'auto'.
 
   const handleNewChat = useCallback(() => {
     if (!isAuthenticated) {
@@ -1519,60 +1513,7 @@ export default function AgentPage() {
           {/* Header right controls (new chat, auth, importing) removed for minimal UI */}
         </header>
 
-        <div className="md:hidden border-b border-quill-border bg-quill-bg px-3 py-2">
-          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-quill-border bg-quill-surface p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleOpenMobileMenu}
-              aria-pressed={mobileWorkspaceView === "menu"}
-              className={`h-10 rounded-xl text-[11px] font-medium transition-all ${
-                mobileWorkspaceView === "menu"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
-                  : "text-quill-muted"
-              }`}
-            >
-              Menu
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleShowMobileChat}
-              aria-pressed={mobileWorkspaceView === "chat"}
-              className={`h-10 rounded-xl text-[11px] font-medium transition-all ${
-                mobileWorkspaceView === "chat"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
-                  : "text-quill-muted"
-              }`}
-            >
-              Chat
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleShowMobileCanvas}
-              disabled={!hasCanvasContent}
-              aria-pressed={mobileWorkspaceView === "canvas"}
-              className={`h-10 rounded-xl text-[11px] font-medium transition-all disabled:opacity-45 ${
-                mobileWorkspaceView === "canvas"
-                  ? "bg-quill-surface-2 text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.22),0_8px_18px_rgba(0,0,0,0.18)]"
-                  : "text-quill-muted"
-              }`}
-            >
-              Canvas
-            </Button>
-          </div>
-          <div className="mt-2 flex items-center justify-between rounded-xl border border-quill-border/70 bg-quill-surface/60 px-3 py-2 text-[11px] text-quill-muted">
-            <span className="truncate">
-              {hasCanvasContent
-                ? "Artifact ready to inspect in Canvas"
-                : "Chat is active. Canvas appears when Quill builds."}
-            </span>
-            <span className="ml-3 shrink-0 text-[10px] uppercase tracking-[0.12em] text-quill-muted/75">
-              {mobileWorkspaceView}
-            </span>
-          </div>
-        </div>
+        {/* Mobile tab bar removed: only hamburger menu remains for navigation. */}
 
         {uiSettings.statusSurface === "hybrid" &&
           (agentStatus !== "idle" || Boolean(activeTaskTitle) || statusStepCount !== undefined) && (
@@ -1709,7 +1650,8 @@ export default function AgentPage() {
                               key={starter.id}
                               type="button"
                               variant="ghost"
-                              onClick={() => handleStarterPrompt(starter.prompt, starter.target)}
+                              // Output format is always 'auto', so just set the draft
+                              onClick={() => setInitialComposerDraft(starter.prompt)}
                               className="h-auto items-start justify-start rounded-2xl border border-quill-border bg-quill-surface px-3 py-3 text-left hover:border-quill-border-2 hover:bg-quill-surface-2"
                             >
                               <span className="flex flex-col items-start gap-1">
@@ -1855,7 +1797,7 @@ export default function AgentPage() {
                   mode={selectedMode}
                   onModeChange={setSelectedMode}
                   builderTarget={builderTarget}
-                  onBuilderTargetChange={setBuilderTarget}
+                  onBuilderTargetChange={() => {}}
                   canvasMode={canvasMode}
                   onCanvasToggle={() => setCanvasMode((v) => !v)}
                   webSearchEnabled={webSearchEnabled}

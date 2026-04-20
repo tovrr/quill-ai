@@ -1,3 +1,10 @@
+// Agent/source options for anchoring
+const AGENT_SOURCES = [
+  { id: "quill", label: "Quill Agent" },
+  { id: "openclaw", label: "OpenClaw" },
+  { id: "hermes", label: "Hermes Agent" },
+  { id: "custom", label: "Custom Agent" },
+];
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -121,6 +128,8 @@ export function TaskInput({
   onReviewKeep,
   onReviewUndo,
 }: TaskInputProps) {
+  // Agent anchor state
+  const [agentSource, setAgentSource] = useState("quill");
   const router = useRouter();
   const [value, setValue] = useState("");
   const [imageMode, setImageMode] = useState(false);
@@ -257,7 +266,7 @@ export function TaskInput({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Input area */}
+      {/* Input area with agent anchor */}
       <div
         className={`rounded-2xl bg-quill-surface transition-all duration-300 border overflow-hidden ${
           isActiveComposer
@@ -265,6 +274,33 @@ export function TaskInput({
             : "border-quill-border shadow-[inset_0_0_0_1px_rgba(239,68,68,0.02)]"
         } ${showWorkingGlow ? "composer-working-glow" : ""}`}
       >
+        <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-quill-border bg-quill-surface text-xs text-quill-muted hover:text-quill-text"
+                aria-label="Select agent/source"
+              >
+                {AGENT_SOURCES.find((a) => a.id === agentSource)?.label ?? "Select Agent"}
+                <ChevronDownIcon className="ml-1 h-3 w-3" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">Agent Source</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={agentSource} onValueChange={setAgentSource}>
+                {AGENT_SOURCES.map((agent) => (
+                  <DropdownMenuRadioItem key={agent.id} value={agent.id} className="py-2">
+                    {agent.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span className="text-[10px] text-quill-muted">Session anchored to agent</span>
+        </div>
         {showReviewRow ? (
           <div className="flex items-center justify-between gap-2 border-b border-quill-border/70 px-3 py-2 text-[11px]">
             <div className="flex min-w-0 items-center gap-2 text-quill-text">
