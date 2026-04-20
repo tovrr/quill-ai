@@ -1,4 +1,5 @@
 import { recordApiMetric } from "@/lib/builder/metrics";
+import { persistentMetricsService } from "@/lib/observability/persistent-metrics";
 
 type ApiRequestContext = {
   route: string;
@@ -157,6 +158,20 @@ export function logApiCompletion(context: ApiRequestContext, completion: ApiComp
     status: completion.status,
     error: completion.error,
   });
+
+  // Record persistent metrics for analytics
+  if (context.userId) {
+    persistentMetricsService.recordUserActivity(context.userId, {
+      route: context.route,
+      feature: "api_request",
+      value: 1,
+      metadata: {
+        status: completion.status,
+        durationMs: Date.now() - context.startedAt,
+        hasError: !!completion.error,
+      },
+    });
+  }
 
   console.info(
     JSON.stringify({
