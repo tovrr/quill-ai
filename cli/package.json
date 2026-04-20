@@ -9,12 +9,21 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["quill-ai", "cli", "ai", "agent", "terminal"],
+  "keywords": [
+    "quill-ai",
+    "cli",
+    "ai",
+    "agent",
+    "terminal"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/tovrr/quill-ai.git",
     "directory": "cli"
   },
-  "files": ["index.mjs", "README.md"]
+  "files": [
+    "index.mjs",
+    "README.md"
+  ]
 }

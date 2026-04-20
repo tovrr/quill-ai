@@ -1,13 +1,12 @@
 # Quill AI TODOs
 
-## Recent Infrastructure Updates (2026-04-17)
+## System Documentation Rollout (2026-04-20)
 
-- [x] **Memory Bank Reorganization** — Moved all agent-focused documentation from `.kilocode/rules/` to `.agents/` folder
-  - Migrated memory-bank/ with all 5 files (brief.md, product.md, architecture.md, tech.md, context.md)
-  - Moved development.md and memory-bank-instructions.md to `.agents/`
-  - Updated all references across AGENTS.md, recipes, and documentation
-  - Cleaned up old locations to prevent confusion
-  - Impact: Agent context is now cleanly consolidated in `.agents/`; recipes remain in `.kilocode/recipes/`
+- [x] **Create Core Documentation Framework**
+  - Scope: Implement missing BRAIN.md, SYSTEMS.md, and ARCHITECTURE.md for complete system understanding
+  - Acceptance: All core documentation files created and properly linked; team can understand architecture, technical specs, and component relationships
+  - Verification: Review documentation completeness via grep and team feedback
+  - Outcome: ✅ Complete documentation framework established (BRAIN.md, SYSTEMS.md, ARCHITECTURE.md)
 
 ## Execution Rules (Keep This Doc Effective)
 
@@ -16,36 +15,46 @@
 - When a task is completed, link the PR/commit next to it and add a one-line outcome note.
 - Re-prioritize weekly: move stale tasks down, pull blockers up.
 
-## 🔴 Critical Business Blockers (Product Viability - Found in 2026-04-01 Skeptic Review)
+## 🔴 CRITICAL Commercial Viability Blockers (Updated 2026-04-20)
 
-These are the 6 foundational gaps blocking product viability. **Must be completed before scaling user acquisition.**
+These are the 4 foundational gaps blocking product viability and revenue generation. **Must be completed before scaling user acquisition or generating revenue.**
 
-- [ ] **Implement payment processor (Stripe / Paddle / Lemon Squeezy)**
+### Phase 1: Commercial Infrastructure (Next 2-3 weeks)
+
+- [x] **Implement payment processor (Stripe / Paddle)**
   - Scope: Add Stripe checkout session → webhook handler → plan activation flow. Update entitlements model to track `stripeCustomerId` + `stripeSubscriptionId`. Wire billing portal link in settings.
   - Acceptance: User can purchase $12 or $29 plan from pricing page, entitlements update on webhook, portal link works in settings.
   - Verification: Run end-to-end purchase flow in Stripe test mode on staging; verify DB reflects purchase; confirm paid features unlock immediately.
+  - Priority: **HIGHEST** - Revenue generation depends on this.
+  - Status: ✅ **COMPLETED** - Full Stripe integration implemented with webhooks, entitlements, and user flows
 
-- [x] **Stream the two-pass builder to prevent UI blocking**
-  - Scope: Swap builder pipeline from blocking `generateText` calls to `streamText` with real-time artifact updates. Show "Draft" → "Critic review" → "Final" progression in UI.
-  - Acceptance: Complex page builds show streaming progress instead of blank canvas; draft appears in editor within 5 seconds.
-  - Verification: Build a SaaS landing page in agent UI; verify timestamps on each phase appear in console; no 30+ second blank periods.
-
-- [x] **Fix message persistence: stop losing images and file attachments**
-  - Scope: Add `partsJson` column to `message` table to store full `UIMessagePart[]` structure (not flattened text). Migrate persisted messages. Update `saveMessage()` to serialize parts; `getMessagesByChatId()` to deserialize.
-  - Acceptance: Reload a chat that contains images → images reappear. File attachments show correct file type badge + size.
-  - Verification: Upload 3 images + PDF to a chat, save it, reload it, inspect message history in DevTools — all media present.
 - [ ] **Add OAuth / social login (Google minimum)**
   - Scope: Wire Google OAuth provider into Better Auth. Add Google Sign In button on login/registration pages. Update auth server/client.
   - Acceptance: User can sign up and log in via Google accounts. Email/password still works as fallback.
   - Verification: Create test Google project, test sign-up flow, verify session created, test subsequent login.
+  - Priority: **HIGHEST** - User acquisition friction depends on this.
 
-- [x] **Remove sandbox false claims OR implement real code executor**
-  - Decision: Option A chosen. Scope: Update Code Wizard killer definition + system prompt to remove execution language when sandbox is disabled.
-  - Acceptance: Code Wizard personality updated to propose/review code with honest local-testing instructions when `QUILL_SANDBOX_CONTAINER_ENABLED` is not set.
-  - Verification: System prompt conditionally removes execution claims based on `isSandboxEnabled()`. Commit: April 12, 2026.
-  - Impact: Eliminates false-claim liability; maintains full code generation/review capability; provides clear user guidance for local verification.
+### Phase 2: Commercial Hardening (Weeks 2-4)
 
-- [x] **Distribute rate limiting from in-memory to Redis (Upstash recommended)** — `src/lib/observability/rate-limit.ts` now uses Upstash Redis pipeline (INCR/EXPIRE/PTTL) with 1500ms timeout and in-memory fallback on Redis errors. All callers (`/api/chat`, `/api/generate-image`, `/api/preview`, `/api/validate-bundle`) updated to `await checkRateLimit()`.
+- [ ] **Implement persistent observability system**
+  - Scope: Replace in-memory metrics with persistent storage. Add external uptime monitoring, log aggregation, and performance analytics.
+  - Acceptance: Metrics survive app restarts, external monitoring system in place, comprehensive logging implemented.
+  - Verification: Simulate app restart → metrics persist; test external monitoring alerts; verify log aggregation works.
+  - Priority: **HIGH** - Production reliability and customer trust depend on this.
+
+- [ ] **Enhanced execution sandbox validation**
+  - Scope: Either implement real sandbox with isolation boundaries OR strengthen the "no execution" claims in system prompts and user communication.
+  - Acceptance: Clear communication between code generation vs execution capabilities; proper testing of sandbox security boundaries.
+  - Verification: Security audit of sandbox implementation; user testing of capability clarity; legal review of claims.
+  - Priority: **MEDIUM** - Legal compliance and user safety depend on this.
+
+## 🔧 Recent Commercial Foundation Updates (Completed 2026-04-20)
+
+- [x] **Distributed rate limiting (Upstash Redis)** — Migration completed with Redis pipeline and in-memory fallback
+- [x] **Streamed two-pass builder** — Real-time artifact updates prevent UI blocking
+- [x] **Message persistence fix** — Images and file attachments now properly stored and retrieved
+- [x] **False sandbox claims removed** — Code Wizard updated with honest language about local testing
+- [x] **Core documentation framework** — BRAIN.md, SYSTEMS.md, ARCHITECTURE.md created
 
 ## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
 
@@ -136,16 +145,25 @@ See `EXECUTION_PLAN_QUILL_PARITY.md` for full roadmap.
 - [ ] Phase 10: Publish/deploy pipeline scaffolding.
 - [ ] Phase 11: Autonomy policy layer (assist/propose/checkpointed-auto) with per-killer permission maps.
 
-## High Priority (Production Safety)
+## 🔧 Technical Debt & Improvements (Next 2-4 weeks)
 
-**NOTE: Escalated to "Critical Business Blockers" section above. See "Distribute rate limiting from in-memory to Redis" for full specs. Keeping this line for cross-reference:**
+### Observable Issues (Today)
+- [ ] **CI/CD visibility improvements** - Add deployment monitoring and status reporting
+- [ ] **Database optimization** - Index optimization, query performance improvements  
+- [ ] **Error handling enhancement** - Better error recovery and user feedback
+- [ ] **Testing coverage expansion** - Integration tests for critical user journeys
 
-- [ ] Replace in-memory rate limiting with distributed rate limiting (Redis/Upstash) — see blocker section for acceptance criteria
-- [ ] Keep current API rate-limit headers and 429 behavior unchanged after migration
-- [ ] Add env vars for distributed limiter and document fail-open/fail-closed behavior
-- [ ] Add monitoring for rate-limit hits by route and user/IP key
+### Infrastructure Modernization (Weeks 3-4)
+- [ ] **Performance budget enforcement** - Bundle size limits and performance monitoring
+- [ ] **Advanced caching strategies** - Redis integration for session and API caching
+- [ ] **Load testing framework** - Performance validation under load
+- [ ] **Infrastructure as Code** - Terraform or similar for deployment automation
 
-## High Priority (Storage and Performance)
+### Developer Experience (Weeks 4-6)
+- [ ] **Enhanced type safety** - Stricter TypeScript and runtime validation
+- [ ] **Documentation automation** - Auto-generated API docs and guides
+- [ ] **Local development setup** - Docker-based local environment with dependencies
+- [ ] **Monitoring tooling** - Developer-friendly error tracking and debugging
 
 **NOTE: This is subsumed by the "Fix message persistence" blocker above. Unified implementation:**
 

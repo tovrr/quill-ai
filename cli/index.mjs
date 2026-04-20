@@ -55,7 +55,7 @@ function parseArgs(argv) {
   let i = 0;
   while (i < argv.length) {
     const arg = argv[i];
-    if (arg === "--url" || arg === "--key" || arg === "--mode") {
+    if (arg === "--url" || arg === "--key" || arg === "--mode" || arg === "--tier") {
       args.flags[arg.slice(2)] = argv[++i] ?? "";
     } else if (arg === "--help" || arg === "-h") {
       args.flags.help = true;
@@ -77,21 +77,35 @@ ${paint(c.bold, "Usage:")}
   quill                              interactive REPL session
   quill "your question"              one-shot query
   quill --mode thinking "question"   use a specific mode
+  quill --tier <tier> "task"        quality tier: critical|quick|experimental
 
 ${paint(c.bold, "Flags:")}
   --url   <url>   API base URL  (default: https://quill-ai-xi.vercel.app)
   --key   <key>   CLI API key   (default: QUILL_CLI_KEY env var or ~/.quillrc)
   --mode  <mode>  fast | thinking | advanced  (default: fast)
+  --tier  <tier>  quality tier critical|quick|experimental (default: quick)
   --help          show this help
   --version       show version
 
+${paint(c.bold, "Commands in REPL:")}
+  .mode fast|thinking|advanced       change mode
+  .tier critical|quick|experimental  change quality tier
+  .clear                              clear conversation
+  .help                               show help
+
+${paint(c.bold, "Quality Tiers:")}
+  critical - Production code (full checks)
+  quick    - Development tasks (basic checks)  
+  experimental - Exploratory work (minimal checks)
+
 ${paint(c.bold, "Config file:")}  ~/.quillrc
-  ${paint(c.gray, '{ "url": "https://...", "key": "your-key", "mode": "fast" }')}
+  ${paint(c.gray, '{ "url": "https://...", "key": "your-key", "mode": "fast", "tier": "quick" }')}
 
 ${paint(c.bold, "Environment variables:")}
   QUILL_URL        API base URL
   QUILL_CLI_KEY    CLI API key
   QUILL_MODE       default mode
+  QUILL_TIER       default quality tier
 `);
 }
 
@@ -120,7 +134,7 @@ async function* parseSSE(readable) {
 }
 
 // ─── Core chat call ──────────────────────────────────────────────────────────
-async function chat({ apiUrl, apiKey, messages, mode, onDelta, onDone, onError }) {
+async function chat({ apiUrl, apiKey, messages, mode, tier, onDelta, onDone, onError }) {
   const url = `${apiUrl}/api/cli/chat`;
 
   let res;
@@ -131,7 +145,7 @@ async function chat({ apiUrl, apiKey, messages, mode, onDelta, onDone, onError }
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ messages, mode }),
+      body: JSON.stringify({ messages, mode, tier }),
     });
   } catch (e) {
     onError(`Network error: ${e.message}\nIs the server running at ${apiUrl}?`);
@@ -178,7 +192,7 @@ async function runRepl(config) {
     historySize: 100,
   });
 
-  const prompt = paint(c.quill + c.bold, "you") + paint(c.gray, " › ") ;
+  const prompt = paint(c.quill + c.bold, "you") + paint(c.gray, " › ");
 
   console.log(
     paint(c.quill + c.bold, "Quill AI") +
@@ -216,6 +230,25 @@ async function runRepl(config) {
         return;
       }
 
+      if (text === ".tier critical" || text === ".tier quick" || text === ".tier experimental") {
+        config.tier = text.split(" ")[1];
+        console.log(paint(c.gray, `Quality tier set to ${config.tier}.\n`));
+        ask();
+        return;
+      }
+
+      if (text === ".help") {
+        console.log(`
+${paint(c.bold, "Quill CLI Commands:")}
+  .mode fast|thinking|advanced       Change AI mode
+  .tier critical|quick|experimental   Change quality tier
+  .clear                              Clear conversation
+  .help                               Show this help
+        `);
+        ask();
+        return;
+      }
+
       history.push({ role: "user", content: text });
 
       process.stdout.write("\n" + paint(c.quill + c.bold, "quill") + paint(c.gray, " › "));
@@ -227,6 +260,7 @@ async function runRepl(config) {
         apiKey,
         messages: history,
         mode: config.mode,
+        tier: config.tier,
         onDelta(delta) {
           process.stdout.write(delta);
           fullResponse += delta;
@@ -257,13 +291,14 @@ async function runRepl(config) {
 
 // ─── One-shot ──────────────────────────────────────────────────────────────────
 async function runOneShot(config, question) {
-  const { apiUrl, apiKey, mode } = config;
+  const { apiUrl, apiKey, mode, tier } = config;
 
   await chat({
     apiUrl,
     apiKey,
     messages: [{ role: "user", content: question }],
     mode,
+    tier,
     onDelta(delta) {
       process.stdout.write(delta);
     },
@@ -301,26 +336,24 @@ async function main() {
 
   const rc = loadRcFile();
 
-  const apiUrl = (flags.url ?? process.env.QUILL_URL ?? rc.url ?? "https://quill-ai-xi.vercel.app").replace(
-    /\/$/,
-    "",
-  );
+  const apiUrl = (flags.url ?? process.env.QUILL_URL ?? rc.url ?? "https://quill-ai-xi.vercel.app").replace(/\/$/, "");
   const apiKey = flags.key ?? process.env.QUILL_CLI_KEY ?? rc.key ?? "";
   const mode = flags.mode ?? process.env.QUILL_MODE ?? rc.mode ?? "fast";
+  const tier = flags.tier ?? process.env.QUILL_TIER ?? rc.tier ?? "quick";
 
   if (!apiKey) {
     console.error(
       paint(c.red, "Error: No CLI key provided.\n") +
         paint(
           c.dim,
-          "Set QUILL_CLI_KEY env var, pass --key <key>, or add \"key\" to ~/.quillrc\n" +
+          'Set QUILL_CLI_KEY env var, pass --key <key>, or add "key" to ~/.quillrc\n' +
             "The server must also have QUILL_CLI_KEY set to the same value.",
         ),
     );
     process.exit(1);
   }
 
-  const config = { apiUrl, apiKey, mode };
+  const config = { apiUrl, apiKey, mode, tier };
 
   const question = positional.join(" ").trim();
   if (question) {

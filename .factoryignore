@@ -1,0 +1,57 @@
+# Dependencies (most important for RAM and performance)
+node_modules/
+venv/
+.venv/
+env/
+__pycache__/
+
+# System and Git folders  
+.git/
+.svn/
+.hg/
+
+# Build outputs and artifacts
+dist/
+build/
+out/
+.next/
+desktop/src-tauri/target/
+desktop/src-tauri/target/
+
+# Large files and binaries
+*.exe
+*.dll
+*.so
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.zip
+*.tar
+*.gz
+*.mp4
+*.mp3
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+coverage/
+.nyc_output/
+
+# Runtime files
+.env.local
+.env.production.local
+.env.staging.local

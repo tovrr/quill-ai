@@ -287,3 +287,16 @@ export async function GET() {
 - 2026-04-12: Continued `/api/chat` decomposition by moving killer policy evaluation and sandbox availability/runtime flags into `src/lib/chat/policy-runtime.ts`; route now consumes `killer`, `policyWarnings`, `effectiveWebSearchRequested`, `canvasBuildIntent`, `sandboxStatus`, and `canRunCode` from one helper; revalidated with passing typecheck and production build
 - 2026-04-12: Added anti-hallucination architecture guardrails for the chat backend in `AGENTS.md` + internal rules/docs and corrected stale runbook env-key references (`GOOGLE_GENERATIVE_AI_API_KEY`) to keep agent guidance aligned with the current codebase
 - 2026-04-12: Added a Chat Backend Change Checklist in `CONTRIBUTING.md` and chat-specific review checks in `.github/pull_request_template.md` to prevent re-inlining and keep chat edits routed through the correct `src/lib/chat/*` modules
+- 2026-04-20: Created comprehensive documentation framework including BRAIN.md (system architecture), SYSTEMS.md (technical specifications), and ARCHITECTURE.md (component relationships) to establish complete system understanding; updated TODOS.md with commercial viability roadmap highlighting payment processor and OAuth as remaining critical blockers
+
+**Documentation System Updates (2026-04-20):**
+- ✅ Created BRAIN.md - Comprehensive system architecture and thinking patterns
+- ✅ Created SYSTEMS.md - Technical specifications and quality gates  
+- ✅ Created ARCHITECTURE.md - Component relationships and system flow
+- ✅ Updated TODOS.md with commercial viability roadmap and technical debt tracking
+- ✅ Established complete documentation framework for Quill AI
+
+**Commercial Viability Progress:**
+- ✅ 4/6 critical business blockers completed (rate limiting, builder streaming, message persistence, sandbox claims)
+- ⚠️ 2 remaining: Payment processor and OAuth/social login (highest priority for revenue generation)
+- 📊 Overall maturity rating: 7/10 - Strong technical foundation, needs commercial infrastructure
