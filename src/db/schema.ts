@@ -504,6 +504,68 @@ export const ragChunks = pgTable(
   (table) => [index("rag_chunk_document_id_idx").on(table.documentId), index("rag_chunk_user_id_idx").on(table.userId)],
 );
 
+// ─── Universal Mission Inbox ─────────────────────────────────────────────────
+
+export const SESSION_SOURCES = [
+  "quill",
+  "telegram",
+  "gmail",
+  "notion",
+  "slack",
+  "hermes",
+  "openclaw",
+  "agent",
+  "custom",
+] as const;
+export type SessionSource = (typeof SESSION_SOURCES)[number];
+
+export const externalSessions = pgTable(
+  "external_session",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    source: varchar("source", { enum: SESSION_SOURCES }).notNull().default("custom"),
+    sourceId: text("sourceId"),
+    title: varchar("title").notNull(),
+    summary: text("summary"),
+    externalUrl: text("externalUrl"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("external_session_user_id_idx").on(table.userId),
+    index("external_session_source_idx").on(table.source),
+    index("external_session_updated_at_idx").on(table.updatedAt),
+  ],
+);
+
+export const userApiKeys = pgTable(
+  "user_api_key",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    label: varchar("label").notNull().default("default"),
+    keyHash: text("keyHash").notNull().unique(),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    lastUsedAt: timestamp("lastUsedAt"),
+  },
+  (table) => [
+    index("user_api_key_user_id_idx").on(table.userId),
+    index("user_api_key_hash_idx").on(table.keyHash),
+  ],
+);
+
+// ─── Metrics ──────────────────────────────────────────────────────────────────
+
 export const metrics = pgTable(
   "metric",
   {

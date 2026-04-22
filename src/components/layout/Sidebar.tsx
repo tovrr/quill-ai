@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, type ComponentType, type SVGProps } f
 import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 import {
+  InboxStackIcon,
   BookOpenIcon,
   ChartBarSquareIcon,
   ChevronDownIcon,
@@ -27,6 +28,7 @@ import {
   WrenchScrewdriverIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, BoltIcon } from "@heroicons/react/24/outline";
 import { SparklesIcon, StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +95,13 @@ interface SidebarProps {
 
 const PRIMARY_WORKSPACE_LINKS: CommandLink[] = [
   {
+    id: "missions",
+    label: "Mission Inbox",
+    subtitle: "Triage tasks and sub-agent runs",
+    href: "/missions",
+    icon: InboxStackIcon,
+  },
+  {
     id: "workspace",
     label: "Workspace",
     subtitle: "Open the main agent console",
@@ -157,6 +166,31 @@ const EXPLORE_LINKS: CommandLink[] = [
     subtitle: "Plans, limits, and upgrade path",
     href: "/pricing",
     icon: RectangleGroupIcon,
+  },
+];
+
+interface GatewayEntry {
+  id: string;
+  label: string;
+  subtitle: string;
+  href: string;
+  badge?: string;
+}
+
+const AGENT_GATEWAY_ENTRIES: GatewayEntry[] = [
+  {
+    id: "openclaw",
+    label: "OpenClaw",
+    subtitle: "Connect your OpenClaw agent directly",
+    href: "/agent?connect=openclaw",
+    badge: "Gateway",
+  },
+  {
+    id: "hermes",
+    label: "Hermes",
+    subtitle: "Bridge external agents via Hermes protocol",
+    href: "/agent?connect=hermes",
+    badge: "Bridge",
   },
 ];
 
@@ -355,8 +389,8 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(true);
-  const [memoryOpen, setMemoryOpen] = useState(false);
-  const [studioOpen, setStudioOpen] = useState(false);
+  const [buildOpen, setBuildOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -525,6 +559,9 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
   const filteredSkillShortcuts = SKILL_SHORTCUTS.filter((item) =>
     matchesQuery(normalizedQuery, item.label, item.subtitle),
   );
+  const filteredGatewayEntries = AGENT_GATEWAY_ENTRIES.filter((item) =>
+    matchesQuery(normalizedQuery, item.label, item.subtitle),
+  );
   const filteredArtifactGroups = ARTIFACT_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) =>
@@ -536,9 +573,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
     filteredPrimaryLinks.length > 0 ||
     (!mobileCompact && filteredExploreLinks.length > 0) ||
     filteredAgents.length > 0 ||
-    (!mobileCompact && filteredMemoryShortcuts.length > 0) ||
-    (!mobileCompact && filteredSkillShortcuts.length > 0) ||
-    (!mobileCompact && filteredArtifactGroups.length > 0) ||
+    filteredMemoryShortcuts.length > 0 ||
+    filteredSkillShortcuts.length > 0 ||
+    filteredGatewayEntries.length > 0 ||
+    filteredArtifactGroups.length > 0 ||
+    filteredChats.length > 0;
     filteredChats.length > 0;
 
   const engineTone =
@@ -739,9 +778,13 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
 
             <div
               className="overflow-hidden transition-all duration-200"
-              style={{ maxHeight: agentsOpen ? "720px" : "0px", opacity: agentsOpen ? 1 : 0 }}
+              style={{ maxHeight: agentsOpen ? "1400px" : "0px", opacity: agentsOpen ? 1 : 0 }}
             >
               <div className="flex flex-col gap-1 pb-2 pt-1">
+                {/* Specialists */}
+                <div className="px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">
+                  Specialists
+                </div>
                 {filteredAgents.map((killer) => (
                   <Button
                     key={killer.id}
@@ -760,157 +803,111 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     </span>
                   </Button>
                 ))}
-              </div>
-            </div>
-          </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => navigateTo("/skills")}
+                  className="flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-dashed border-quill-border px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.3)] hover:bg-quill-surface-2"
+                >
+                  <PlusIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-medium leading-tight text-quill-muted">Add custom expert</span>
+                    <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">Install a specialized agent</span>
+                  </span>
+                </Button>
 
-          {!mobileCompact && (
-            <div className="space-y-1 pt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setMemoryOpen((value) => !value)}
-                className={sidebarSectionToggleClass}
-              >
-                <span className="flex items-center gap-1.5">
-                  <FolderIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                  Memory & Skills
-                </span>
-                <ChevronDownIcon
-                  className="h-2.75 w-2.75 transition-transform"
-                  aria-hidden="true"
-                  style={{ transform: memoryOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-                />
-              </Button>
-
-              <div
-                className="overflow-hidden transition-all duration-200"
-                style={{ maxHeight: memoryOpen ? "700px" : "0px", opacity: memoryOpen ? 1 : 0 }}
-              >
-                <div className="flex flex-col gap-1 pb-2 pt-1">
-                  {filteredMemoryShortcuts.map((item) => {
-                    const Icon = item.icon;
-                    return (
+                {/* Connect / Gateway */}
+                <div className="mx-1 my-2 border-t border-quill-border/60" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setConnectOpen((v) => !v)}
+                  className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted hover:text-[#A1A7B0]"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <BoltIcon className="h-2.5 w-2.5" aria-hidden="true" />
+                    Connect
+                  </span>
+                  <ChevronDownIcon
+                    className="h-2.5 w-2.5"
+                    aria-hidden="true"
+                    style={{ transform: connectOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+                  />
+                </Button>
+                <div
+                  className="overflow-hidden transition-all duration-200"
+                  style={{ maxHeight: connectOpen ? "300px" : "0px", opacity: connectOpen ? 1 : 0 }}
+                >
+                  <div className="flex flex-col gap-1 pt-1">
+                    {filteredGatewayEntries.map((entry) => (
                       <Button
-                        key={item.id}
+                        key={entry.id}
                         type="button"
                         variant="ghost"
-                        onClick={() => {
-                          if (item.action === "settings") {
-                            setSettingsOpen(true);
-                            return;
-                          }
-
-                          if (item.prompt) {
-                            openAgentPrompt(item.prompt, item.launchMode ?? "draft");
-                          }
-                        }}
+                        onClick={() => navigateTo(entry.href)}
                         className={sidebarRowButtonClass}
                       >
-                        <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                        <span className="min-w-0">
-                          <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">
-                            {item.label}
+                        <ArrowTopRightOnSquareIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{entry.label}</span>
+                            {entry.badge && (
+                              <span className="rounded-full bg-[rgba(239,68,68,0.12)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#F87171]">
+                                {entry.badge}
+                              </span>
+                            )}
                           </span>
-                          <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">
-                            {item.subtitle}
-                          </span>
+                          <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{entry.subtitle}</span>
                         </span>
                       </Button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
 
-                  {filteredSkillShortcuts.length > 0 && (
-                    <div className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">
-                      Learned skills
-                    </div>
-                  )}
-                  {filteredSkillShortcuts.map((item) => (
+                {/* Skills & Memory */}
+                <div className="mx-1 my-2 border-t border-quill-border/60" />
+                <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">
+                  Skills &amp; Memory
+                </div>
+                {filteredMemoryShortcuts.map((item) => {
+                  const Icon = item.icon;
+                  return (
                     <Button
                       key={item.id}
                       type="button"
                       variant="ghost"
-                      onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
+                      onClick={() => {
+                        if (item.action === "settings") { setSettingsOpen(true); return; }
+                        if (item.prompt) openAgentPrompt(item.prompt, item.launchMode ?? "draft");
+                      }}
                       className={sidebarRowButtonClass}
                     >
-                      <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" aria-hidden="true" />
+                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
                         <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                       </span>
                     </Button>
-                  ))}
-                </div>
+                  );
+                })}
+                {filteredSkillShortcuts.map((item) => (
+                  <Button
+                    key={item.id}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
+                    className={sidebarRowButtonClass}
+                  >
+                    <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
+                      <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
+                    </span>
+                  </Button>
+                ))}
               </div>
             </div>
-          )}
-
-          {!mobileCompact && (
-            <div className="space-y-1 pt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStudioOpen((value) => !value)}
-                className={sidebarSectionToggleClass}
-              >
-                <span className="flex items-center gap-1.5">
-                  <DocumentTextIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                  Artifact Studio
-                </span>
-                <ChevronDownIcon
-                  className="h-2.75 w-2.75 transition-transform"
-                  aria-hidden="true"
-                  style={{ transform: studioOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-                />
-              </Button>
-
-              <div
-                className="overflow-hidden transition-all duration-200"
-                style={{ maxHeight: studioOpen ? "1200px" : "0px", opacity: studioOpen ? 1 : 0 }}
-              >
-                <div className="space-y-3 pb-2 pt-1">
-                  {filteredArtifactGroups.map((group) => {
-                    const Icon = group.icon;
-                    return (
-                      <div
-                        key={group.id}
-                        className="rounded-xl border border-quill-border bg-quill-surface/40 px-2.5 py-2.5"
-                      >
-                        <div className="flex items-start gap-2.5 px-1 pb-2">
-                          <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                          <div className="min-w-0">
-                            <div className="text-[12px] font-medium text-quill-text">{group.label}</div>
-                            <div className="mt-0.5 text-[11px] leading-tight text-quill-muted">{group.subtitle}</div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          {group.items.map((item) => (
-                            <Button
-                              key={item.id}
-                              type="button"
-                              variant="ghost"
-                              onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
-                              className="flex h-auto w-full items-start justify-start gap-2 rounded-lg border border-transparent px-2 py-2 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.2)] hover:bg-quill-surface-2"
-                            >
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#EF4444]" />
-                              <span className="min-w-0">
-                                <span className="block text-[12px] font-medium leading-tight text-[#C1C7D0]">
-                                  {item.label}
-                                </span>
-                                <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">
-                                  {item.subtitle}
-                                </span>
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           <div className="mx-4 my-2 border-t border-quill-border" />
 

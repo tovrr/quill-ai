@@ -8,14 +8,15 @@ import { useRouter } from "next/navigation";
 import {
   ArrowPathIcon,
   Bars3Icon,
+  BookOpenIcon,
   ExclamationCircleIcon,
   PencilSquareIcon,
-  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SecondaryRightRail } from "@/components/layout/SecondaryRightRail";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import {
   AgentStatusBar,
@@ -1430,6 +1431,15 @@ export default function AgentPage() {
   }, [messages, setMessages, sendMessage, isLoading]);
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
+  const outputFormatLabel =
+    builderTarget === "auto"
+      ? "Smart (auto)"
+      : builderTarget === "page"
+        ? "Live Page"
+        : builderTarget === "react-app"
+          ? "React App"
+          : "Next.js Bundle";
+  const activeSessionCount = Number(isLoading || isGeneratingImage);
   // trustIndicators removed for minimal UI
   const hasCanvasContent = canvasContent.trim().length > 0;
   const mobileWorkspaceView: "menu" | "chat" | "canvas" = mobileSidebarOpen ? "menu" : canvasMode ? "canvas" : "chat";
@@ -1469,7 +1479,7 @@ export default function AgentPage() {
 
       {/* Mobile: fixed full-screen sidebar drawer */}
       <div
-        className="md:hidden fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-out"
+        className="md:hidden fixed inset-y-0 left-0 z-50 w-[min(85vw,20rem)] max-w-[20rem] transition-transform duration-300 ease-out"
         style={{ transform: mobileSidebarOpen ? "translateX(0)" : "translateX(-100%)" }}
       >
         <Suspense fallback={sidebarFallback}>
@@ -1481,7 +1491,7 @@ export default function AgentPage() {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <header
-          className={`flex items-center gap-2 border-b border-quill-border bg-quill-bg shrink-0 ${uiSettings.focusMode ? "px-2 py-2 md:px-3" : "px-3 py-2 md:gap-3 md:px-4 md:py-3"}`}
+          className={`relative flex items-center gap-2 border-b border-quill-border bg-quill-bg shrink-0 ${uiSettings.focusMode ? "px-2 py-2 md:px-3" : "px-3 py-2 md:gap-3 md:px-4 md:py-3"}`}
         >
           {/* Hamburger: mobile drawer toggle */}
           <Button
@@ -1500,17 +1510,89 @@ export default function AgentPage() {
             <Bars3Icon className="h-4.25 w-4.25" aria-hidden="true" />
           </Button>
 
-          {/* Active mode badge and trial plan removed for minimal UI */}
+          <div className="hidden md:flex items-center gap-2">
+            <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium text-quill-muted">
+              {modeLabels[selectedMode]}
+            </span>
+            {isTrialPlan && (
+              <span className="rounded-full border border-[rgba(239,68,68,0.28)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f2b1b1]">
+                {trialDaysLeft !== null ? `Trial: ${Math.max(0, trialDaysLeft)}d left` : planLabel}
+              </span>
+            )}
+          </div>
+
+          <div className="hidden md:flex min-w-0 flex-1 items-center gap-2 px-2">
+            {isEditingChatTitle ? (
+              <Input
+                ref={chatTitleInputRef}
+                value={chatTitleDraft}
+                onChange={(e) => setChatTitleDraft(e.target.value)}
+                onBlur={() => {
+                  void saveChatTitle();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void saveChatTitle();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setChatTitleDraft(chatTitle);
+                    setIsEditingChatTitle(false);
+                  }
+                }}
+                className="h-8 max-w-md border-quill-border bg-quill-surface text-sm"
+                disabled={isSavingChatTitle}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsEditingChatTitle(true)}
+                className="group h-8 max-w-md justify-start gap-1.5 rounded-lg px-2 text-sm text-quill-muted hover:bg-quill-surface-2 hover:text-quill-text"
+              >
+                <span className="truncate">{chatTitle}</span>
+                <PencilSquareIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+              </Button>
+            )}
+            {isSavingChatTitle && <span className="text-[10px] text-quill-muted">Saving...</span>}
+          </div>
 
           {/* Mobile-only: truncated chat title in header center */}
           {chatTitle && (
-            <span className="md:hidden flex-1 min-w-0 truncate text-center text-xs text-quill-muted px-1">
+            <span className="pointer-events-none absolute left-12 right-12 md:hidden truncate text-center text-xs text-quill-muted">
               {chatTitle}
             </span>
           )}
 
-          {/* Chat title editing and tooltip removed for minimal UI */}
-          {/* Header right controls (new chat, auth, importing) removed for minimal UI */}
+          <div className="ml-auto flex items-center gap-1.5 md:gap-2">
+            <Button
+              onClick={() => router.push("/docs")}
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 rounded-lg border-quill-border bg-quill-surface px-2.5 text-[11px] md:h-9 md:px-3 md:text-xs"
+              title="Open docs"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Docs</span>
+            </Button>
+
+            {authResolved ? (
+              isAuthenticated ? (
+                <AccountMenu compact />
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg border-quill-border bg-quill-surface px-2.5 text-[11px] md:h-9 md:px-3 md:text-xs"
+                  onClick={() => router.push("/login?callbackUrl=/agent")}
+                >
+                  Sign in
+                </Button>
+              )
+            ) : null}
+          </div>
         </header>
 
         {/* Mobile tab bar removed: only hamburger menu remains for navigation. */}
@@ -1873,6 +1955,16 @@ export default function AgentPage() {
             <div className="md:hidden fixed inset-0 z-40 animate-slide-up">
               <CanvasPanel content={canvasContent} onClose={() => setCanvasMode(false)} isWorking={isLoading} />
             </div>
+          )}
+
+          {!canvasMode && (
+            <SecondaryRightRail
+              modeLabel={modeLabels[selectedMode]}
+              outputFormatLabel={outputFormatLabel}
+              isCanvasOpen={canvasMode}
+              isWorking={isLoading || isGeneratingImage}
+              activeSessions={activeSessionCount}
+            />
           )}
         </div>
       </div>

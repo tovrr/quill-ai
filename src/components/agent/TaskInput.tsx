@@ -29,7 +29,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // Agent/source options for anchoring
 const AGENT_SOURCES = [
@@ -131,13 +135,11 @@ export function TaskInput({
 }: TaskInputProps) {
   // Agent anchor state
   const [agentSource, setAgentSource] = useState("quill");
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const router = useRouter();
   const [value, setValue] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileList | null>(null);
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
-  const [builderDropdownOpen, setBuilderDropdownOpen] = useState(false);
-  const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -210,8 +212,8 @@ export function TaskInput({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setAttachedFiles(e.target.files);
-      setModeDropdownOpen(false);
-      setBuilderDropdownOpen(false);
+
+
     }
   };
 
@@ -267,7 +269,7 @@ export function TaskInput({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Input area with agent anchor */}
+      {/* Input area */}
       <div
         className={`rounded-2xl bg-quill-surface transition-all duration-300 border overflow-hidden ${
           isActiveComposer
@@ -275,140 +277,6 @@ export function TaskInput({
             : "border-quill-border shadow-[inset_0_0_0_1px_rgba(239,68,68,0.02)]"
         } ${showWorkingGlow ? "composer-working-glow" : ""}`}
       >
-        <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg border-quill-border bg-quill-surface text-xs text-quill-muted hover:text-quill-text"
-                aria-label="Select agent/source"
-              >
-                {AGENT_SOURCES.find((a) => a.id === agentSource)?.label ?? "Select Agent"}
-                <ChevronDownIcon className="ml-1 h-3 w-3" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">Agent Source</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={agentSource} onValueChange={setAgentSource}>
-                {AGENT_SOURCES.map((agent) => (
-                  <DropdownMenuRadioItem key={agent.id} value={agent.id} className="py-2">
-                    {agent.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <span className="text-[10px] text-quill-muted">Session anchored to agent</span>
-        </div>
-        {showReviewRow ? (
-          <div className="flex items-center justify-between gap-2 border-b border-quill-border/70 px-3 py-2 text-[11px]">
-            <div className="flex min-w-0 items-center gap-2 text-quill-text">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-quill-accent" />
-              <span className="truncate font-medium">{reviewSummary?.label}</span>
-              {typeof reviewSummary?.additions === "number" && (
-                <span className="shrink-0 text-quill-green">+{reviewSummary.additions}</span>
-              )}
-              {typeof reviewSummary?.deletions === "number" && (
-                <span className="shrink-0 text-[#f2a1a1]">-{reviewSummary.deletions}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                onClick={() => {
-                  onReviewKeep?.();
-                }}
-                variant="outline"
-                className="h-auto rounded-lg border-quill-border-2 bg-quill-surface-2 px-2 py-1 text-[11px] text-quill-text hover:border-[rgba(239,68,68,0.35)]"
-              >
-                {reviewSummary?.keepLabel ?? "Keep"}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  setValue("");
-                  setAttachedFiles(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                  setImageMode(false);
-                  onReviewUndo?.();
-                }}
-                variant="outline"
-                className="h-auto rounded-lg border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-1 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)]"
-              >
-                {reviewSummary?.undoLabel ?? "Undo"}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="hidden items-center justify-between gap-2 border-b border-quill-border/70 px-4 py-2 text-[11px] sm:flex">
-            <div className="inline-flex min-w-0 items-center gap-2 text-quill-muted">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-quill-accent" />
-              <span className="truncate">
-                Describe a task (e.g., Draft PR summary, Refactor file X, Plan migration Y)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {activeCapabilityBadges.slice(0, 2).map((badge) => (
-                <span
-                  key={badge}
-                  className="rounded-full border border-quill-border-2 bg-quill-surface-2 px-2 py-0.5 text-[10px] font-medium text-[#B8C0CB]"
-                >
-                  {badge}
-                </span>
-              ))}
-              <span className="truncate text-[10px] uppercase tracking-[0.12em] text-quill-muted">
-                {imageMode ? "Image mode" : currentModeLabel}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Attached file chips */}
-        {attachedFiles && attachedFiles.length > 0 && (
-          <div className="px-4 pt-3 flex flex-wrap gap-2">
-            {Array.from(attachedFiles).map((file, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-border border border-quill-border-2 text-xs text-[#A1A7B0]"
-              >
-                <PaperClipIcon className="h-2.75 w-2.75 shrink-0" aria-hidden="true" />
-                <span className="max-w-25 truncate">{file.name}</span>
-                <Button
-                  type="button"
-                  onClick={() => removeFile(i)}
-                  variant="ghost"
-                  size="icon"
-                  className="ml-0.5 h-5 w-5 text-quill-muted hover:text-quill-text"
-                  aria-label="Remove file"
-                >
-                  <XMarkIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Image mode badge */}
-        {imageMode && (
-          <div className="px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-quill-accent-glow border border-[rgba(239,68,68,0.3)] text-xs text-[#F87171] font-medium">
-              <SparklesIcon className="h-2.75 w-2.75" aria-hidden="true" />
-              Image generation mode
-            </span>
-          </div>
-        )}
-
-        {isWorking && !imageMode && (
-          <div className="px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.22)] text-xs text-[#f2b1b1] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171] animate-pulse" />
-              {workingLabel ?? "Quill is working..."}
-            </span>
-          </div>
-        )}
-
         {/* Textarea */}
         <textarea
           ref={textareaRef}
@@ -473,8 +341,8 @@ export function TaskInput({
                   <Button
                     onClick={() => {
                       fileInputRef.current?.click();
-                      setModeDropdownOpen(false);
-                      setBuilderDropdownOpen(false);
+
+
                     }}
                     type="button"
                     variant="ghost"
@@ -516,8 +384,8 @@ export function TaskInput({
                         }
 
                         if (webSearchState !== "available") {
-                          setModeDropdownOpen(false);
-                          setBuilderDropdownOpen(false);
+
+
                           return;
                         }
 
@@ -614,193 +482,237 @@ export function TaskInput({
             </div>
             {/* end left group */}
 
-            {/* Right: mode selector + send */}
+            {/* Right: config selector + send */}
             <div className="flex shrink-0 items-center gap-1 border-l border-quill-border pl-1.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={isDisabled}
-                    aria-label="Toggle advanced options"
-                    onClick={() => {
-                      setAdvancedOptionsOpen((value) => !value);
-                      setModeDropdownOpen(false);
-                      setBuilderDropdownOpen(false);
-                    }}
-                    className={`flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 ${
-                      advancedOptionsOpen || builderTarget !== "auto" || canvasMode || mode !== "fast"
-                        ? "bg-quill-border text-quill-text"
-                        : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                    }`}
-                  >
-                    <AdjustmentsHorizontalIcon className="h-3.75 w-3.75" aria-hidden="true" />
-                    {showControlLabels && <span className="hidden sm:inline">Options</span>}
-                    <ChevronDownIcon
-                      className="h-2.5 w-2.5 transition-transform duration-150"
-                      aria-hidden="true"
-                      style={{ transform: advancedOptionsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Output format, canvas, and model mode</TooltipContent>
-              </Tooltip>
+              <div className="hidden md:block">
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={isDisabled}
+                          aria-label="Configuration settings"
+                          className={"flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
+                            (mode !== "fast" || agentSource !== "quill"
+                              ? "bg-quill-border text-quill-text"
+                              : "text-quill-muted hover:text-quill-text hover:bg-quill-border")
+                          }
+                        >
+                          <AdjustmentsHorizontalIcon className="h-3.75 w-3.75" aria-hidden="true" />
+                          {showControlLabels && <span className="hidden sm:inline">Settings</span>}
+                          <ChevronDownIcon
+                            className="h-2.5 w-2.5 ml-1 transition-transform duration-150"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Agent, Mode, Skills, and MCPs</TooltipContent>
+                  </Tooltip>
 
-              {advancedOptionsOpen && (
-                <>
-                  <DropdownMenu open={builderDropdownOpen} onOpenChange={setBuilderDropdownOpen}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={isDisabled}
-                            aria-label="Builder options"
-                            className={`flex min-w-0 items-center ${toolbarButtonBaseClass} disabled:opacity-30 ${builderButtonSizingClass} ${
-                              builderDropdownOpen || builderTarget !== "auto" || canvasMode
-                                ? "bg-quill-border text-quill-text"
-                                : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                            }`}
-                          >
-                            <RectangleGroupIcon className="h-3 w-3" aria-hidden="true" />
-                            {(builderTarget !== "auto" || canvasMode || showControlLabels) && (
-                              <span className="hidden sm:inline">
-                                {BUILDER_TARGETS.find((target) => target.id === builderTarget)?.label ?? "Build"}
-                              </span>
-                            )}
-                            {(builderTarget !== "auto" || canvasMode) && !builderDropdownOpen && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#F87171]" />
-                            )}
-                            <ChevronDownIcon
-                              className="h-2.5 w-2.5 transition-transform duration-150"
-                              aria-hidden="true"
-                              style={{ transform: builderDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                            />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Output format &amp; canvas</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">
-                        Output format
-                      </DropdownMenuLabel>
-                      <DropdownMenuRadioGroup
-                        value={builderTarget}
-                        onValueChange={(value) => onBuilderTargetChange(value as BuilderTarget)}
-                      >
-                        {BUILDER_TARGETS.map((target) => (
-                          <DropdownMenuRadioItem key={target.id} value={target.id} className="items-start py-2">
-                            <span className="flex flex-col gap-0.5">
-                              <span>{target.label}</span>
-                              <span className="text-[11px] text-quill-muted">{target.desc}</span>
-                            </span>
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={onCanvasToggle} className="gap-3 py-2.5">
-                        <RectangleGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>Preview panel</span>
-                        {canvasMode && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F87171]" />}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <DropdownMenuContent align="end" className="w-56 mb-2 bg-[#1A1D21] border-quill-border">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 py-2">
+                      Configuration
+                    </DropdownMenuLabel>
 
-                  <DropdownMenu open={modeDropdownOpen} onOpenChange={setModeDropdownOpen}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={isDisabled}
-                            aria-label="Model mode"
-                            className={`flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 ${modeButtonSizingClass} ${
-                              modeDropdownOpen
-                                ? "bg-quill-border text-quill-text"
-                                : "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                            }`}
-                          >
-                            <span className={showControlLabels ? "hidden sm:inline" : "inline text-[11px] sm:inline"}>
-                              {showControlLabels ? currentModeLabel : currentModeLabel}
-                            </span>
-                            <ChevronDownIcon
-                              className="h-2.5 w-2.5 transition-transform duration-150"
-                              aria-hidden="true"
-                              style={{ transform: modeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                            />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Flash: fastest | Think: deeper | Pro: highest quality</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted">
-                        Mode
-                      </DropdownMenuLabel>
-                      {visibleModes.map((m) => {
-                        const isEnabled = enabledModes.has(m.id);
-                        return (
-                          <DropdownMenuItem
-                            key={m.id}
-                            onClick={() => {
-                              if (!isEnabled) {
-                                setModeDropdownOpen(false);
-                                router.push("/pricing");
-                                return;
-                              }
-                              onModeChange(m.id);
-                              setModeDropdownOpen(false);
-                            }}
-                            className="items-start gap-3 py-2"
-                          >
-                            <span className="flex flex-1 flex-col gap-0.5">
-                              <span
-                                className={
-                                  !isEnabled ? "text-quill-muted" : mode === m.id ? "text-[#F87171]" : "text-[#A1A7B0]"
-                                }
-                              >
-                                {m.label}
-                              </span>
-                              <span className="text-[11px] text-quill-muted">{m.desc}</span>
-                            </span>
-                            {!isEnabled ? (
-                              <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
-                                Paid
-                              </span>
-                            ) : mode === m.id ? (
-                              <CheckIcon className="h-3.25 w-3.25 shrink-0 text-[#F87171]" aria-hidden="true" />
-                            ) : null}
-                          </DropdownMenuItem>
-                        );
-                      })}
+                    {/* Agent Source */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-3 w-full py-2.5 px-3">
+                        <span>Agent: {AGENT_SOURCES.find((a) => a.id === agentSource)?.label ?? "Quill Agent"}</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-48 bg-[#1A1D21] border-quill-border z-100">
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-2 py-2">Select Agent</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup value={agentSource} onValueChange={setAgentSource}>
+                          {AGENT_SOURCES.map((agent) => (
+                            <DropdownMenuRadioItem key={agent.id} value={agent.id} className="py-2.5 text-xs cursor-pointer px-2">
+                              {agent.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
 
-                      {hasLockedModes && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <div className="mx-1 rounded-xl border border-quill-accent-glow bg-[rgba(239,68,68,0.05)] p-3">
-                            <p className="text-xs text-[#c7c7d8]">Think and Pro require a paid plan.</p>
-                            <Button
-                              type="button"
+                    {/* Mode */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full">
+                        <span>Mode: {currentModeLabel}</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-64 bg-[#1A1D21] border-quill-border z-100">
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 pt-2">Model Engine</DropdownMenuLabel>
+                        {visibleModes.map((m) => {
+                          const isEnabled = enabledModes.has(m.id);
+                          return (
+                            <DropdownMenuItem
+                              key={m.id}
                               onClick={() => {
-                                setModeDropdownOpen(false);
-                                router.push("/pricing");
+                                if (!isEnabled) {
+                                  router.push("/pricing");
+                                  return;
+                                }
+                                onModeChange(m.id);
                               }}
-                              className="mt-2 inline-flex h-auto items-center gap-1.5 rounded-lg bg-[#EF4444] px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-[#DC2626]"
+                              className="items-start gap-3 py-2.5 px-3 cursor-pointer"
                             >
-                              Upgrade
-                              <ArrowRightIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              )}
+                              <span className="flex flex-1 flex-col gap-0.5">
+                                <span
+                                  className={
+                                    !isEnabled ? "text-quill-muted" : mode === m.id ? "text-[#F87171]" : "text-[#A1A7B0]"
+                                  }
+                                >
+                                  {m.label}
+                                </span>
+                                <span className="text-[11px] text-quill-muted">{m.desc}</span>
+                              </span>
+                              {!isEnabled ? (
+                                <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
+                                  Paid
+                                </span>
+                              ) : mode === m.id ? (
+                                <CheckIcon className="h-3.25 w-3.25 shrink-0 text-[#F87171]" aria-hidden="true" />
+                              ) : null}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
 
+                    {/* Skills */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full opacity-60">
+                        <span>Skills (0)</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-56 bg-[#1A1D21] border-quill-border z-100">
+                        <div className="px-3 py-3 text-[11px] text-quill-muted text-center italic">
+                          Configure specialized commands in your workspace's .kilocode/skills folder.
+                        </div>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    {/* MCPs */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full opacity-60">
+                        <span>MCP Servers (0)</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-56 bg-[#1A1D21] border-quill-border z-100">
+                        <div className="px-3 py-3 text-[11px] text-quill-muted text-center italic">
+                          Configure local Model Context Protocol integrations to enable DB access, git, or Figma.
+                        </div>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="md:hidden">
+                <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={isDisabled}
+                        aria-label="Open mobile settings"
+                        onClick={() => setMobileSettingsOpen(true)}
+                        className={"flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
+                          (mode !== "fast" || agentSource !== "quill"
+                            ? "bg-quill-border text-quill-text"
+                            : "text-quill-muted hover:text-quill-text hover:bg-quill-border")
+                        }
+                      >
+                        <AdjustmentsHorizontalIcon className="h-3.75 w-3.75" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Agent and mode settings</TooltipContent>
+                  </Tooltip>
+
+                  <SheetContent side="bottom" className="rounded-t-2xl border-x-0 border-b-0 px-4 pb-6 pt-4">
+                    <SheetHeader>
+                      <SheetTitle className="text-base">Configuration</SheetTitle>
+                      <SheetDescription>Choose source and model behavior for this chat.</SheetDescription>
+                    </SheetHeader>
+
+                    <div className="mt-4 space-y-4">
+                      <section className="space-y-2">
+                        <p className="text-[11px] uppercase tracking-wider text-quill-muted">Agent</p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {AGENT_SOURCES.map((agent) => {
+                            const selected = agentSource === agent.id;
+                            return (
+                              <Button
+                                key={agent.id}
+                                type="button"
+                                variant="ghost"
+                                className={`h-10 justify-between rounded-lg border px-3 ${
+                                  selected
+                                    ? "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.09)] text-quill-text"
+                                    : "border-quill-border bg-quill-surface-2 text-quill-muted"
+                                }`}
+                                onClick={() => setAgentSource(agent.id)}
+                              >
+                                <span className="text-xs">{agent.label}</span>
+                                {selected && <CheckIcon className="h-3.75 w-3.75 text-[#F87171]" aria-hidden="true" />}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </section>
+
+                      <section className="space-y-2">
+                        <p className="text-[11px] uppercase tracking-wider text-quill-muted">Mode</p>
+                        <div className="space-y-2">
+                          {visibleModes.map((m) => {
+                            const isEnabled = enabledModes.has(m.id);
+                            return (
+                              <Button
+                                key={m.id}
+                                type="button"
+                                variant="ghost"
+                                className={`h-auto w-full items-start justify-between rounded-lg border px-3 py-2 text-left ${
+                                  !isEnabled
+                                    ? "border-quill-border bg-quill-surface-2 text-quill-muted"
+                                    : mode === m.id
+                                      ? "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.09)] text-quill-text"
+                                      : "border-quill-border bg-quill-surface-2 text-[#A1A7B0]"
+                                }`}
+                                onClick={() => {
+                                  if (!isEnabled) {
+                                    router.push("/pricing");
+                                    return;
+                                  }
+                                  onModeChange(m.id);
+                                  setMobileSettingsOpen(false);
+                                }}
+                              >
+                                <span className="flex flex-1 flex-col gap-0.5">
+                                  <span className="text-xs">{m.label}</span>
+                                  <span className="text-[11px] text-quill-muted">{m.desc}</span>
+                                </span>
+                                {!isEnabled ? (
+                                  <span className="rounded-full border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] font-medium text-[#F87171]">
+                                    Paid
+                                  </span>
+                                ) : mode === m.id ? (
+                                  <CheckIcon className="h-3.75 w-3.75 shrink-0 text-[#F87171]" aria-hidden="true" />
+                                ) : null}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </section>
+
+                      <section className="rounded-lg border border-quill-border bg-quill-surface-2 p-3 text-[11px] text-quill-muted">
+                        Skills (0): Configure specialized commands in .kilocode/skills.
+                      </section>
+
+                      <section className="rounded-lg border border-quill-border bg-quill-surface-2 p-3 text-[11px] text-quill-muted">
+                        MCP Servers (0): Configure local MCP integrations in your workspace settings.
+                      </section>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
               {canStop ? (
                 <Tooltip>
                   <TooltipTrigger asChild>

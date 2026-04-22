@@ -1,0 +1,255 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Bars3Icon, InboxStackIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { AccountMenu } from "@/components/layout/AccountMenu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { AgentMissionSource } from "@/lib/missions/source-policy";
+
+type MissionSource = "quill" | AgentMissionSource;
+type MissionSourceFilter = "quill-agents" | "openclaw" | "hermes";
+
+interface MissionEntry {
+  id: string;
+  title: string;
+  source: MissionSource;
+  sourceId: string | null;
+  externalUrl: string | null;
+  summary: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+const SOURCE_LABELS: Record<MissionSource, string> = {
+  quill: "Quill",
+  hermes: "Hermes",
+  openclaw: "OpenClaw",
+  agent: "Agent",
+  custom: "Custom",
+};
+
+const SOURCE_COLORS: Record<MissionSource, string> = {
+  quill:     "bg-[rgba(139,92,246,0.15)] text-[#c4b5fd] border-[rgba(139,92,246,0.3)]",
+  hermes:    "bg-[rgba(251,146,60,0.15)] text-[#fdba74] border-[rgba(251,146,60,0.3)]",
+  openclaw:  "bg-[rgba(52,211,153,0.14)] text-[#9ff0cd] border-[rgba(52,211,153,0.28)]",
+  agent:     "bg-[rgba(251,191,36,0.14)] text-[#ffd88a] border-[rgba(251,191,36,0.3)]",
+  custom:    "bg-quill-surface-2 text-quill-muted border-quill-border",
+};
+
+const SOURCE_FILTERS: Array<{ value: MissionSourceFilter; label: string }> = [
+  { value: "quill-agents", label: "Quill Agents (all specialists and customs)" },
+  { value: "openclaw", label: "OpenClaw Agent" },
+  { value: "hermes", label: "Hermes Agent" },
+];
+
+function relativeTime(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export default function MissionsPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [missions, setMissions] = useState<MissionEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<MissionSourceFilter>("quill-agents");
+
+  useEffect(() => {
+    fetch("/api/missions")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.missions)) setMissions(data.missions as MissionEntry[]);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return missions.filter((m) => {
+      if (sourceFilter === "quill-agents") {
+        if (!["quill", "agent", "custom"].includes(m.source)) return false;
+      } else if (m.source !== sourceFilter) {
+        return false;
+      }
+      if (!q) return true;
+      return m.title.toLowerCase().includes(q) || (m.summary ?? "").toLowerCase().includes(q);
+    });
+  }, [missions, query, sourceFilter]);
+
+  return (
+    <div className="flex h-[100dvh] overflow-hidden bg-quill-bg text-quill-text">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 flex lg:hidden">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="relative z-50 flex w-72 flex-col">
+            <Sidebar onClose={() => setSidebarOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex lg:w-72 lg:flex-col lg:shrink-0">
+        <Sidebar />
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-2 border-b border-quill-border px-3 py-3 sm:px-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0 rounded-lg lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </Button>
+
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <InboxStackIcon className="h-5 w-5 shrink-0 text-quill-muted" aria-hidden="true" />
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-semibold leading-tight">Mission Inbox</h1>
+              <p className="hidden truncate text-xs text-quill-muted sm:block">
+                Agent missions only — Quill, Hermes, OpenClaw, and connected agents
+              </p>
+            </div>
+          </div>
+
+          <Link href="/agent">
+            <Button type="button" size="sm" className="shrink-0 gap-1.5 rounded-lg text-xs">
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">New mission</span>
+              <span className="sm:hidden">New</span>
+            </Button>
+          </Link>
+
+          <AccountMenu />
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 border-b border-quill-border px-3 py-2 sm:px-4">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search missions…"
+            className="h-8 min-w-0 flex-1 border-quill-border bg-quill-bg text-sm"
+          />
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as MissionSourceFilter)}
+            className="h-8 shrink-0 rounded-lg border border-quill-border bg-quill-bg px-2 text-xs text-quill-muted"
+          >
+            {SOURCE_FILTERS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Mission list */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {loading ? (
+            <ul className="divide-y divide-quill-border">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-3 px-4 py-4">
+                  <div className="h-3 w-16 animate-pulse rounded bg-quill-surface" />
+                  <div className="h-4 w-3/5 animate-pulse rounded bg-quill-surface" />
+                  <div className="ml-auto h-3 w-10 animate-pulse rounded bg-quill-surface" />
+                </li>
+              ))}
+            </ul>
+          ) : filtered.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+              <InboxStackIcon className="h-10 w-10 text-quill-muted" aria-hidden="true" />
+              {missions.length === 0 ? (
+                <>
+                  <p className="text-sm font-medium">No missions yet</p>
+                  <p className="max-w-xs text-xs text-quill-muted">
+                    Every Quill chat and connected agent mission lands here automatically.
+                  </p>
+                  <Link href="/agent">
+                    <Button size="sm" className="mt-1 gap-1.5 rounded-lg text-xs">
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      Start your first mission
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">No results</p>
+                  <p className="text-xs text-quill-muted">Try a different search or filter.</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <ul className="divide-y divide-quill-border">
+              {filtered.map((mission) => {
+                const href =
+                  mission.source === "quill"
+                    ? `/agent?chat=${mission.id}`
+                    : (mission.externalUrl ?? "#");
+                const isExternal = mission.source !== "quill" && mission.externalUrl;
+
+                return (
+                  <li key={mission.id}>
+                    <a
+                      href={href}
+                      target={isExternal ? "_blank" : undefined}
+                      rel={isExternal ? "noopener noreferrer" : undefined}
+                      className="flex items-center gap-3 px-3 py-3.5 transition-colors hover:bg-quill-surface sm:px-4"
+                    >
+                      {/* Source badge */}
+                      <span
+                        className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${SOURCE_COLORS[mission.source]}`}
+                      >
+                        {SOURCE_LABELS[mission.source]}
+                      </span>
+
+                      {/* Title + summary */}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-quill-text">{mission.title}</p>
+                        {mission.summary && (
+                          <p className="mt-0.5 truncate text-[11px] text-quill-muted">{mission.summary}</p>
+                        )}
+                      </div>
+
+                      {/* Time */}
+                      <span className="shrink-0 text-[11px] text-quill-muted">
+                        {relativeTime(mission.updatedAt ?? mission.createdAt)}
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!loading && missions.length > 0 && (
+          <div className="border-t border-quill-border px-4 py-2">
+            <p className="text-[11px] text-quill-muted">
+              {filtered.length === missions.length
+                ? `${missions.length} mission${missions.length !== 1 ? "s" : ""}`
+                : `${filtered.length} of ${missions.length} missions`}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
