@@ -1,0 +1,21 @@
+// Sample daemon config for Quil AI agent runtime manager
+// Save as daemon.config.json
+{
+  "serverUrl": "http://localhost:3000/api/runtimes", // Base URL for REST API
+  "heartbeatIntervalSec": 15,
+  "agentCLIs": [
+    {
+      "name": "Hermes",
+      "path": "C:/agents/hermes.exe",
+      "provider": "HermesAI",
+      "metadata": { "versionCmd": "--version" }
+    },
+    {
+      "name": "Claude",
+      "path": "C:/agents/claude.exe",
+      "provider": "Anthropic",
+      "metadata": { "versionCmd": "--version" }
+    }
+    // Add more agents as needed
+  ]
+}
