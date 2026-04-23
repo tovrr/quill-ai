@@ -20,3 +20,9 @@ jobs:
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/projects/prj_LavN5r8fkIn40xk9au7COx8IQSAm/deployments" | python3 -m json.tool || true
           echo "--- v6/deployments (filter by projectId) ---"
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?projectId=prj_LavN5r8fkIn40xk9au7COx8IQSAm" | python3 -m json.tool || true
+          echo "--- project info v1 ---"
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/projects/prj_LavN5r8fkIn40xk9au7COx8IQSAm" | python3 -m json.tool || true
+          echo "--- project info v8 ---"
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v8/projects/prj_LavN5r8fkIn40xk9au7COx8IQSAm" | python3 -m json.tool || true
+          echo "--- integrations list ---"
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/integrations" | python3 -m json.tool || true
