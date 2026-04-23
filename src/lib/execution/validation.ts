@@ -71,7 +71,8 @@ export class CodeValidator {
     deep_nesting: /(?:\s{4,}|\t)/g,
     function_calls: /(?<!\w)\w+\s*\(/g,
     loops: /(while\s+\w+|for\s+\w+\s+in\s+\w+)/g,
-    recursion: /(?:def\s+\w+\([^)]*\):\s*.*?\1\w+|return\s+\w+\([^)]*\))/gs,
+    // Capture function name and use [\s\S] instead of dotAll for broader compatibility
+    recursion: /(?:def\s+(\w+)\([^)]*\):\s*[\s\S]*?\1\w+|return\s+\w+\([^)]*\))/g,
   };
 
   // resource limits

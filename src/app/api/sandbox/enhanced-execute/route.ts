@@ -38,13 +38,16 @@ export async function POST(req: Request) {
   }
 
   // Enhanced input validation
-  const { code, language, timeoutMs, validateOnly = false, enablePerformanceTracking = false } = body;
+  const { code, language, timeoutMs, validateOnly = false } = body;
+  // Coerce enablePerformanceTracking from unknown to boolean
+  const enablePerformanceTracking =
+    typeof body["enablePerformanceTracking"] === "boolean" ? (body["enablePerformanceTracking"] as boolean) : false;
 
-  if (typeof code !== 'string' || !code.trim()) {
+  if (typeof code !== "string" || !code.trim()) {
     return jsonResponse({ error: "Missing or empty 'code' field." }, 400);
   }
 
-  if (typeof language !== 'string') {
+  if (typeof language !== "string") {
     return jsonResponse({ error: "Missing 'language' field." }, 400);
   }
 
@@ -58,7 +61,7 @@ export async function POST(req: Request) {
   // Enhanced validation only mode
   if (validateOnly) {
     const validation = codeValidator.validateCode(code, language);
-    
+
     console.info("[sandbox/enhanced-execute:validate]", {
       userId,
       language,
@@ -75,7 +78,7 @@ export async function POST(req: Request) {
         riskLevel: validation.riskLevel,
         warnings: validation.warnings,
         errors: validation.errors,
-        canExecute: validation.isValid && validation.riskLevel !== 'critical',
+        canExecute: validation.isValid && validation.riskLevel !== "critical",
       },
       validation.isValid ? 200 : 422,
     );
@@ -86,7 +89,7 @@ export async function POST(req: Request) {
     const result = await enhancedExecutionService.execute({
       code,
       language: language.toLowerCase(),
-      timeoutMs: typeof timeoutMs === 'number' && timeoutMs > 0 ? timeoutMs : undefined,
+      timeoutMs: typeof timeoutMs === "number" && timeoutMs > 0 ? timeoutMs : undefined,
       enablePerformanceTracking,
     });
 
@@ -117,7 +120,7 @@ export async function POST(req: Request) {
     if (result.validation) {
       responseData.validation = result.validation;
       responseData.riskLevel = result.validation.riskLevel;
-      responseData.canExecute = result.validation.isValid && result.validation.riskLevel !== 'critical';
+      responseData.canExecute = result.validation.isValid && result.validation.riskLevel !== "critical";
     }
 
     // Add warnings if any
@@ -141,22 +144,21 @@ export async function POST(req: Request) {
     }
 
     return jsonResponse(responseData, result.ok ? 200 : 422);
-
   } catch (error) {
     console.error("[sandbox/enhanced-execute:error]", {
       userId,
       language,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
 
     return jsonResponse(
       {
         ok: false,
-        stdout: '',
-        stderr: error instanceof Error ? error.message : 'Code execution failed',
+        stdout: "",
+        stderr: error instanceof Error ? error.message : "Code execution failed",
         exitCode: 1,
         durationMs: 0,
-        error: error instanceof Error ? error.message : 'Execution error',
+        error: error instanceof Error ? error.message : "Execution error",
         canExecute: false,
       },
       500,
@@ -167,78 +169,84 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   // Provide information about enhanced execution capabilities
   const url = new URL(req.url);
-  const language = url.searchParams.get('language');
+  const language = url.searchParams.get("language");
 
   if (language) {
-    const validation = codeValidator.validateCode('# Sample placeholder code', language);
-    
-    return jsonResponse({
-      language,
-      supportsValidation: true,
-      supportedFeatures: [
-        'pre-execution validation',
-        'risk assessment',
-        'performance monitoring',
-        'resource constraint enforcement',
-        'security scanning'
-      ],
-      resourceLimits: {
-        maxCodeSize: 50000,
-        maxLines: 1000,
-        maxComplexity: 10,
-        maxNestingDepth: 5,
-        maxExecutionTimeMs: 30000,
+    const validation = codeValidator.validateCode("# Sample placeholder code", language);
+
+    return jsonResponse(
+      {
+        language,
+        supportsValidation: true,
+        supportedFeatures: [
+          "pre-execution validation",
+          "risk assessment",
+          "performance monitoring",
+          "resource constraint enforcement",
+          "security scanning",
+        ],
+        resourceLimits: {
+          maxCodeSize: 50000,
+          maxLines: 1000,
+          maxComplexity: 10,
+          maxNestingDepth: 5,
+          maxExecutionTimeMs: 30000,
+        },
+        sampleRiskLevels: ["low", "medium", "high", "critical"],
+        validationExample: validation,
       },
-      sampleRiskLevels: ['low', 'medium', 'high', 'critical'],
-      validationExample: validation,
-    }, 200);
+      200,
+    );
   }
 
-  return jsonResponse({
-    endpoint: 'enhanced-execute',
-    description: 'Enhanced code execution with validation and monitoring',
-    features: [
-      'pre-execution code validation',
-      'security vulnerability scanning', 
-      'performance monitoring',
-      'resource constraint enforcement',
-      'risk assessment',
-      'execution statistics tracking',
-    ],
-    supportedLanguages: SUPPORTED_LANGUAGES,
-    resourceLimits: {
-      maxCodeSize: '50KB',
-      maxLines: 1000,
-      maxExecutionTime: '30 seconds',
-      maxNestingDepth: 5,
-    },
-    endpoints: {
-      POST: {
-        description: 'Execute code with enhanced validation',
-        parameters: {
-          code: 'string - Code to execute',
-          language: 'string - Programming language',
-          timeoutMs: 'number - Execution timeout in milliseconds',
-          validateOnly: 'boolean - Only validate without execution',
-          enablePerformanceTracking: 'boolean - Enable detailed performance monitoring',
+  return jsonResponse(
+    {
+      endpoint: "enhanced-execute",
+      description: "Enhanced code execution with validation and monitoring",
+      features: [
+        "pre-execution code validation",
+        "security vulnerability scanning",
+        "performance monitoring",
+        "resource constraint enforcement",
+        "risk assessment",
+        "execution statistics tracking",
+      ],
+      supportedLanguages: SUPPORTED_LANGUAGES,
+      resourceLimits: {
+        maxCodeSize: "50KB",
+        maxLines: 1000,
+        maxExecutionTime: "30 seconds",
+        maxNestingDepth: 5,
+      },
+      endpoints: {
+        POST: {
+          description: "Execute code with enhanced validation",
+          parameters: {
+            code: "string - Code to execute",
+            language: "string - Programming language",
+            timeoutMs: "number - Execution timeout in milliseconds",
+            validateOnly: "boolean - Only validate without execution",
+            enablePerformanceTracking: "boolean - Enable detailed performance monitoring",
+          },
+          response: {
+            ok: "boolean - Execution success status",
+            stdout: "string - Standard output",
+            stderr: "string - Standard error",
+            exitCode: "number - Exit code",
+            durationMs: "number - Execution duration",
+            validation: "object - Pre-execution validation results",
+            warnings: "string[] - Warning messages",
+            performanceMetrics: "object - Performance monitoring data",
+          },
         },
-        response: {
-          ok: 'boolean - Execution success status',
-          stdout: 'string - Standard output',
-          stderr: 'string - Standard error',
-          exitCode: 'number - Exit code',
-          durationMs: 'number - Execution duration',
-          validation: 'object - Pre-execution validation results',
-          warnings: 'string[] - Warning messages',
-          performanceMetrics: 'object - Performance monitoring data',
+        GET: {
+          description: "Get enhanced execution capabilities information",
+          parameters: {
+            language: "string - Get validation info for specific language",
+          },
         },
       },
-      GET: {
-        description: 'Get enhanced execution capabilities information',
-        parameters: {
-          language: 'string - Get validation info for specific language',
-        },
-      },
     },
-  }, 200);
+    200,
+  );
 }

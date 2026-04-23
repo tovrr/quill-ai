@@ -33,7 +33,8 @@ async function registerAgent(agent: AgentCLI, serverUrl: string) {
     });
     console.log(`[REGISTERED] ${agent.name}`);
   } catch (err) {
-    console.error(`[REGISTER FAIL] ${agent.name}:`, err.message);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[REGISTER FAIL] ${agent.name}:`, msg);
   }
 }
 
@@ -45,7 +46,8 @@ async function heartbeatAgent(agent: AgentCLI, serverUrl: string) {
     });
     // console.log(`[HEARTBEAT] ${agent.name}`);
   } catch (err) {
-    console.error(`[HEARTBEAT FAIL] ${agent.name}:`, err.message);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[HEARTBEAT FAIL] ${agent.name}:`, msg);
   }
 }
 
@@ -54,7 +56,8 @@ async function deregisterAgent(agent: AgentCLI, serverUrl: string) {
     await axios.delete(`${serverUrl}/${encodeURIComponent(agent.name)}`);
     console.log(`[DEREGISTERED] ${agent.name}`);
   } catch (err) {
-    console.error(`[DEREGISTER FAIL] ${agent.name}:`, err.message);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[DEREGISTER FAIL] ${agent.name}:`, msg);
   }
 }
 
