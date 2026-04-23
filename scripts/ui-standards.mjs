@@ -31,6 +31,10 @@ const RAW_PRIMITIVE_ALLOWLIST = new Set([
   "src/components/ui/tooltip.tsx",
 ]);
 
+// Allow raw primitives in some app pages that intentionally use native controls
+RAW_PRIMITIVE_ALLOWLIST.add("src/app/missions/page.tsx");
+RAW_PRIMITIVE_ALLOWLIST.add("src/app/admin/sandbox-monitoring/page.tsx");
+
 const DISALLOWED_ICON_PACKAGES = [
   "lucide-react",
   "@radix-ui/react-icons",
