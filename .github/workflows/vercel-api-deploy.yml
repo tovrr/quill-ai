@@ -1,0 +1,33 @@
+name: vercel-api-deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy'
+        required: false
+        default: 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel API deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: prj_LavN5r8fkIn40xk9au7COx8IQSAm
+          GIT_ORG: tovrr
+          GIT_REPO: quill-ai
+        run: |
+          set -euo pipefail
+          REF="${{ github.event.inputs.ref || 'main' }}"
+          echo "Triggering Vercel deployment for ref=$REF"
+          body=$(jq -n --arg org "$GIT_ORG" --arg repo "$GIT_REPO" --arg ref "$REF" --arg project "$VERCEL_PROJECT_ID" '{project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref}}')
+          echo "$body" > /tmp/vercel-body.json
+          curl -sS -X POST "https://api.vercel.com/v13/deployments" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/vercel-body.json -o /tmp/vercel-response.json
+          echo "Vercel response:"
+          cat /tmp/vercel-response.json
+          jq -r '.id, .url, .meta.githubCommitSha, .meta.githubCommitRef' /tmp/vercel-response.json || true
