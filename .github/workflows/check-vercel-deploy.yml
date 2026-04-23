@@ -1,0 +1,22 @@
+name: Check Vercel Deployments
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Query Vercel deployments
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "Checking Vercel deployments for project: prj_LavN5r8fkIn40xk9au7COx8IQSAm"
+          echo "--- v13/projects/:projectId/deployments ---"
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/projects/prj_LavN5r8fkIn40xk9au7COx8IQSAm/deployments" | python3 -m json.tool || true
+          echo "--- v6/deployments (filter by projectId) ---"
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?projectId=prj_LavN5r8fkIn40xk9au7COx8IQSAm" | python3 -m json.tool || true
