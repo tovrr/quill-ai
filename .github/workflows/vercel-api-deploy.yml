@@ -16,13 +16,14 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: prj_LavN5r8fkIn40xk9au7COx8IQSAm
+          VERCEL_PROJECT_NAME: quill-ai
           GIT_ORG: tovrr
           GIT_REPO: quill-ai
         run: |
           set -euo pipefail
           REF="${{ github.event.inputs.ref || 'main' }}"
           echo "Triggering Vercel deployment for ref=$REF"
-          body=$(jq -n --arg org "$GIT_ORG" --arg repo "$GIT_REPO" --arg ref "$REF" --arg project "$VERCEL_PROJECT_ID" '{project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref}}')
+          body=$(jq -n --arg name "$VERCEL_PROJECT_NAME" --arg org "$GIT_ORG" --arg repo "$GIT_REPO" --arg ref "$REF" --arg project "$VERCEL_PROJECT_ID" '{name: $name, project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref}}')
           echo "$body" > /tmp/vercel-body.json
           curl -sS -X POST "https://api.vercel.com/v13/deployments" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
