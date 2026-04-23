@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubContent,
-  DropdownMenuSubTrigger
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -212,8 +212,6 @@ export function TaskInput({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setAttachedFiles(e.target.files);
-
-
     }
   };
 
@@ -341,8 +339,6 @@ export function TaskInput({
                   <Button
                     onClick={() => {
                       fileInputRef.current?.click();
-
-
                     }}
                     type="button"
                     variant="ghost"
@@ -384,8 +380,6 @@ export function TaskInput({
                         }
 
                         if (webSearchState !== "available") {
-
-
                           return;
                         }
 
@@ -494,7 +488,8 @@ export function TaskInput({
                           variant="ghost"
                           disabled={isDisabled}
                           aria-label="Configuration settings"
-                          className={"flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
+                          className={
+                            "flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
                             (mode !== "fast" || agentSource !== "quill"
                               ? "bg-quill-border text-quill-text"
                               : "text-quill-muted hover:text-quill-text hover:bg-quill-border")
@@ -523,10 +518,16 @@ export function TaskInput({
                         <span>Agent: {AGENT_SOURCES.find((a) => a.id === agentSource)?.label ?? "Quill Agent"}</span>
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-48 bg-[#1A1D21] border-quill-border z-100">
-                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-2 py-2">Select Agent</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-2 py-2">
+                          Select Agent
+                        </DropdownMenuLabel>
                         <DropdownMenuRadioGroup value={agentSource} onValueChange={setAgentSource}>
                           {AGENT_SOURCES.map((agent) => (
-                            <DropdownMenuRadioItem key={agent.id} value={agent.id} className="py-2.5 text-xs cursor-pointer px-2">
+                            <DropdownMenuRadioItem
+                              key={agent.id}
+                              value={agent.id}
+                              className="py-2.5 text-xs cursor-pointer px-2"
+                            >
                               {agent.label}
                             </DropdownMenuRadioItem>
                           ))}
@@ -540,7 +541,9 @@ export function TaskInput({
                         <span>Mode: {currentModeLabel}</span>
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-64 bg-[#1A1D21] border-quill-border z-100">
-                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 pt-2">Model Engine</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 pt-2">
+                          Model Engine
+                        </DropdownMenuLabel>
                         {visibleModes.map((m) => {
                           const isEnabled = enabledModes.has(m.id);
                           return (
@@ -558,7 +561,11 @@ export function TaskInput({
                               <span className="flex flex-1 flex-col gap-0.5">
                                 <span
                                   className={
-                                    !isEnabled ? "text-quill-muted" : mode === m.id ? "text-[#F87171]" : "text-[#A1A7B0]"
+                                    !isEnabled
+                                      ? "text-quill-muted"
+                                      : mode === m.id
+                                        ? "text-[#F87171]"
+                                        : "text-[#A1A7B0]"
                                   }
                                 >
                                   {m.label}
@@ -615,7 +622,8 @@ export function TaskInput({
                         disabled={isDisabled}
                         aria-label="Open mobile settings"
                         onClick={() => setMobileSettingsOpen(true)}
-                        className={"flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
+                        className={
+                          "flex min-w-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-30 " +
                           (mode !== "fast" || agentSource !== "quill"
                             ? "bg-quill-border text-quill-text"
                             : "text-quill-muted hover:text-quill-text hover:bg-quill-border")

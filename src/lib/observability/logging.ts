@@ -191,9 +191,22 @@ export function withRequestHeaders(res: Response, requestId: string): Response {
   const headers = new Headers(res.headers);
   headers.set("x-request-id", requestId);
 
-  // Add CORS headers for API responses
-  if (!headers.has("access-control-allow-origin")) {
+  // Configure CORS using an allowlist from ALLOWED_ORIGINS (comma-separated).
+  // If unset, default to safer `null` (same-origin) instead of a wildcard.
+  const allowedRaw = process.env.ALLOWED_ORIGINS ?? "";
+  const allowed = allowedRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (allowed.length === 0) {
+    headers.set("access-control-allow-origin", "null");
+  } else if (allowed.includes("*")) {
     headers.set("access-control-allow-origin", "*");
+  } else {
+    // Use the first allowed origin to avoid reflecting arbitrary origins.
+    headers.set("access-control-allow-origin", allowed[0]);
+    headers.set("vary", "Origin");
   }
 
   // Add security headers

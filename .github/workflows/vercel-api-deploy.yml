@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref to deploy'
+        description: "Git ref to deploy"
         required: false
-        default: 'main'
+        default: "main"
 
 jobs:
   deploy:
