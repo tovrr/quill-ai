@@ -1,21 +1,26 @@
 import "server-only";
 import Stripe from "stripe";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripeInstance: Stripe | null = null;
 
-if (!stripeSecretKey) {
-  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+function ensureStripe(): Stripe {
+  if (stripeInstance) return stripeInstance;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+  }
+  stripeInstance = new Stripe(key, {
+    apiVersion: "2025-08-27.basil",
+    typescript: true,
+  });
+  return stripeInstance;
 }
 
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2025-08-27.basil",
-  typescript: true,
-});
-
 export const stripeClient = {
-  stripe,
+  // note: Stripe is created lazily to avoid build-time throws when env vars are absent
 
   createCustomer: async (user: { id: string; email?: string; name?: string }) => {
+    const stripe = ensureStripe();
     return stripe.customers.create({
       email: user.email,
       name: user.name,
@@ -35,6 +40,7 @@ export const stripeClient = {
   }) => {
     const { userId, customerEmail, priceId, mode, successUrl, cancelUrl } = params;
 
+    const stripe = ensureStripe();
     let customerId: string | undefined;
 
     if (customerEmail) {
@@ -76,6 +82,7 @@ export const stripeClient = {
   },
 
   createPortalSession: async (params: { customerId: string; returnUrl: string }) => {
+    const stripe = ensureStripe();
     return stripe.billingPortal.sessions.create({
       customer: params.customerId,
       return_url: params.returnUrl,

@@ -585,7 +585,7 @@ export function TaskInput({
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-56 bg-[#1A1D21] border-quill-border z-100">
                         <div className="px-3 py-3 text-[11px] text-quill-muted text-center italic">
-                          Configure specialized commands in your workspace's .kilocode/skills folder.
+                          Configure specialized commands in your workspace&apos;s .kilocode/skills folder.
                         </div>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
