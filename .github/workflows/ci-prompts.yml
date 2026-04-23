@@ -16,6 +16,6 @@ jobs:
         with:
           node-version: "20"
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: Validate prompt examples
         run: node scripts/prompts.mjs --run-examples
