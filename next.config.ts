@@ -24,7 +24,6 @@ function buildCspReportOnlyPolicy(): string {
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
-    "upgrade-insecure-requests",
     "report-uri /api/csp-report",
   ].join("; ");
 }
@@ -33,8 +32,7 @@ function buildCspEnforcedPolicy(): string {
   const connectSrc = isDev
     ? "'self' ws: wss: http://localhost:* https://vitals.vercel-insights.com https://*.vercel-insights.com"
     : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
-
-  return [
+  const parts = [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -46,8 +44,13 @@ function buildCspEnforcedPolicy(): string {
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
-    "upgrade-insecure-requests",
-  ].join("; ");
+  ];
+
+  if (!isDev) {
+    parts.push("upgrade-insecure-requests");
+  }
+
+  return parts.join("; ");
 }
 
 const nextConfig: NextConfig = {
@@ -72,37 +75,24 @@ const nextConfig: NextConfig = {
     const cspReportOnly = buildCspReportOnlyPolicy();
     const cspEnforced = buildCspEnforcedPolicy();
 
+    const commonHeaders: Array<{ key: string; value: string }> = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+      // Phase 2 CSP rollout: enforce policy while keeping report-only telemetry
+      { key: "Content-Security-Policy", value: cspEnforced },
+      { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+    ];
+
+    if (!isDev) {
+      commonHeaders.splice(4, 0, { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" });
+    }
+
     return [
       {
-        // Apply hardening headers to every response
         source: "/(.*)",
-        headers: [
-          // Prevent MIME-type sniffing
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          // Deny framing entirely (clickjacking protection)
-          { key: "X-Frame-Options", value: "DENY" },
-          // Strict referrer — no full URL leakage to third parties
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          // Disable unused browser features
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
-          },
-          // HSTS — force HTTPS for 1 year once deployed
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
-          },
-          // Phase 2 CSP rollout: enforce policy while keeping report-only telemetry
-          {
-            key: "Content-Security-Policy",
-            value: cspEnforced,
-          },
-          {
-            key: "Content-Security-Policy-Report-Only",
-            value: cspReportOnly,
-          },
-        ],
+        headers: commonHeaders,
       },
     ];
   },
