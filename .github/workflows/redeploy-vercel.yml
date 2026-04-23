@@ -1,0 +1,28 @@
+name: Redeploy to Vercel (manual)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: |
+          npm ci --prefer-offline --no-audit || true
+
+      - name: Redeploy with Vercel CLI
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "Deploying commit $(git rev-parse --short HEAD) to Vercel project prj_LavN5r8fkIn40xk9au7COx8IQSAm"
+          npx vercel@latest --prod --confirm --token "$VERCEL_TOKEN" --project prj_LavN5r8fkIn40xk9au7COx8IQSAm
