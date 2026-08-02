@@ -130,10 +130,10 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.2.3",
     "husky": "^8.0.0",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.10"
   }
 }
