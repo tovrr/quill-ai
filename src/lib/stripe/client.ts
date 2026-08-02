@@ -19,6 +19,15 @@ function ensureStripe(): Stripe {
 export const stripeClient = {
   // note: Stripe is created lazily to avoid build-time throws when env vars are absent
 
+  /**
+   * Raw Stripe SDK instance, lazily initialized. Use for any operation not
+   * covered by the helper methods below (e.g. subscriptions.retrieve in the
+   * webhook handler).
+   */
+  get stripe(): Stripe {
+    return ensureStripe();
+  },
+
   createCustomer: async (user: { id: string; email?: string; name?: string }) => {
     const stripe = ensureStripe();
     return stripe.customers.create({
