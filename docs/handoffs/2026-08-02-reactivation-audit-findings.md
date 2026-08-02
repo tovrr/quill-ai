@@ -22,14 +22,16 @@ findings/status doc only — no code, config, or dependency changes in this PR.
 
 ## 2. CI status — currently broken, confirmed pre-existing (not caused by PR #3)
 
-3 of the repo's 8 workflows are red on both `main` (last run 2026-04-23) and `staging`
-(post-merge run 2026-08-02):
+3 of the repo's 8 workflows are red on `main` (last run 2026-04-23). On `staging`-targeted
+PRs, only 2 of those 3 actually trigger — **CI — AI Rules & Typecheck** is scoped to
+`main` only (`on: push/pull_request branches: [main]`) and has never run against a
+`staging` PR, including #3 or this one. Confirmed as of 2026-08-02 ~21:30 UTC:
 
-| Workflow | Failure | Root cause |
-|---|---|---|
-| **CI Smoke** (build) | `next build` fails | Both `src/middleware.ts` **and** `src/proxy.ts` exist. Next 16 renamed `middleware` → `proxy` and hard-errors when both are present ("Please use `./src/proxy.ts` only"). |
-| **CI Guardrails** (typecheck) | `tsc --noEmit` — 4 errors | `stripeClient` (`src/lib/stripe/client.ts`) only exports `createCustomer`/`createCheckoutSession`/`createPortalSession`. Call sites in `src/app/api/stripe/webhook/route.ts` (×3) and `src/app/success/page.tsx` (×1) reference `stripeClient.stripe.subscriptions.retrieve(...)` — that `.stripe` property doesn't exist on the exported object. |
-| **CI — AI Rules & Typecheck** | same typecheck error | Same root cause as above. |
+| Workflow | Runs on staging PRs? | Failure | Root cause |
+|---|---|---|---|
+| **CI Smoke** (build) | Yes | `next build` fails | Both `src/middleware.ts` **and** `src/proxy.ts` exist. Next 16 renamed `middleware` → `proxy` and hard-errors when both are present ("Please use `./src/proxy.ts` only"). |
+| **CI Guardrails** (typecheck) | Yes | `tsc --noEmit` — 4 errors | `stripeClient` (`src/lib/stripe/client.ts`) only exports `createCustomer`/`createCheckoutSession`/`createPortalSession`. Call sites in `src/app/api/stripe/webhook/route.ts` (×3) and `src/app/success/page.tsx` (×1) reference `stripeClient.stripe.subscriptions.retrieve(...)` — that `.stripe` property doesn't exist on the exported object. Independently reproduced on this PR's own CI run (`databaseId 30768061438`). |
+| **CI — AI Rules & Typecheck** | No (`main`-only trigger) | Same underlying bug when it last ran on `main` (2026-04-23) | Same root cause as CI Guardrails — the two workflows share the same `typecheck` step, just gated on different branches. |
 
 **Vercel build (independent failure, reported separately):** `npm install` fails with
 `ERESOLVE` — `@stripe/react-stripe-js@2.8.0` peer-deps `react ^18`, but the project pins
@@ -48,8 +50,9 @@ dependency-upgrade PR per one-PR-one-scope.
 
 ## 3. Dependency / CVE audit
 
-**81 open Dependabot alerts** (1 auto-dismissed on `ws`, 6 already fixed historically — those
-aren't part of the 81). Severity breakdown:
+**81 open Dependabot alerts** as of 2026-08-02 ~21:30 UTC (1 auto-dismissed on `ws`, 6 already
+fixed historically — those aren't part of the 81; counts are a moving target and will drift
+as new advisories publish). Severity breakdown:
 
 | Severity | Count |
 |---|---|
