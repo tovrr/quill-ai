@@ -37,6 +37,16 @@
      canvas preview when its local `dark` boolean is false. */
   --color-quill-code-preview-bg: #f0f0ff;
   --color-quill-code-preview-text: #1a1a2e;
+  --color-quill-code-preview-text-2: #2a2a4e;
+  --color-quill-code-preview-darker: #3a3a60;
+  --color-quill-code-preview-lighter: #d2d2e6;
+  --color-quill-code-preview-muted: #8E949E;
+  --color-quill-code-preview-muted-2: #9b9bb7;
+  --color-quill-code-preview-muted-3: #8f90aa;
+  --color-quill-code-preview-warning: #fcd48f;
+  --color-quill-code-preview-soft-bg: #faf9ff;
+  --color-quill-code-preview-soft-bg-2: #f5f3ff;
+  --color-quill-code-preview-soft-border: #e0deff;
   --color-quill-code-preview-accent: #5b4dd4;
   --color-quill-code-preview-border: #ddd9ff;
   /* Pre-mixed alpha tokens (light) — pre-baked so call sites stay short.
