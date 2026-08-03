@@ -1515,7 +1515,7 @@ export default function AgentPage() {
               {modeLabels[selectedMode]}
             </span>
             {isTrialPlan && (
-              <span className="rounded-full border border-[rgba(239,68,68,0.28)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f2b1b1]">
+              <span className="rounded-full border border-quill-glow-22 bg-quill-glow-10 px-2.5 py-1 text-[10px] font-medium text-quill-accent-2">
                 {trialDaysLeft !== null ? `Trial: ${Math.max(0, trialDaysLeft)}d left` : planLabel}
               </span>
             )}
@@ -1667,7 +1667,7 @@ export default function AgentPage() {
             >
               {displayMessages.length === 0 && (
                 <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-center py-6 md:py-10">
-                  <div className="w-full rounded-[28px] border border-quill-border bg-[radial-gradient(circle_at_top,rgba(239,68,68,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0))] px-5 py-6 shadow-[0_18px_70px_rgba(0,0,0,0.28)] md:px-8 md:py-8">
+                  <div className="w-full rounded-[28px] border border-quill-border bg-quill-killer-glow px-5 py-6 shadow-[0_18px_70px_rgba(0,0,0,0.28)] md:px-8 md:py-8">
                     <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                       <div className="max-w-2xl">
                         <div
@@ -1712,7 +1712,7 @@ export default function AgentPage() {
                         </div>
                       </div>
 
-                      <div className="w-full max-w-xl rounded-3xl border border-quill-border bg-[#13171d] p-3 md:p-4">
+                      <div className="w-full max-w-xl rounded-3xl border border-quill-border bg-quill-surface-2 p-3 md:p-4">
                         <div className="mb-3 flex items-center justify-between px-1">
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-quill-muted">
@@ -1722,7 +1722,7 @@ export default function AgentPage() {
                               Pick a high-signal task and Quill will do the rest.
                             </p>
                           </div>
-                          <span className="rounded-full border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f7b0b0]">
+                          <span className="rounded-full border border-quill-glow-20 bg-quill-glow-10 px-2.5 py-1 text-[10px] font-medium text-quill-accent-2">
                             Operator mode
                           </span>
                         </div>
@@ -1792,7 +1792,7 @@ export default function AgentPage() {
                       {[0, 1, 2].map((i) => (
                         <span
                           key={i}
-                          className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-typing-dot"
+                          className="w-1.5 h-1.5 rounded-full bg-quill-accent animate-typing-dot"
                           style={{ animationDelay: `${i * 0.15}s` }}
                         />
                       ))}
@@ -1812,7 +1812,7 @@ export default function AgentPage() {
                         {activeToolNames.slice(0, 3).map((name) => (
                           <span
                             key={name}
-                            className="rounded-full border border-[rgba(239,68,68,0.22)] bg-[rgba(239,68,68,0.08)] px-2 py-0.5 text-[10px] text-[#f7b0b0]"
+                            className="rounded-full border border-quill-glow-22 bg-quill-glow-10 px-2 py-0.5 text-[10px] text-quill-accent-2"
                           >
                             {name}
                           </span>
@@ -1831,9 +1831,9 @@ export default function AgentPage() {
                   <div className="w-7 h-7 rounded-full bg-quill-surface border border-quill-border flex items-center justify-center shrink-0 mt-0.5">
                     <QuillLogo size={16} />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-[rgba(248,113,113,0.3)] px-4 py-3 flex items-center gap-2">
-                    <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-[#F87171]" aria-hidden="true" />
-                    <span className="text-xs text-[#F87171]">Generating image...</span>
+                  <div className="rounded-2xl rounded-tl-sm bg-quill-surface border border-quill-glow-22 px-4 py-3 flex items-center gap-2">
+                    <ArrowPathIcon className="h-3.25 w-3.25 animate-spin text-quill-accent-2" aria-hidden="true" />
+                    <span className="text-xs text-quill-accent-2">Generating image...</span>
                   </div>
                 </div>
               )}
@@ -1845,19 +1845,19 @@ export default function AgentPage() {
             <div className="agent-composer-shell shrink-0 px-3 md:px-6 pb-4 md:pb-5 pt-1.5 md:pt-2 border-t border-quill-border bg-quill-bg">
               <div className="max-w-3xl mx-auto">
                 {pageError && (
-                  <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 animate-fade-in">
+                  <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-quill-glow-22 bg-quill-glow-10 px-3.5 py-2.5 animate-fade-in">
                     <div className="flex items-start gap-2.5">
                       <ExclamationCircleIcon
-                        className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F87171]"
+                        className="h-3.5 w-3.5 shrink-0 mt-0.5 text-quill-accent-2"
                         aria-hidden="true"
                       />
-                      <p className="text-[12px] leading-relaxed text-[#f7b0b0]">{pageError}</p>
+                      <p className="text-[12px] leading-relaxed text-quill-accent-2">{pageError}</p>
                     </div>
                     <Button
                       type="button"
                       onClick={() => setPageError(null)}
                       variant="outline"
-                      className="h-auto shrink-0 rounded-lg border-[rgba(248,113,113,0.25)] px-2 py-1 text-[11px] text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.12)]"
+                      className="h-auto shrink-0 rounded-lg border-quill-glow-22 px-2 py-1 text-[11px] text-quill-accent-2 hover:bg-quill-glow-10"
                     >
                       Dismiss
                     </Button>
