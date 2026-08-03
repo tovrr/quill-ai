@@ -123,7 +123,7 @@ function LoginContent() {
         </div>
 
         {/* Card */}
-        <div className="bg-[#0d0d15] border border-quill-border rounded-2xl p-6">
+        <div className="bg-quill-surface-2 border border-quill-border rounded-2xl p-6">
           {/* Tab switcher */}
           <div className="flex rounded-xl bg-quill-surface p-1 mb-5">
             {(["signin", "signup"] as Tab[]).map((t) => (
@@ -133,7 +133,7 @@ function LoginContent() {
                 variant="ghost"
                 onClick={() => handleTabChange(t)}
                 className={`h-auto flex-1 py-1.5 rounded-lg text-sm font-medium ${
-                  tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-[#A1A7B0]"
+                  tab === t ? "bg-quill-border text-quill-text shadow-sm" : "text-quill-muted hover:text-quill-text"
                 }`}
               >
                 {t === "signin" ? "Sign in" : "Sign up"}
@@ -145,7 +145,7 @@ function LoginContent() {
             {tab === "signup" && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-quill-muted">
-                  Name <span className="text-[#3a3a5a]">(optional)</span>
+                  Name <span className="text-quill-muted">(optional)</span>
                 </label>
                 <Input
                   type="text"
@@ -200,12 +200,12 @@ function LoginContent() {
             </div>
 
             {error && (
-              <p className="text-xs text-[#f87171] bg-[rgba(248,113,113,0.1)] border border-[rgba(248,113,113,0.2)] rounded-lg px-3 py-2">
+              <p className="text-xs text-quill-red bg-[var(--color-quill-red)]/10 border border-[var(--color-quill-red)]/20 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
             {success && (
-              <p className="text-xs text-quill-green bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] rounded-lg px-3 py-2">
+              <p className="text-xs text-quill-green bg-[var(--color-quill-green)]/10 border border-[var(--color-quill-green)]/20 rounded-lg px-3 py-2">
                 {success}
               </p>
             )}
@@ -213,7 +213,7 @@ function LoginContent() {
             <Button
               type="submit"
               disabled={loading || !email.trim() || !password.trim()}
-              className="h-auto w-full rounded-xl bg-[#EF4444] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(239,68,68,0.25)] hover:bg-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-auto w-full rounded-xl bg-quill-accent py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--color-quill-glow-22)] hover:bg-quill-accent-2 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading
                 ? tab === "signup" ? "Creating account…" : "Signing in…"
@@ -230,7 +230,7 @@ function LoginContent() {
 
         {/* Guest */}
         <div className="flex items-center justify-center mt-4">
-          <Link href="/agent" className="text-xs text-quill-muted hover:text-[#A1A7B0] transition-colors">
+          <Link href="/agent" className="text-xs text-quill-muted hover:text-quill-text transition-colors">
             Continue without signing in →
           </Link>
         </div>

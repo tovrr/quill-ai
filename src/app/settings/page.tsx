@@ -35,9 +35,9 @@ function planLabel(plan: string): string {
 type IntegrationStatus = "configured" | "not-configured" | "managed";
 
 function statusClasses(status: IntegrationStatus): string {
-  if (status === "configured") return "bg-green-900/30 text-green-400";
-  if (status === "managed") return "bg-blue-900/30 text-blue-300";
-  return "bg-zinc-800 text-zinc-300";
+  if (status === "configured") return "bg-[var(--color-quill-green)]/15 text-quill-green";
+  if (status === "managed") return "bg-quill-accent/15 text-quill-accent";
+  return "bg-quill-surface-2 text-quill-muted";
 }
 
 function statusLabel(status: IntegrationStatus): string {
@@ -133,7 +133,7 @@ export default async function SettingsPage() {
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Billing & Subscription</h2>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">{planLabel(activePlan)} plan</h3>
@@ -145,10 +145,10 @@ export default async function SettingsPage() {
                 <span
                   className={`px-2 py-1 text-xs rounded-full ${
                     activeStatus === "active"
-                      ? "bg-green-900/30 text-green-400"
+                      ? "bg-[var(--color-quill-green)]/15 text-quill-green"
                       : activeStatus === "past_due"
-                        ? "bg-amber-900/30 text-amber-400"
-                        : "bg-zinc-800 text-zinc-300"
+                        ? "bg-quill-yellow/15 text-quill-yellow"
+                        : "bg-quill-surface-2 text-quill-muted"
                   }`}
                 >
                   {activeStatus}
@@ -180,7 +180,7 @@ export default async function SettingsPage() {
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Account</h2>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6 space-y-4">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6 space-y-4">
             <div>
               <h3 className="text-lg font-semibold mb-2">Email</h3>
               <p className="text-sm text-quill-muted">{sessionData.user.email ?? "—"}</p>
@@ -207,7 +207,7 @@ export default async function SettingsPage() {
           <h2 className="text-2xl font-bold mb-2">Connections</h2>
           <p className="text-sm text-quill-muted mb-6">All integration and channel settings in one place.</p>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6 space-y-8">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6 space-y-8">
             <div>
               <h3 className="text-lg font-semibold mb-3">Messaging Channels</h3>
               <div className="space-y-3">
@@ -297,14 +297,14 @@ export default async function SettingsPage() {
 
         {/* Danger Zone */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-red-400">Danger Zone</h2>
+          <h2 className="text-2xl font-bold mb-6 text-quill-red">Danger Zone</h2>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6 space-y-4">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6 space-y-4">
             <Button asChild variant="destructive" className="w-full" disabled={!canManageBilling}>
               <Link href={canManageBilling ? "/api/stripe/portal" : "#"}>Cancel Subscription</Link>
             </Button>
 
-            <div className="text-xs text-[#6F737A]">
+            <div className="text-xs text-quill-muted">
               Your plan remains active until the end of your current billing period. You can cancel or update billing in
               Stripe.
             </div>
