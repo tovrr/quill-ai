@@ -150,6 +150,21 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
+/* ── Killer card hero glow ──────────────────────────────────────────────────────
+   Used by /agent's empty-state "killer card" — a red glow at the top with a
+   subtle white-light overlay, giving the container a soft "lit from above"
+   look. Kept in sync with .dark via the glow tokens. */
+.bg-quill-killer-glow {
+  background-image:
+    radial-gradient(circle at top, var(--color-quill-glow-10), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0));
+}
+.dark .bg-quill-killer-glow {
+  background-image:
+    radial-gradient(circle at top, var(--color-quill-glow-10), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0));
+}
+
 /* ── Scrollbar styling ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
