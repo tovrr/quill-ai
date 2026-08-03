@@ -50,7 +50,7 @@ function renderInlineCanvas(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-semibold text-[#1a1a2e]">
+        <strong key={i} className="font-semibold text-quill-code-preview-text">
           {part.slice(2, -2)}
         </strong>
       );
@@ -59,7 +59,7 @@ function renderInlineCanvas(text: string) {
       return (
         <code
           key={i}
-          className="px-1.5 py-0.5 rounded bg-[#f0f0ff] text-[#5b4dd4] text-[12px] font-mono border border-[#ddd9ff]"
+          className="px-1.5 py-0.5 rounded bg-quill-code-preview-bg text-quill-code-preview-accent text-[12px] font-mono border border-quill-code-preview-border"
         >
           {part.slice(1, -1)}
         </code>
@@ -86,13 +86,13 @@ function MarkdownDocument({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <div key={i} className="my-4 rounded-xl overflow-hidden border border-[#e0deff]">
+        <div key={i} className="my-4 rounded-xl overflow-hidden border border-quill-code-preview-soft-border">
           {lang && (
-            <div className="px-3 py-1.5 bg-[#f5f3ff] border-b border-[#e0deff] text-[10px] text-[#EF4444] font-mono uppercase tracking-wide">
+            <div className="px-3 py-1.5 bg-quill-code-preview-soft-bg-2 border-b border-quill-code-preview-soft-border text-[10px] text-quill-accent font-mono uppercase tracking-wide">
               {lang}
             </div>
           )}
-          <pre className="p-4 bg-[#faf9ff] overflow-x-auto text-[12px] font-mono text-[#3a3a60] leading-relaxed">
+          <pre className="p-4 bg-quill-code-preview-soft-bg overflow-x-auto text-[12px] font-mono text-quill-code-preview-darker leading-relaxed">
             <code>{codeLines.join("\n")}</code>
           </pre>
         </div>,
@@ -103,27 +103,27 @@ function MarkdownDocument({ text }: { text: string }) {
 
     if (line.startsWith("# ")) {
       elements.push(
-        <h1 key={i} className="text-2xl font-bold text-[#1a1a2e] mt-6 mb-2 leading-tight">
+        <h1 key={i} className="text-2xl font-bold text-quill-code-preview-text mt-6 mb-2 leading-tight">
           {renderInlineCanvas(line.slice(2))}
         </h1>,
       );
     } else if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="text-lg font-bold text-[#1a1a2e] mt-5 mb-1.5">
+        <h2 key={i} className="text-lg font-bold text-quill-code-preview-text mt-5 mb-1.5">
           {renderInlineCanvas(line.slice(3))}
         </h2>,
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="text-base font-semibold text-[#2a2a4e] mt-4 mb-1">
+        <h3 key={i} className="text-base font-semibold text-quill-code-preview-text-2 mt-4 mb-1">
           {renderInlineCanvas(line.slice(4))}
         </h3>,
       );
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
         <div key={i} className="flex gap-2.5 pl-2 py-0.5">
-          <span className="text-[#EF4444] mt-1 shrink-0 text-xs">●</span>
-          <span className="text-[#3a3a60] text-sm leading-relaxed">{renderInlineCanvas(line.slice(2))}</span>
+          <span className="text-quill-accent mt-1 shrink-0 text-xs">●</span>
+          <span className="text-quill-code-preview-darker text-sm leading-relaxed">{renderInlineCanvas(line.slice(2))}</span>
         </div>,
       );
     } else if (/^\d+\. /.test(line)) {
@@ -131,14 +131,14 @@ function MarkdownDocument({ text }: { text: string }) {
       if (match) {
         elements.push(
           <div key={i} className="flex gap-2.5 pl-2 py-0.5">
-            <span className="text-[#EF4444] shrink-0 tabular-nums text-sm font-medium">{match[1]}.</span>
-            <span className="text-[#3a3a60] text-sm leading-relaxed">{renderInlineCanvas(match[2])}</span>
+            <span className="text-quill-accent shrink-0 tabular-nums text-sm font-medium">{match[1]}.</span>
+            <span className="text-quill-code-preview-darker text-sm leading-relaxed">{renderInlineCanvas(match[2])}</span>
           </div>,
         );
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={i} className="pl-4 border-l-4 border-[#EF4444] text-[#7A7F88] italic my-2 py-1">
+        <blockquote key={i} className="pl-4 border-l-4 border-quill-accent text-quill-code-preview-muted italic my-2 py-1">
           {renderInlineCanvas(line.slice(2))}
         </blockquote>,
       );
@@ -146,7 +146,7 @@ function MarkdownDocument({ text }: { text: string }) {
       elements.push(<div key={i} className="h-3" />);
     } else {
       elements.push(
-        <p key={i} className="text-[#3a3a60] text-sm leading-relaxed">
+        <p key={i} className="text-quill-code-preview-darker text-sm leading-relaxed">
           {renderInlineCanvas(line)}
         </p>,
       );
@@ -415,12 +415,12 @@ function FileBundlePreview({
   const activeLineCount = activeCode ? activeCode.split("\n").length : 0;
 
   return (
-    <div className="h-full grid grid-cols-1 md:grid-cols-[260px_1fr] bg-[#0d0d15]">
+    <div className="h-full grid grid-cols-1 md:grid-cols-[260px_1fr] bg-quill-surface-2">
       <div className="border-b border-quill-border md:border-b-0 md:border-r overflow-auto max-h-52 md:max-h-none">
-        <div className="sticky top-0 z-10 border-b border-quill-border bg-[#10121a]/95 px-3 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 border-b border-quill-border bg-quill-surface-2/95 px-3 py-3 backdrop-blur">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-quill-code-preview-muted-3">
                 {type === "react-app" ? "React app files" : "Next.js bundle files"}
               </div>
               <div className="mt-1 text-[11px] text-quill-muted">{paths.length} files ready to inspect</div>
@@ -436,7 +436,7 @@ function FileBundlePreview({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search files"
-            className="mt-3 w-full rounded-xl border border-quill-border bg-[#0d0d15] px-3 py-2 text-[12px] text-quill-text outline-none placeholder:text-quill-muted"
+            className="mt-3 w-full rounded-xl border border-quill-border bg-quill-surface-2 px-3 py-2 text-[12px] text-quill-text outline-none placeholder:text-quill-muted"
           />
         </div>
         <div className="p-2 space-y-1">
@@ -449,8 +449,8 @@ function FileBundlePreview({
               aria-label={`Open file ${path}`}
               className={`h-auto w-full justify-start rounded-xl px-2.5 py-2 text-[12px] font-mono truncate ${
                 path === activePath
-                  ? "bg-quill-border text-quill-text shadow-[inset_0_0_0_1px_rgba(239,68,68,0.16)]"
-                  : "text-[#9b9bb7] hover:bg-[#151924]"
+                  ? "bg-quill-border text-quill-text ring-1 ring-inset ring-quill-glow-22"
+                  : "text-quill-code-preview-muted-2 hover:bg-quill-surface-2"
               }`}
             >
               {path}
@@ -464,18 +464,18 @@ function FileBundlePreview({
         </div>
       </div>
       <div className="overflow-auto min-h-0">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-quill-border bg-[#10121a]/95 px-4 py-2.5 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-quill-border bg-quill-surface-2/95 px-4 py-2.5 backdrop-blur">
           <div className="min-w-0">
             <div className="truncate text-[12px] font-medium text-quill-text">{activePath ?? "No file selected"}</div>
             <div className="mt-0.5 text-[11px] text-quill-muted">{activeLineCount} lines</div>
           </div>
           {activePath === entry && (
-            <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+            <span className="rounded-full border border-quill-glow-green-20 bg-quill-glow-green-08 px-2.5 py-1 text-[10px] font-medium text-quill-green">
               Entry point
             </span>
           )}
         </div>
-        <pre className="p-5 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
+        <pre className="p-5 text-[12px] font-mono text-quill-muted leading-relaxed whitespace-pre-wrap break-all">
           {activeCode}
         </pre>
       </div>
@@ -772,10 +772,10 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
     artifactType === "react-app" ? "react app" : artifactType === "nextjs-bundle" ? "next.js bundle" : artifactType;
   const qualityTone = artifactQuality
     ? artifactQuality.score >= 80
-      ? { label: "Ready", className: "text-[#9be7b5]" }
+      ? { label: "Ready", className: "text-quill-green" }
       : artifactQuality.score >= 60
-        ? { label: "Needs review", className: "text-[#fcd48f]" }
-        : { label: "Needs work", className: "text-[#f7b0b0]" }
+        ? { label: "Needs review", className: "text-quill-code-preview-warning" }
+        : { label: "Needs work", className: "text-quill-accent-2" }
     : null;
 
   const handleCopy = () => {
@@ -919,16 +919,16 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
       <div
         className="flex flex-col h-full w-full md:w-130"
         style={{
-          borderLeft: "1px solid #272B33",
-          background: dark ? "#0E1015" : "#fafafe",
+          borderLeft: "1px solid var(--color-quill-border)",
+          background: dark ? "var(--color-quill-bg)" : "var(--color-quill-code-preview-soft-bg)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-2.5 shrink-0"
           style={{
-            borderBottom: `1px solid ${dark ? "#272B33" : "#e8e6ff"}`,
-            background: dark ? "#0d0d15" : "#fff",
+            borderBottom: `1px solid ${dark ? "var(--color-quill-border)" : "var(--color-quill-code-preview-soft-border)"}`,
+            background: dark ? "var(--color-quill-surface-2)" : "var(--color-quill-code-preview-soft-bg-2)",
           }}
         >
           {/* Left: icon + title + tabs */}
@@ -941,14 +941,14 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                   <DocumentTextIcon className="h-2.5 w-2.5 text-white" aria-hidden="true" />
                 )}
               </div>
-              <span className={`text-sm font-semibold ${dark ? "text-quill-text" : "text-[#1a1a2e]"}`}>Canvas</span>
+              <span className={`text-sm font-semibold ${dark ? "text-quill-text" : "text-quill-code-preview-text"}`}>Canvas</span>
               <Badge
                 variant="secondary"
-                className={`text-[10px] ${dark ? "bg-quill-border text-quill-accent" : "bg-[#f0f0ff] text-quill-accent"}`}
+                className={`text-[10px] ${dark ? "bg-quill-border text-quill-accent" : "bg-quill-code-preview-bg text-quill-accent"}`}
               >
                 {artifactLabel}
               </Badge>
-              {isWorking && <span className="text-[11px] text-[#fcd48f]">Generating...</span>}
+              {isWorking && <span className="text-[11px] text-quill-code-preview-warning">Generating...</span>}
               {qualityTone && (
                 <span className={`hidden md:inline text-[11px] ${qualityTone.className}`}>{qualityTone.label}</span>
               )}
@@ -1002,7 +1002,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               className={`hidden md:flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
                 dark
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                  : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-accent"
               }`}
             >
               {copied ? (
@@ -1024,7 +1024,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               className={`md:hidden h-7 w-7 rounded-lg transition-all disabled:opacity-40 ${
                 dark
                   ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                  : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                  : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-accent"
               }`}
             >
               {copied ? (
@@ -1047,7 +1047,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                   className={`h-7 w-7 rounded-lg transition-all disabled:opacity-40 ${
                     dark
                       ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                      : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                      : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-accent"
                   }`}
                 >
                   <ArrowDownTrayIcon className="h-3.25 w-3.25" aria-hidden="true" />
@@ -1067,7 +1067,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 className={`hidden md:flex px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
                   dark
                     ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                    : "text-[#7A7F88] hover:bg-[#f0f0ff] hover:text-[#EF4444]"
+                    : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-accent"
                 }`}
               >
                 Export ZIP
@@ -1133,7 +1133,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                   className={`h-7 w-7 rounded-lg transition-all ${
                     dark
                       ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
-                      : "text-[#8E949E] hover:bg-[#f0f0ff] hover:text-[#7A7F88]"
+                      : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-code-preview-muted"
                   }`}
                 >
                   <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1150,33 +1150,33 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             /* Empty state */
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
               <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-quill-surface" : "bg-[#f0f0ff]"}`}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center ${dark ? "bg-quill-surface" : "bg-quill-code-preview-bg"}`}
               >
-                <CodeBracketIcon className="h-5.5 w-5.5 text-[#EF4444]" aria-hidden="true" />
+                <CodeBracketIcon className="h-5.5 w-5.5 text-quill-accent" aria-hidden="true" />
               </div>
               <div>
-                <p className={`text-sm font-medium ${dark ? "text-quill-text" : "text-[#2a2a4e]"}`}>Canvas is empty</p>
-                <p className={`text-xs mt-1 max-w-55 ${dark ? "text-quill-muted" : "text-[#8E949E]"}`}>
+                <p className={`text-sm font-medium ${dark ? "text-quill-text" : "text-quill-code-preview-text-2"}`}>Canvas is empty</p>
+                <p className={`text-xs mt-1 max-w-55 ${dark ? "text-quill-muted" : "text-quill-code-preview-muted"}`}>
                   Ask Quill to build a landing page, UI component, or write a document to see it rendered here.
                 </p>
               </div>
             </div>
           ) : artifactParseFailed ? (
-            <div className="h-full overflow-y-auto bg-[#0d0d15]">
+            <div className="h-full overflow-y-auto bg-quill-surface-2">
               <div className="p-5 space-y-3">
-                <div className="rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-3">
-                  <p className="text-sm font-semibold text-[#f7b0b0]">Builder artifact could not be parsed</p>
-                  <p className="text-xs text-[#d2d2e6] mt-1">
+                <div className="rounded-xl border border-quill-glow-22 bg-quill-glow-10 p-3">
+                  <p className="text-sm font-semibold text-quill-accent-2">Builder artifact could not be parsed</p>
+                  <p className="text-xs text-quill-code-preview-lighter mt-1">
                     Ask Quill to re-send the response as a valid artifact block wrapped in &lt;quill-artifact&gt; with
                     artifactVersion=1.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-quill-border bg-[#11111a]">
-                  <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-[#8f90aa]">
+                <div className="rounded-xl border border-quill-border bg-quill-surface-2">
+                  <div className="px-3 py-2 border-b border-quill-border text-[11px] font-semibold uppercase tracking-wide text-quill-code-preview-muted-3">
                     Raw response
                   </div>
-                  <pre className="p-4 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all max-h-120 overflow-auto">
+                  <pre className="p-4 text-[12px] font-mono text-quill-muted leading-relaxed whitespace-pre-wrap break-all max-h-120 overflow-auto">
                     {content}
                   </pre>
                 </div>
@@ -1194,8 +1194,8 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               />
             ) : (
               /* Code view */
-              <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
-                <pre className="p-6 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
+              <div ref={streamContainerRef} className="h-full overflow-auto bg-quill-surface-2">
+                <pre className="p-6 text-[12px] font-mono text-quill-muted leading-relaxed whitespace-pre-wrap break-all">
                   {htmlSrc}
                 </pre>
               </div>
@@ -1207,19 +1207,19 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                   key={preview.url}
                   src={preview.url}
                   sandbox="allow-scripts allow-forms allow-popups"
-                  className="w-full h-full border-0 bg-[#0d0d15]"
+                  className="w-full h-full border-0 bg-quill-surface-2"
                   title="React app preview"
                 />
               ) : preview.status === "auth-required" ? (
                 <div className="h-full flex items-center justify-center px-6">
-                  <div className="max-w-md rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-4 text-center space-y-2">
-                    <p className="text-sm font-semibold text-[#f7b0b0]">Sign in required for additional previews</p>
-                    <p className="text-xs text-[#d2d2e6]">
+                  <div className="max-w-md rounded-xl border border-quill-glow-22 bg-quill-glow-10 p-4 text-center space-y-2">
+                    <p className="text-sm font-semibold text-quill-accent-2">Sign in required for additional previews</p>
+                    <p className="text-xs text-quill-code-preview-lighter">
                       {preview.message ?? "You used your free guest previews. Sign in to keep using live preview."}
                     </p>
                     <a
                       href="/login"
-                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium bg-[#EF4444] text-white hover:bg-[#dc2626] transition-colors"
+                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium bg-quill-accent text-white hover:bg-quill-accent transition-colors"
                     >
                       Sign in to preview
                     </a>
@@ -1227,7 +1227,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 </div>
               ) : (
                 /* Loading / error states */
-                <div className="flex items-center justify-center h-full gap-3 text-[#9b9bb7]">
+                <div className="flex items-center justify-center h-full gap-3 text-quill-code-preview-muted-2">
                   <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
                   <span className="text-sm">
                     {previewLoading
@@ -1249,11 +1249,11 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             <iframe
               key={livePreview.url}
               src={livePreview.url}
-              className="w-full h-full border-0 bg-[#0d0d15]"
+              className="w-full h-full border-0 bg-quill-surface-2"
               title="Next.js live preview"
             />
           ) : fileBundle?.type === "nextjs-bundle" && livePreview.status === "booting" ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-[#9b9bb7]">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-quill-code-preview-muted-2">
               <ArrowPathIcon className="h-5 w-5 animate-spin" aria-hidden="true" />
               <p className="text-sm">Booting preview sandbox&hellip;</p>
               <p className="text-xs text-quill-muted max-w-64 text-center">
@@ -1262,9 +1262,9 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
             </div>
           ) : fileBundle?.type === "nextjs-bundle" && livePreview.status === "error" ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 px-6">
-              <div className="max-w-md rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.08)] p-4 text-center space-y-2">
-                <p className="text-sm font-semibold text-[#f7b0b0]">Preview sandbox failed</p>
-                <p className="text-xs text-[#d2d2e6]">{livePreview.error}</p>
+              <div className="max-w-md rounded-xl border border-quill-glow-22 bg-quill-glow-10 p-4 text-center space-y-2">
+                <p className="text-sm font-semibold text-quill-accent-2">Preview sandbox failed</p>
+                <p className="text-xs text-quill-code-preview-lighter">{livePreview.error}</p>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1278,23 +1278,23 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           ) : fileBundle ? (
             <div className="h-full flex flex-col">
               {fileBundle.type === "nextjs-bundle" && bundleReadiness && (
-                <details className="mx-4 mt-4 rounded-xl border border-quill-border bg-[#11111a]">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-[#8f90aa]">
+                <details className="mx-4 mt-4 rounded-xl border border-quill-border bg-quill-surface-2">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-quill-code-preview-muted-3">
                     Export readiness
-                    <span className={bundleReadiness.errors.length > 0 ? "text-[#f7b0b0]" : "text-[#9be7b5]"}>
+                    <span className={bundleReadiness.errors.length > 0 ? "text-quill-accent-2" : "text-quill-green"}>
                       {bundleReadiness.errors.length > 0 ? `${bundleReadiness.errors.length} issue(s)` : "Ready"}
                     </span>
                   </summary>
                   <div className="border-t border-quill-border p-3 space-y-1.5">
                     {bundleReadiness.errors.length > 0 && (
-                      <ul className="text-xs text-[#f7b0b0] space-y-1">
+                      <ul className="text-xs text-quill-accent-2 space-y-1">
                         {bundleReadiness.errors.slice(0, 3).map((err) => (
                           <li key={err}>• {err}</li>
                         ))}
                       </ul>
                     )}
                     {bundleReadiness.warnings.length > 0 && (
-                      <ul className="text-xs text-[#d2d2e6] space-y-1">
+                      <ul className="text-xs text-quill-code-preview-lighter space-y-1">
                         {bundleReadiness.warnings.slice(0, 3).map((warn) => (
                           <li key={warn}>• {warn}</li>
                         ))}
@@ -1304,13 +1304,13 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                     {bundleValidation.ok !== null && (
                       <div className="mt-2 pt-2 border-t border-quill-border space-y-1">
                         <p
-                          className={`text-xs font-medium ${bundleValidation.ok ? "text-[#9be7b5]" : "text-[#f7b0b0]"}`}
+                          className={`text-xs font-medium ${bundleValidation.ok ? "text-quill-green" : "text-quill-accent-2"}`}
                         >
                           Local validation {bundleValidation.ok ? "passed" : "failed"}
                           {bundleValidation.phase ? ` (${bundleValidation.phase})` : ""}
                         </p>
                         {bundleValidation.output && (
-                          <pre className="max-h-32 overflow-auto text-[10px] text-[#bcbcd6] bg-[#0d0d15] border border-quill-border rounded p-2 whitespace-pre-wrap break-all">
+                          <pre className="max-h-32 overflow-auto text-[10px] text-quill-code-preview-lighter bg-quill-surface-2 border border-quill-border rounded p-2 whitespace-pre-wrap break-all">
                             {bundleValidation.output}
                           </pre>
                         )}
@@ -1328,8 +1328,8 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               </div>
             </div>
           ) : showRawStream ? (
-            <div ref={streamContainerRef} className="h-full overflow-auto bg-[#0d0d15]">
-              <pre className="p-6 text-[12px] font-mono text-[#C1C7D0] leading-relaxed whitespace-pre-wrap break-all">
+            <div ref={streamContainerRef} className="h-full overflow-auto bg-quill-surface-2">
+              <pre className="p-6 text-[12px] font-mono text-quill-muted leading-relaxed whitespace-pre-wrap break-all">
                 {content}
               </pre>
             </div>
@@ -1344,14 +1344,14 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
         </div>
 
         {content && (
-          <div className="md:hidden shrink-0 border-t border-quill-border bg-[#0d0d15] px-3 py-2 pb-safe">
+          <div className="md:hidden shrink-0 border-t border-quill-border bg-quill-surface-2 px-3 py-2 pb-safe">
             <div className="grid grid-cols-5 gap-1.5 text-[11px]">
               {(isHTML || fileBundle?.type === "react-app") && (
                 <Button
                   onClick={() => setPreferredTab("preview")}
                   type="button"
                   variant="outline"
-                  className={`h-9 rounded-lg ${effectiveTab === "preview" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+                  className={`h-9 rounded-lg ${effectiveTab === "preview" ? "border-quill-glow-border text-quill-accent-2 bg-quill-glow-10" : "border-quill-border text-quill-muted"}`}
                 >
                   Preview
                 </Button>
@@ -1360,7 +1360,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
                 onClick={() => setPreferredTab("code")}
                 type="button"
                 variant="outline"
-                className={`h-9 rounded-lg ${effectiveTab === "code" ? "border-[rgba(239,68,68,0.5)] text-[#f7b0b0] bg-[rgba(239,68,68,0.12)]" : "border-quill-border text-quill-muted"}`}
+                className={`h-9 rounded-lg ${effectiveTab === "code" ? "border-quill-glow-border text-quill-accent-2 bg-quill-glow-10" : "border-quill-border text-quill-muted"}`}
               >
                 Code
               </Button>
