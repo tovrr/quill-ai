@@ -775,11 +775,11 @@ export function TaskInput({
       )}
 
       {/* Hint */}
-      <div className="keyboard-hint hidden items-center justify-between gap-3 px-1 text-[11px] text-[#AAB1BC] sm:flex">
+      <div className="keyboard-hint hidden items-center justify-between gap-3 px-1 text-[11px] text-quill-muted sm:flex">
         <p>
-          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Enter</kbd> send
+          <kbd className="px-1 py-0.5 rounded bg-quill-border text-quill-text text-[10px] font-mono">Enter</kbd> send
           &middot;{" "}
-          <kbd className="px-1 py-0.5 rounded bg-quill-border text-[#C4CBD6] text-[10px] font-mono">Shift+Enter</kbd>{" "}
+          <kbd className="px-1 py-0.5 rounded bg-quill-border text-quill-text text-[10px] font-mono">Shift+Enter</kbd>{" "}
           new line
         </p>
         <p className="truncate text-right">
