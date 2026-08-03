@@ -24,6 +24,21 @@
   --color-quill-yellow: #ca8a04;
   --color-quill-red: #dc2626;
   --color-quill-orange: #ef4444;
+  /* Semantic non-accent colors — for "info" / "highlighted" indicators in
+     admin pages, replacing the blue/purple hex codes that used to live
+     inline. Same color identity in both modes, just shifted for contrast. */
+  --color-quill-info: #2563eb;       /* blue, primary */
+  --color-quill-info-2: #3b82f6;     /* blue, secondary (slightly lighter) */
+  --color-quill-special: #7c3aed;     /* purple, primary */
+  --color-quill-special-2: #a78bfa;   /* purple, secondary */
+  /* CanvasPanel "paper" preview sub-theme — a deliberately distinct
+     lavender palette that simulates a light-mode webpage preview inside
+     the canvas, regardless of the global app theme. Used only by the
+     canvas preview when its local `dark` boolean is false. */
+  --color-quill-code-preview-bg: #f0f0ff;
+  --color-quill-code-preview-text: #1a1a2e;
+  --color-quill-code-preview-accent: #5b4dd4;
+  --color-quill-code-preview-border: #ddd9ff;
   /* Pre-mixed alpha tokens (light) — pre-baked so call sites stay short.
      .dark overrides each of these with the same hue at the right opacity. */
   --color-quill-glass: rgba(245, 243, 237, 0.85);
@@ -64,6 +79,18 @@
   --color-quill-glow-44: rgba(239, 68, 68, 0.44);
   --color-quill-glow-05: rgba(239, 68, 68, 0.05);
   --color-quill-shadow-soft: rgba(0, 0, 0, 0.28);
+  /* Semantic tokens — shifted for dark-mode contrast. */
+  --color-quill-info: #60a5fa;
+  --color-quill-info-2: #93c5fd;
+  --color-quill-special: #c4b5fd;
+  --color-quill-special-2: #ddd6fe;
+  /* Canvas "paper" preview sub-theme — kept intentionally consistent
+     across modes so the preview always looks like a light "paper" page
+     inside the canvas, even when the rest of the app is dark. */
+  --color-quill-code-preview-bg: #f0f0ff;
+  --color-quill-code-preview-text: #1a1a2e;
+  --color-quill-code-preview-accent: #5b4dd4;
+  --color-quill-code-preview-border: #ddd9ff;
   color-scheme: dark;
 }
 
