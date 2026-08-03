@@ -93,7 +93,7 @@ export default function DocsPage() {
           <Link href="/" className="text-xs text-quill-muted hover:text-quill-text transition-colors hidden sm:block">← Home</Link>
           <Link
             href="/login"
-            className="flex items-center h-8 px-3 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
+            className="flex items-center h-8 px-3 rounded-lg bg-quill-accent hover:bg-quill-accent-2 text-white text-xs font-medium transition-all"
           >
             Try free
           </Link>
@@ -109,7 +109,7 @@ export default function DocsPage() {
 
         {/* Search placeholder */}
         <div className="mt-6 max-w-md mx-auto">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#6F737A]">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-quill-muted">
             <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
             Search docs…
           </div>
@@ -133,9 +133,9 @@ export default function DocsPage() {
               {section.articles.map((article) => (
                 <div
                   key={article.slug}
-                  className="group flex flex-col gap-1.5 p-4 rounded-xl border border-quill-border bg-[#0d0d15] hover:border-quill-border-2 hover:bg-quill-surface transition-all duration-150 cursor-default"
+                  className="group flex flex-col gap-1.5 p-4 rounded-xl border border-quill-border bg-quill-surface-2 hover:border-quill-border-2 hover:bg-quill-surface transition-all duration-150 cursor-default"
                 >
-                  <p className="text-sm font-medium text-quill-text group-hover:text-white transition-colors leading-snug">
+                  <p className="text-sm font-medium text-quill-text transition-colors leading-snug">
                     {article.title}
                   </p>
                   <p className="text-xs text-quill-muted leading-relaxed">{article.desc}</p>
@@ -150,11 +150,11 @@ export default function DocsPage() {
         <div className="pt-8 border-t border-quill-border text-center">
           <p className="text-sm text-quill-muted">
             Can&apos;t find what you&apos;re looking for?{" "}
-            <a href="mailto:support@quill.ai" className="text-[#EF4444] hover:underline">
+            <a href="mailto:support@quill.ai" className="text-quill-accent hover:underline">
               Contact support
             </a>
           </p>
-          <div className="flex items-center justify-center gap-5 mt-4 text-xs text-[#6F737A]">
+          <div className="flex items-center justify-center gap-5 mt-4 text-xs text-quill-muted">
             <Link href="/privacy" className="hover:text-quill-muted transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-quill-muted transition-colors">Terms</Link>
             <Link href="/" className="hover:text-quill-muted transition-colors">Home</Link>

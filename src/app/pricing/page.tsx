@@ -63,7 +63,7 @@ export default function PricingPage() {
           </Link>
           <Link
             href="/login"
-            className="flex items-center h-9 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.25)] active:scale-95"
+            className="flex items-center h-9 px-4 rounded-xl bg-quill-accent hover:bg-quill-accent-2 text-white text-sm font-medium transition-all shadow-lg shadow-[var(--color-quill-glow-22)] active:scale-95"
           >
             Try Free
           </Link>
@@ -79,7 +79,7 @@ export default function PricingPage() {
         <p className="text-quill-muted text-base sm:text-lg max-w-lg mx-auto">
           Keep the familiar AI workflow. Upgrade when you need stronger policy, routing, and governance controls.
         </p>
-        <p className="mt-3 text-xs text-[#EF4444] font-medium">
+        <p className="mt-3 text-xs text-quill-accent font-medium">
           No hidden fees. Transparent limits and predictable control upgrades.
         </p>
       </div>
@@ -88,23 +88,23 @@ export default function PricingPage() {
       <div className="px-4 sm:px-6 pb-16 sm:pb-24 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-start">
           {/* Free */}
-          <div className="flex flex-col p-6 rounded-2xl border border-quill-border bg-[#0d0d15]">
+          <div className="flex flex-col p-6 rounded-2xl border border-quill-border bg-quill-surface-2">
             <p className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-3">Free</p>
             <div className="flex items-end gap-1 mb-1">
               <span className="text-4xl font-black text-quill-text">$0</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#6F737A] mb-6">No credit card required</p>
+            <p className="text-xs text-quill-muted mb-6">No credit card required</p>
             <Link
               href="/login"
-              className="flex items-center justify-center h-10 rounded-xl border border-quill-border text-sm font-medium text-[#A1A7B0] hover:border-quill-border-2 hover:text-quill-text transition-all mb-6"
+              className="flex items-center justify-center h-10 rounded-xl border border-quill-border text-sm font-medium text-quill-muted hover:border-quill-border-2 hover:text-quill-text transition-all mb-6"
             >
               Get started
             </Link>
             <ul className="space-y-3">
               {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-quill-muted">
-                  <Check color="#343944" />
+                  <Check color="var(--color-quill-border-2)" />
                   {f}
                 </li>
               ))}
@@ -112,21 +112,21 @@ export default function PricingPage() {
           </div>
 
           {/* Pro */}
-          <div className="flex flex-col p-6 rounded-2xl border-2 border-[#EF4444] bg-[#0d0d15] relative">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#EF4444] text-white text-[11px] font-bold tracking-wide whitespace-nowrap">
+          <div className="flex flex-col p-6 rounded-2xl border-2 border-quill-accent bg-quill-surface-2 relative">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-quill-accent text-white text-[11px] font-bold tracking-wide whitespace-nowrap">
               MOST POPULAR
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#EF4444] mb-3">Pro Control</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-quill-accent mb-3">Pro Control</p>
             <div className="flex items-end gap-1 mb-1">
               <span className="text-4xl font-black text-quill-text">$29</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
+            <p className="text-xs text-quill-muted mb-6">Billed monthly · Cancel anytime</p>
             <CheckoutButton plan="pro" />
             <ul className="space-y-3">
               {THINK_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#C1C7D0]">
-                  <Check color="#EF4444" />
+                <li key={f} className="flex items-start gap-2.5 text-sm text-quill-text">
+                  <Check color="var(--color-quill-accent)" />
                   {f}
                 </li>
               ))}
@@ -135,20 +135,20 @@ export default function PricingPage() {
 
           {/* Team */}
           <div
-            className="flex flex-col p-6 rounded-2xl border border-[rgba(245,158,11,0.3)] bg-[#0d0d15]"
+            className="flex flex-col p-6 rounded-2xl border border-[var(--color-quill-yellow)]/30 bg-quill-surface-2"
             style={{ boxShadow: "0 0 40px rgba(245,158,11,0.04)" }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b] mb-3">Team Ops</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-quill-yellow mb-3">Team Ops</p>
             <div className="flex items-end gap-1 mb-1">
               <span className="text-4xl font-black text-quill-text">$99</span>
               <span className="text-sm text-quill-muted mb-1">/mo</span>
             </div>
-            <p className="text-xs text-[#6F737A] mb-6">Billed monthly · Cancel anytime</p>
+            <p className="text-xs text-quill-muted mb-6">Billed monthly · Cancel anytime</p>
             <CheckoutButton plan="team" />
             <ul className="space-y-3">
               {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#C1C7D0]">
-                  <Check color="#f59e0b" />
+                <li key={f} className="flex items-start gap-2.5 text-sm text-quill-text">
+                  <Check color="var(--color-quill-yellow)" />
                   {f}
                 </li>
               ))}
@@ -234,7 +234,7 @@ export default function PricingPage() {
             <QuillLogo size={16} />
             <span className="text-xs font-semibold gradient-text">Quill AI</span>
           </div>
-          <p className="text-xs text-[#6F737A]">© 2026 Quill AI</p>
+          <p className="text-xs text-quill-muted">© 2026 Quill AI</p>
           <div className="flex gap-5 text-xs text-quill-muted">
             <Link href="/pricing" className="hover:text-quill-text transition-colors">
               Pricing

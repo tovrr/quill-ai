@@ -23,7 +23,7 @@ function MessageBubble({
     <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       {isUser ? (
-        <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-quill-accent-2 flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-0.5">
           U
         </div>
       ) : (
@@ -36,7 +36,7 @@ function MessageBubble({
       <div
         className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? "rounded-tr-sm bg-[#EF4444] text-white"
+            ? "rounded-tr-sm bg-quill-accent text-white"
             : "rounded-tl-sm bg-quill-surface border border-quill-border text-quill-text"
         }`}
       >
@@ -77,7 +77,7 @@ export default async function SharePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-quill-bg flex flex-col">
       {/* Top banner */}
-      <div className="border-b border-quill-border bg-[#0d0d15] shrink-0">
+      <div className="border-b border-quill-border bg-quill-surface-2 shrink-0">
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <QuillLogo size={20} />
@@ -87,7 +87,7 @@ export default async function SharePage({ params }: Props) {
           </div>
           <Link
             href="/agent"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-quill-accent hover:bg-quill-accent-2 text-white text-xs font-medium transition-all"
           >
             <PlusIcon className="h-3 w-3" />
             Try Quill AI
@@ -129,7 +129,7 @@ export default async function SharePage({ params }: Props) {
       </div>
 
       {/* Footer CTA */}
-      <div className="border-t border-quill-border bg-[#0d0d15] shrink-0">
+      <div className="border-t border-quill-border bg-quill-surface-2 shrink-0">
         <div className="max-w-3xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-quill-text">Continue this conversation in Quill AI</p>
@@ -137,7 +137,7 @@ export default async function SharePage({ params }: Props) {
           </div>
           <Link
             href="/agent"
-            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-all shadow-lg shadow-[rgba(239,68,68,0.3)]"
+            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-quill-accent hover:bg-quill-accent-2 text-white text-sm font-medium transition-all shadow-lg shadow-[var(--color-quill-glow-44)]"
           >
             Start chatting
             <ArrowRightIcon className="h-3.5 w-3.5" />

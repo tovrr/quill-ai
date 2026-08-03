@@ -33,35 +33,35 @@ export default function AnalyticsDashboardPage() {
 
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-2">Active Users</h3>
-            <div className="text-2xl font-bold text-[#3b82f6]">0</div>
-            <p className="text-xs text-[#6F737A] mt-1">Last 24 hours</p>
+            <div className="text-2xl font-bold text-quill-accent">0</div>
+            <p className="text-xs text-quill-muted mt-1">Last 24 hours</p>
           </div>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-2">Avg Response Time</h3>
-            <div className="text-2xl font-bold text-[#10b981]">0ms</div>
-            <p className="text-xs text-[#6F737A] mt-1">System performance</p>
+            <div className="text-2xl font-bold text-quill-green">0ms</div>
+            <p className="text-xs text-quill-muted mt-1">System performance</p>
           </div>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-2">Error Rate</h3>
-            <div className="text-2xl font-bold text-[#f59e0b]">0%</div>
-            <p className="text-xs text-[#6F737A] mt-1">24-hour baseline</p>
+            <div className="text-2xl font-bold text-quill-yellow">0%</div>
+            <p className="text-xs text-quill-muted mt-1">24-hour baseline</p>
           </div>
 
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-quill-muted mb-2">Total Messages</h3>
-            <div className="text-2xl font-bold text-[#8b5cf6]">0</div>
-            <p className="text-xs text-[#6F737A] mt-1">Last 24 hours</p>
+            <div className="text-2xl font-bold text-quill-text">0</div>
+            <p className="text-xs text-quill-muted mt-1">Last 24 hours</p>
           </div>
         </div>
 
         {/* Analytics Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* System Performance */}
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-lg font-semibold text-quill-text mb-4">System Performance</h3>
 
             <div className="space-y-4">
@@ -71,7 +71,7 @@ export default function AnalyticsDashboardPage() {
                   <span>Avg: 0ms</span>
                 </div>
                 <div className="h-16 bg-quill-surface rounded-lg flex items-center justify-center">
-                  <span className="text-xs text-[#6F737A]">Performance chart loading...</span>
+                  <span className="text-xs text-quill-muted">Performance chart loading...</span>
                 </div>
               </div>
 
@@ -81,14 +81,14 @@ export default function AnalyticsDashboardPage() {
                   <span>100%</span>
                 </div>
                 <div className="h-2 bg-quill-surface rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 w-full"></div>
+                  <div className="h-full bg-quill-green w-full"></div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* User Activity */}
-          <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+          <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
             <h3 className="text-lg font-semibold text-quill-text mb-4">User Activity</h3>
 
             <div className="space-y-4">
@@ -98,15 +98,15 @@ export default function AnalyticsDashboardPage() {
                   <span>0</span>
                 </div>
                 <div className="h-16 bg-quill-surface rounded-lg flex items-center justify-center">
-                  <span className="text-xs text-[#6F737A]">Activity chart loading...</span>
+                  <span className="text-xs text-quill-muted">Activity chart loading...</span>
                 </div>
               </div>
 
               <div>
                 <div className="text-sm text-quill-muted mb-2">Weekly Growth</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-green-400">+12%</span>
-                  <span className="text-xs text-[#6F737A]">vs last week</span>
+                  <span className="text-sm text-quill-green">+12%</span>
+                  <span className="text-xs text-quill-muted">vs last week</span>
                 </div>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function AnalyticsDashboardPage() {
         </div>
 
         {/* Feature Usage Analytics */}
-        <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6 mb-8">
+        <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-quill-text">Feature Usage Analytics</h3>
             <div className="flex gap-2">
@@ -138,11 +138,11 @@ export default function AnalyticsDashboardPage() {
               <div key={index} className="flex items-center justify-between py-3 border-b border-quill-border">
                 <div>
                   <div className="font-medium text-quill-text">{item.feature}</div>
-                  <div className="text-xs text-[#6F737A]">{item.users} unique users</div>
+                  <div className="text-xs text-quill-muted">{item.users} unique users</div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-quill-text">{item.usage}</div>
-                  <div className={`text-xs ${item.growth.startsWith("+") ? "text-green-400" : "text-red-400"}`}>
+                  <div className={`text-xs ${item.growth.startsWith("+") ? "text-quill-green" : "text-quill-red"}`}>
                     {item.growth}
                   </div>
                 </div>
@@ -152,13 +152,13 @@ export default function AnalyticsDashboardPage() {
         </div>
 
         {/* Maintenance Section */}
-        <div className="bg-[#0d0d15] rounded-2xl border border-quill-border p-6">
+        <div className="bg-quill-surface-2 rounded-2xl border border-quill-border p-6">
           <h3 className="text-lg font-semibold text-quill-text mb-4">System Maintenance</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button className="flex items-center gap-3 p-4 border border-quill-border rounded-lg hover:bg-quill-border transition-all">
-              <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-quill-accent/20 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-quill-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -169,13 +169,13 @@ export default function AnalyticsDashboardPage() {
               </div>
               <div className="text-left">
                 <div className="font-medium text-quill-text">Export Analytics</div>
-                <div className="text-xs text-[#6F737A]">Download metrics and reports</div>
+                <div className="text-xs text-quill-muted">Download metrics and reports</div>
               </div>
             </button>
 
             <button className="flex items-center gap-3 p-4 border border-quill-border rounded-lg hover:bg-quill-border transition-all">
-              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-quill-yellow/20 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-quill-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -186,7 +186,7 @@ export default function AnalyticsDashboardPage() {
               </div>
               <div className="text-left">
                 <div className="font-medium text-quill-text">Cleanup Data</div>
-                <div className="text-xs text-[#6F737A]">Remove old metric records</div>
+                <div className="text-xs text-quill-muted">Remove old metric records</div>
               </div>
             </button>
           </div>

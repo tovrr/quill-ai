@@ -71,11 +71,11 @@ export default async function SuccessPage({ searchParams }: { searchParams?: Pro
         <div className="mt-8">
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              state.confirmed ? "bg-green-500/20" : "bg-amber-500/20"
+              state.confirmed ? "bg-[var(--color-quill-green)]/20" : "bg-quill-yellow/20"
             }`}
           >
             <svg
-              className={`w-8 h-8 ${state.confirmed ? "text-green-400" : "text-amber-400"}`}
+              className={`w-8 h-8 ${state.confirmed ? "text-quill-green" : "text-quill-yellow"}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -91,23 +91,23 @@ export default async function SuccessPage({ searchParams }: { searchParams?: Pro
           <p className="text-quill-muted mb-8">{state.message}</p>
 
           <div className="space-y-4">
-            <div className="bg-[#0d0d15] rounded-xl border border-quill-border p-4">
+            <div className="bg-quill-surface-2 rounded-xl border border-quill-border p-4">
               <h3 className="font-semibold text-quill-text mb-2">Your new features</h3>
               <ul className="text-sm text-quill-muted space-y-2">
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#EF4444] rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-quill-accent rounded-full"></span>
                   Unlimited providers and environments
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#EF4444] rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-quill-accent rounded-full"></span>
                   Advanced policy and rules
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#EF4444] rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-quill-accent rounded-full"></span>
                   Fast + Balanced + Reasoning profiles
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#EF4444] rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-quill-accent rounded-full"></span>
                   Priority email support
                 </li>
               </ul>
@@ -116,7 +116,7 @@ export default async function SuccessPage({ searchParams }: { searchParams?: Pro
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/agent"
-                className="flex-1 flex items-center justify-center h-10 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-semibold transition-all"
+                className="flex-1 flex items-center justify-center h-10 rounded-xl bg-quill-accent hover:bg-quill-accent-2 text-white text-sm font-semibold transition-all"
               >
                 Start Building with Quill
               </Link>
@@ -131,7 +131,7 @@ export default async function SuccessPage({ searchParams }: { searchParams?: Pro
           </div>
         </div>
 
-        <p className="text-xs text-[#6F737A] mt-12">Your billing confirmation has been sent to your email address.</p>
+        <p className="text-xs text-quill-muted mt-12">Your billing confirmation has been sent to your email address.</p>
       </div>
     </div>
   );
