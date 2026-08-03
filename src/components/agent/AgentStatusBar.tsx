@@ -42,7 +42,7 @@ export function AgentStatusBar({ status, taskTitle, stepCount, totalSteps, compa
 
   return (
     <div
-      className={`flex items-center gap-3 bg-[#0d0d15] border-b border-quill-border ${compact ? "px-3 py-1.5" : "px-4 py-2.5"}`}
+      className={`flex items-center gap-3 bg-quill-surface-2 border-b border-quill-border ${compact ? "px-3 py-1.5" : "px-4 py-2.5"}`}
     >
       {/* Status dot */}
       <div className="flex items-center gap-2">
