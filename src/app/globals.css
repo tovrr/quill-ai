@@ -24,6 +24,16 @@
   --color-quill-yellow: #ca8a04;
   --color-quill-red: #dc2626;
   --color-quill-orange: #ef4444;
+  /* Pre-mixed alpha tokens (light) — pre-baked so call sites stay short.
+     .dark overrides each of these with the same hue at the right opacity. */
+  --color-quill-glass: rgba(245, 243, 237, 0.85);
+  --color-quill-glass-strong: rgba(245, 243, 237, 0.95);
+  --color-quill-glow-border: rgba(220, 38, 38, 0.4);
+  --color-quill-glow-10: rgba(220, 38, 38, 0.1);
+  --color-quill-glow-22: rgba(220, 38, 38, 0.22);
+  --color-quill-glow-44: rgba(220, 38, 38, 0.44);
+  --color-quill-glow-05: rgba(220, 38, 38, 0.05);
+  --color-quill-shadow-soft: rgba(0, 0, 0, 0.1);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -46,6 +56,14 @@
   --color-quill-yellow: #fbbf24;
   --color-quill-red: #ef4444;
   --color-quill-orange: #f87171;
+  --color-quill-glass: rgba(14, 16, 21, 0.85);
+  --color-quill-glass-strong: rgba(14, 16, 21, 0.95);
+  --color-quill-glow-border: rgba(239, 68, 68, 0.4);
+  --color-quill-glow-10: rgba(239, 68, 68, 0.1);
+  --color-quill-glow-22: rgba(239, 68, 68, 0.22);
+  --color-quill-glow-44: rgba(239, 68, 68, 0.44);
+  --color-quill-glow-05: rgba(239, 68, 68, 0.05);
+  --color-quill-shadow-soft: rgba(0, 0, 0, 0.28);
   color-scheme: dark;
 }
 
@@ -151,7 +169,7 @@ body {
     box-shadow: 0 0 8px var(--color-quill-accent-glow);
   }
   50% {
-    box-shadow: 0 0 20px color-mix(in srgb, var(--color-quill-accent) 44%, transparent);
+    box-shadow: 0 0 20px var(--color-quill-glow-44);
   }
 }
 
@@ -203,13 +221,13 @@ body {
   0%,
   100% {
     box-shadow:
-      0 0 12px color-mix(in srgb, var(--color-quill-accent) 10%, transparent),
-      inset 0 0 10px color-mix(in srgb, var(--color-quill-accent) 5%, transparent);
+      0 0 12px var(--color-quill-glow-10),
+      inset 0 0 10px var(--color-quill-glow-05);
   }
   50% {
     box-shadow:
-      0 0 24px color-mix(in srgb, var(--color-quill-accent) 22%, transparent),
-      inset 0 0 16px color-mix(in srgb, var(--color-quill-accent) 10%, transparent);
+      0 0 24px var(--color-quill-glow-22),
+      inset 0 0 16px var(--color-quill-glow-10);
   }
 }
 
@@ -236,7 +254,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--color-quill-accent) 10%, transparent) 50%,
+    var(--color-quill-glow-10) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -260,9 +278,9 @@ body {
 
 /* ── Utility classes ─────────────────────────────────────────────────────────── */
 
-/* Glass morphism — dark-tinted blur by default; light surfaces use rgba(255,255,255,0.7) */
+/* Glass morphism — theme-aware 85% bg + blur */
 .glass {
-  background: color-mix(in srgb, var(--color-quill-bg) 85%, transparent);
+  background: var(--color-quill-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -281,10 +299,10 @@ body {
 
 /* Accent glow border */
 .glow-border {
-  border: 1px solid color-mix(in srgb, var(--color-quill-accent) 40%, transparent);
+  border: 1px solid var(--color-quill-glow-border);
   box-shadow:
-    0 0 16px color-mix(in srgb, var(--color-quill-accent) 10%, transparent),
-    inset 0 0 16px color-mix(in srgb, var(--color-quill-accent) 5%, transparent);
+    0 0 16px var(--color-quill-glow-10),
+    inset 0 0 16px var(--color-quill-glow-05);
 }
 
 /* Homepage hero effects */
@@ -341,23 +359,23 @@ html.is-mobile .agent-composer-shell {
 
 /* iOS profile: tighter glass + softer top edge */
 html.os-ios.is-mobile .agent-composer-shell {
-  border-top-color: color-mix(in srgb, var(--color-quill-accent-2) 20%, transparent);
-  box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.35);
+  border-top-color: var(--color-quill-glow-22);
+  box-shadow: 0 -14px 30px var(--color-quill-shadow-soft);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-quill-bg) 78%, transparent),
-    color-mix(in srgb, var(--color-quill-bg) 94%, transparent)
+    var(--color-quill-glass),
+    var(--color-quill-glass-strong)
   );
 }
 
 /* Android profile: denser spacing and stronger separation from feed */
 html.os-android.is-mobile .agent-composer-shell {
-  border-top-color: color-mix(in srgb, var(--color-quill-accent) 24%, transparent);
-  box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.28);
+  border-top-color: var(--color-quill-glow-22);
+  box-shadow: 0 -10px 26px var(--color-quill-shadow-soft);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-quill-bg) 84%, transparent),
-    color-mix(in srgb, var(--color-quill-bg) 97%, transparent)
+    var(--color-quill-glass),
+    var(--color-quill-glass-strong)
   );
 }
 
@@ -375,6 +393,6 @@ html.browser-safari.is-mobile .agent-screen {
   .hero-nav-glass {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: color-mix(in srgb, var(--color-quill-bg) 95%, transparent);
+    background: var(--color-quill-glass-strong);
   }
 }
