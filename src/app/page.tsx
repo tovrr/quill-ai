@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/20/solid";
 import { QuillLogo } from "@/components/ui/QuillLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { KILLERS, type KillerIconKey } from "@/lib/ai/killers";
 import { HeroInput } from "@/components/HeroInput";
 
@@ -150,6 +151,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle className="h-9 w-9" />
             <Link
               href="/login"
               className="max-sm:hidden flex items-center h-9 px-3 rounded-xl text-sm text-quill-muted hover:text-quill-text hover:bg-quill-border transition-all"

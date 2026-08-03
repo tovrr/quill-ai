@@ -17,6 +17,7 @@ jobs:
       API_METRICS_TOKEN: smoke-metrics-token
       SMOKE_BASE_URL: http://127.0.0.1:3000
       ALLOW_INMEMORY_RATELIMIT_FALLBACK: "true"
+      ENABLE_IN_MEMORY_METRICS: "true"
 
     steps:
       - name: Checkout
@@ -53,6 +54,7 @@ jobs:
       - name: Enforce bundle budgets
         env:
           BUNDLE_MAX_TOTAL_JS_KB: 2400
+          BUNDLE_MAX_SINGLE_CSS_KB: 100
         run: npm run bundle:check
 
       - name: Start app

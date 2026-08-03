@@ -46,7 +46,14 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",          // iOS safe area support
-  themeColor: "#EF4444",
+  // Theme-aware browser chrome: PWA address bar / iOS status bar tint
+  // shifts with the user's chosen color scheme. The accent red works in
+  // both modes; a darker tint is used under system-dark to match the
+  // surface so the status bar doesn't clash with the app background.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EF4444" },
+    { media: "(prefers-color-scheme: dark)", color: "#EF4444" },
+  ],
 };
 
 // ── App metadata + PWA ────────────────────────────────────────────────────────
@@ -109,11 +116,27 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {/* Inline pre-hydration script: applies saved/system theme to <html>
+            before first paint so we don't flash light → dark on dark-system users. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('theme');
+                  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var theme = stored || (systemDark ? 'dark' : 'light');
+                  if (theme === 'dark') document.documentElement.classList.add('dark');
+                } catch (_) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.variable} antialiased font-sans`}>
         <DeviceAwareness />
