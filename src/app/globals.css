@@ -52,6 +52,10 @@
   --color-quill-glow-green-10: rgba(34, 197, 94, 0.1);
   --color-quill-glow-green-08: rgba(34, 197, 94, 0.08);
   --color-quill-glow-green-06: rgba(34, 197, 94, 0.06);
+  --color-quill-glow-green-20: rgba(34, 197, 94, 0.2);
+  --color-quill-glow-yellow-10: rgba(202, 138, 4, 0.1);
+  --color-quill-glow-yellow-20: rgba(202, 138, 4, 0.2);
+  --color-quill-glow-20: rgba(220, 38, 38, 0.2);
   --color-quill-overlay: rgba(0, 0, 0, 0.4);
   --color-quill-shadow-soft: rgba(0, 0, 0, 0.1);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -87,6 +91,10 @@
   --color-quill-glow-green-10: rgba(52, 211, 153, 0.1);
   --color-quill-glow-green-08: rgba(52, 211, 153, 0.08);
   --color-quill-glow-green-06: rgba(52, 211, 153, 0.06);
+  --color-quill-glow-green-20: rgba(52, 211, 153, 0.2);
+  --color-quill-glow-yellow-10: rgba(251, 191, 36, 0.1);
+  --color-quill-glow-yellow-20: rgba(251, 191, 36, 0.2);
+  --color-quill-glow-20: rgba(239, 68, 68, 0.2);
   --color-quill-overlay: rgba(17, 17, 24, 0.8);
   --color-quill-shadow-soft: rgba(0, 0, 0, 0.28);
   /* Semantic tokens — shifted for dark-mode contrast. */
