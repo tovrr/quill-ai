@@ -84,9 +84,9 @@ interface HealthPayload {
 
 const PINNED_KEY = "quill-pinned-chats";
 const sidebarSectionToggleClass =
-  "flex h-auto w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted hover:text-[#A1A7B0]";
+  "flex h-auto w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted hover:text-quill-muted";
 const sidebarRowButtonClass =
-  "flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.24)] hover:bg-quill-surface-2";
+  "flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-quill-glow-22 hover:bg-quill-surface-2";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -582,11 +582,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
 
   const engineTone =
     engineStatus === "ok"
-      ? "text-[#34d399] bg-[rgba(52,211,153,0.1)] border-[rgba(52,211,153,0.2)]"
+      ? "text-quill-green bg-quill-glow-green-10 border-quill-glow-green-20"
       : engineStatus === "degraded"
-        ? "text-[#fbbf24] bg-[rgba(251,191,36,0.1)] border-[rgba(251,191,36,0.2)]"
+        ? "text-quill-yellow bg-quill-glow-yellow-10 border-quill-glow-yellow-20"
         : engineStatus === "down"
-          ? "text-[#f87171] bg-[rgba(248,113,113,0.1)] border-[rgba(248,113,113,0.2)]"
+          ? "text-quill-accent-2 bg-quill-glow-10 border-quill-glow-20"
           : "text-quill-muted bg-quill-surface-2 border-quill-border";
   const engineLabel =
     engineStatus === "ok"
@@ -596,12 +596,12 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         : engineStatus === "down"
           ? "Offline"
           : "Checking";
-  const sidebarHistoryActionClass = "h-7 w-7 rounded-md text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]";
+  const sidebarHistoryActionClass = "h-7 w-7 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted";
 
   return (
     <TooltipProvider delayDuration={500}>
       <aside
-        className="flex h-full w-full shrink-0 flex-col overflow-y-auto border-r border-quill-border bg-[#0d0d15] scroll-smooth overscroll-contain"
+        className="flex h-full w-full shrink-0 flex-col overflow-y-auto border-r border-quill-border bg-quill-surface-2 scroll-smooth overscroll-contain"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className="shrink-0 border-b border-quill-border px-5 py-4">
@@ -636,7 +636,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
             <Button
               onClick={() => navigateTo("/agent")}
               type="button"
-              className="flex h-auto w-full items-center justify-center gap-2.5 rounded-xl bg-[#EF4444] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-[rgba(239,68,68,0.25)] transition-all duration-150 hover:bg-[#DC2626]"
+              className="flex h-auto w-full items-center justify-center gap-2.5 rounded-xl bg-quill-accent px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-quill-glow-22 transition-all duration-150 hover:bg-quill-accent-2"
             >
               <PlusIcon className="h-3.5 w-3.5" aria-hidden="true" />
               New mission
@@ -697,7 +697,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     >
                       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                       <span className="min-w-0">
-                        <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
+                        <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
                         <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                       </span>
                     </Button>
@@ -743,7 +743,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                       >
                         <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                         <span className="min-w-0">
-                          <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">
+                          <span className="block text-[13px] font-medium leading-tight text-quill-muted">
                             {item.label}
                           </span>
                           <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">
@@ -766,7 +766,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
               className={sidebarSectionToggleClass}
             >
               <span className="flex items-center gap-1.5">
-                <SparklesIcon className="h-2.5 w-2.5 text-[#F87171]" aria-hidden="true" />
+                <SparklesIcon className="h-2.5 w-2.5 text-quill-accent-2" aria-hidden="true" />
                 Agents
               </span>
               <ChevronDownIcon
@@ -798,7 +798,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                       style={{ backgroundColor: killer.accent }}
                     />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{killer.name}</span>
+                      <span className="block text-[13px] font-medium leading-tight text-quill-muted">{killer.name}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{killer.tagline}</span>
                     </span>
                   </Button>
@@ -807,7 +807,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                   type="button"
                   variant="ghost"
                   onClick={() => navigateTo("/skills")}
-                  className="flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-dashed border-quill-border px-3 py-2.5 text-left transition-all duration-150 hover:border-[rgba(239,68,68,0.3)] hover:bg-quill-surface-2"
+                  className="flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-dashed border-quill-border px-3 py-2.5 text-left transition-all duration-150 hover:border-quill-glow-22 hover:bg-quill-surface-2"
                 >
                   <PlusIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                   <span className="min-w-0">
@@ -822,7 +822,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                   type="button"
                   variant="ghost"
                   onClick={() => setConnectOpen((v) => !v)}
-                  className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted hover:text-[#A1A7B0]"
+                  className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted hover:text-quill-muted"
                 >
                   <span className="flex items-center gap-1.5">
                     <BoltIcon className="h-2.5 w-2.5" aria-hidden="true" />
@@ -850,9 +850,9 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                         <ArrowTopRightOnSquareIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5">
-                            <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{entry.label}</span>
+                            <span className="block text-[13px] font-medium leading-tight text-quill-muted">{entry.label}</span>
                             {entry.badge && (
-                              <span className="rounded-full bg-[rgba(239,68,68,0.12)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#F87171]">
+                              <span className="rounded-full bg-quill-glow-10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-quill-accent-2">
                                 {entry.badge}
                               </span>
                             )}
@@ -884,7 +884,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     >
                       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
                       <span className="min-w-0">
-                        <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
+                        <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
                         <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                       </span>
                     </Button>
@@ -898,9 +898,9 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
                     className={sidebarRowButtonClass}
                   >
-                    <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" aria-hidden="true" />
+                    <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-accent-2" aria-hidden="true" />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-[#C1C7D0]">{item.label}</span>
+                      <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
                       <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
                     </span>
                   </Button>
@@ -967,7 +967,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                           className="mt-1.5 h-1 w-1 shrink-0 rounded-full transition-colors"
                           style={{ background: isPinned ? "#EF4444" : "#343944" }}
                         />
-                        <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-[#b8b8d0]">
+                        <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-quill-muted">
                           {chat.title}
                         </span>
                       </Button>
@@ -1021,7 +1021,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                               variant="ghost"
                               size="icon"
                               aria-label={shareToast === chat.id ? "Share link copied" : "Copy share link"}
-                              className={`${sidebarHistoryActionClass} ${shareToast === chat.id ? "bg-[#22c55e]/10 text-[#4ade80]" : "text-quill-muted hover:bg-quill-border hover:text-[#A1A7B0]"}`}
+                              className={`${sidebarHistoryActionClass} ${shareToast === chat.id ? "bg-quill-glow-green-10 text-quill-green" : "text-quill-muted hover:bg-quill-border hover:text-quill-muted"}`}
                             >
                               <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
                             </Button>
@@ -1043,7 +1043,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                               size="icon"
                               disabled={deletingChatId === chat.id}
                               aria-label="Delete chat"
-                              className="h-7 w-7 rounded-md text-quill-muted transition-all hover:bg-quill-border hover:text-[#f87171] disabled:opacity-50"
+                              className="h-7 w-7 rounded-md text-quill-muted transition-all hover:bg-quill-border hover:text-quill-accent-2 disabled:opacity-50"
                             >
                               <TrashIcon className="h-2.75 w-2.75" aria-hidden="true" />
                             </Button>
@@ -1064,7 +1064,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                               variant="ghost"
                               size="icon"
                               aria-label="More chat actions"
-                              className="h-8 w-8 rounded-md text-quill-muted hover:bg-quill-border hover:text-[#b8b8d0]"
+                              className="h-8 w-8 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted"
                             >
                               <EllipsisVerticalIcon className="h-3.5 w-3.5" aria-hidden="true" />
                             </Button>
@@ -1073,7 +1073,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                         </Tooltip>
 
                         {openChatMenuId === chat.id && (
-                          <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-quill-border bg-[#11111a] p-1.5 shadow-xl">
+                          <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-quill-border bg-quill-surface-2 p-1.5 shadow-xl">
                             <Button
                               type="button"
                               variant="ghost"
@@ -1082,7 +1082,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                                 togglePin(chat.id);
                                 setOpenChatMenuId(null);
                               }}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] hover:bg-quill-border"
+                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
                             >
                               {isPinned ? "Unpin" : "Pin to top"}
                             </Button>
@@ -1104,7 +1104,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                                   });
                                 setOpenChatMenuId(null);
                               }}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#C1C7D0] hover:bg-quill-border"
+                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
                             >
                               Copy share link
                             </Button>
@@ -1117,7 +1117,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                                 setOpenChatMenuId(null);
                               }}
                               disabled={deletingChatId === chat.id}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-[#f7b0b0] hover:bg-quill-border disabled:opacity-50"
+                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-accent-2 hover:bg-quill-border disabled:opacity-50"
                             >
                               Delete chat
                             </Button>
@@ -1156,19 +1156,19 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
 
         {pendingDeleteChat && (
           <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-quill-border bg-[#0d0d15] p-4 shadow-2xl">
+            <div className="w-full max-w-sm rounded-2xl border border-quill-border bg-quill-surface-2 p-4 shadow-2xl">
               <h3 className="text-sm font-semibold text-quill-text">Delete this chat?</h3>
               <p className="mt-2 text-xs leading-relaxed text-quill-muted">
                 This action cannot be undone. The conversation will be removed from your history.
               </p>
-              <p className="mt-2 line-clamp-2 text-xs text-[#A1A7B0]">{pendingDeleteChat.title}</p>
+              <p className="mt-2 line-clamp-2 text-xs text-quill-muted">{pendingDeleteChat.title}</p>
 
               <div className="mt-4 flex items-center justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setPendingDeleteChat(null)}
-                  className="h-auto rounded-lg px-3 py-1.5 text-xs text-[#A1A7B0] hover:border-quill-border-2 hover:text-quill-text"
+                  className="h-auto rounded-lg px-3 py-1.5 text-xs text-quill-muted hover:border-quill-border-2 hover:text-quill-text"
                 >
                   Cancel
                 </Button>
@@ -1178,7 +1178,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                     void confirmDeleteChat();
                   }}
                   disabled={deletingChatId === pendingDeleteChat.id}
-                  className="h-auto rounded-lg bg-[#EF4444] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#DC2626] disabled:opacity-60"
+                  className="h-auto rounded-lg bg-quill-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-quill-accent-2 disabled:opacity-60"
                 >
                   {deletingChatId === pendingDeleteChat.id ? "Deleting..." : "Delete"}
                 </Button>
