@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { memo, useState } from "react";
 import {
@@ -99,7 +99,7 @@ function ReasoningBlock({ text }: { text: string }) {
   const preview = text.length > 80 ? text.slice(0, 77) + "..." : text;
   const previewNodes = renderReasoningPreview(preview);
   return (
-    <div className="w-full rounded-2xl rounded-tl-sm bg-[#131321] border border-quill-border overflow-hidden">
+    <div className="w-full rounded-2xl rounded-tl-sm bg-quill-surface-2 border border-quill-border overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -163,23 +163,23 @@ function ToolCallBadge({
 
   const containerClass = `w-full rounded-2xl border text-xs animate-fade-in ${
     isRunning
-      ? "border-[rgba(239,68,68,0.26)] bg-[rgba(239,68,68,0.08)]"
+      ? "border-[rgba(239,68,68,0.26)] bg-quill-glow-10"
       : isDone
-        ? "border-[rgba(52,211,153,0.22)] bg-[rgba(52,211,153,0.06)]"
+        ? "border-[rgba(52,211,153,0.22)] bg-quill-glow-green-06"
         : isError
-          ? "border-[rgba(248,113,113,0.28)] bg-[rgba(248,113,113,0.08)]"
-          : "border-quill-border bg-[rgba(17,17,24,0.8)]"
+          ? "border-[rgba(248,113,113,0.28)] bg-quill-glow-10"
+          : "border-quill-border bg-quill-overlay"
   }`;
 
   const header = (
     <div className="flex w-full items-start gap-3 px-4 py-3 text-left">
       <div className="mt-0.5 shrink-0">
         {isRunning ? (
-          <ArrowPathIcon className="h-3.5 w-3.5 animate-spin-slow text-[#EF4444]" aria-hidden="true" />
+          <ArrowPathIcon className="h-3.5 w-3.5 animate-spin-slow text-quill-accent" aria-hidden="true" />
         ) : isDone ? (
           <CheckIcon className="h-3.5 w-3.5 text-quill-green" aria-hidden="true" />
         ) : isError ? (
-          <ExclamationCircleIcon className="h-3.5 w-3.5 text-[#fca5a5]" aria-hidden="true" />
+          <ExclamationCircleIcon className="h-3.5 w-3.5 text-quill-accent-2" aria-hidden="true" />
         ) : (
           <span className="mt-0.5 block h-2.5 w-2.5 rounded-full bg-quill-muted" aria-hidden="true" />
         )}
@@ -193,11 +193,11 @@ function ToolCallBadge({
             variant="secondary"
             className={`px-2 py-0 text-[10px] ${
               isRunning
-                ? "border-[rgba(239,68,68,0.16)] bg-[rgba(239,68,68,0.12)] text-[#F87171]"
+                ? "border-[rgba(239,68,68,0.16)] bg-quill-glow-10 text-quill-accent-2"
                 : isDone
-                  ? "border-[rgba(52,211,153,0.16)] bg-[rgba(52,211,153,0.1)] text-quill-green"
+                  ? "border-[rgba(52,211,153,0.16)] bg-quill-glow-green-10 text-quill-green"
                   : isError
-                    ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#fca5a5]"
+                    ? "border-[rgba(248,113,113,0.18)] bg-quill-glow-10 text-quill-accent-2"
                     : "text-quill-muted"
             }`}
           >
@@ -240,7 +240,7 @@ function ToolCallBadge({
           {inputText && (
             <div className="grid gap-1">
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-quill-muted">Input</span>
-              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">
+              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-quill-surface-2 p-3 font-mono text-[11px] leading-relaxed text-quill-muted">
                 {inputText}
               </pre>
             </div>
@@ -248,15 +248,15 @@ function ToolCallBadge({
           {outputText && (
             <div className="grid gap-1">
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-quill-muted">Output</span>
-              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-[#0d0d15] p-3 font-mono text-[11px] leading-relaxed text-[#c8c8e0]">
+              <pre className="overflow-x-auto rounded-xl border border-quill-border bg-quill-surface-2 p-3 font-mono text-[11px] leading-relaxed text-quill-muted">
                 {outputText}
               </pre>
             </div>
           )}
           {errorOutput && (
             <div className="grid gap-1">
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#fca5a5]">Error</span>
-              <pre className="overflow-x-auto rounded-xl border border-[rgba(248,113,113,0.24)] bg-[rgba(248,113,113,0.08)] p-3 font-mono text-[11px] leading-relaxed text-[#f6b1b1]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-quill-accent-2">Error</span>
+              <pre className="overflow-x-auto rounded-xl border border-[rgba(248,113,113,0.24)] bg-quill-glow-10 p-3 font-mono text-[11px] leading-relaxed text-quill-accent-2">
                 {errorOutput}
               </pre>
             </div>
@@ -279,14 +279,14 @@ function renderInline(text: string) {
     }
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="px-1 py-0.5 rounded bg-quill-border text-[#F87171] text-[12px] font-mono">
+        <code key={i} className="px-1 py-0.5 rounded bg-quill-border text-quill-accent-2 text-[12px] font-mono">
           {part.slice(1, -1)}
         </code>
       );
     }
     if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
       return (
-        <em key={i} className="italic text-[#c8c8e0]">
+        <em key={i} className="italic text-quill-muted">
           {part.slice(1, -1)}
         </em>
       );
@@ -315,12 +315,12 @@ function MarkdownText({ text }: { text: string }) {
       elements.push(
         <div key={i} className="my-2 rounded-xl overflow-hidden border border-quill-border">
           {lang && (
-            <div className="px-3 py-1.5 bg-[#0d0d15] border-b border-quill-border text-[10px] text-quill-muted font-mono uppercase tracking-wide">
+            <div className="px-3 py-1.5 bg-quill-surface-2 border-b border-quill-border text-[10px] text-quill-muted font-mono uppercase tracking-wide">
               {lang}
             </div>
           )}
-          <div className="relative bg-[#0d0d15]">
-            <pre className="p-4 md:p-4 overflow-x-auto text-[11px] md:text-[12px] font-mono text-[#c8c8e0] leading-relaxed">
+          <div className="relative bg-quill-surface-2">
+            <pre className="p-4 md:p-4 overflow-x-auto text-[11px] md:text-[12px] font-mono text-quill-muted leading-relaxed">
               <code>{codeLines.join("\n")}</code>
             </pre>
             {/* Mobile scroll hint */}
@@ -369,14 +369,14 @@ function MarkdownText({ text }: { text: string }) {
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="text-sm font-semibold text-[#c8c8e0] mt-2 mb-0.5">
+        <h3 key={i} className="text-sm font-semibold text-quill-muted mt-2 mb-0.5">
           {renderInline(line.slice(4))}
         </h3>,
       );
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
         <div key={i} className="flex gap-2 pl-2">
-          <span className="text-[#EF4444] mt-0.5 shrink-0">â€¢</span>
+          <span className="text-quill-accent mt-0.5 shrink-0">â€¢</span>
           <span>{renderInline(line.slice(2))}</span>
         </div>,
       );
@@ -385,14 +385,14 @@ function MarkdownText({ text }: { text: string }) {
       if (match) {
         elements.push(
           <div key={i} className="flex gap-2 pl-2">
-            <span className="text-[#EF4444] shrink-0 tabular-nums">{match[1]}.</span>
+            <span className="text-quill-accent shrink-0 tabular-nums">{match[1]}.</span>
             <span>{renderInline(match[2])}</span>
           </div>,
         );
       }
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={i} className="pl-3 border-l-2 border-[#EF4444] text-[#a8a8c0] italic my-1">
+        <blockquote key={i} className="pl-3 border-l-2 border-quill-accent text-quill-muted italic my-1">
           {renderInline(line.slice(2))}
         </blockquote>,
       );
@@ -421,7 +421,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
       onClick={() => onOpenCanvas(text)}
       variant="outline"
       size="sm"
-      className="shrink-0 h-auto rounded-xl border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-3 py-1.5 text-[10px] font-medium text-[#f7b0b0] hover:bg-[rgba(239,68,68,0.14)] hover:text-white"
+      className="shrink-0 h-auto rounded-xl border-[rgba(239,68,68,0.2)] bg-quill-glow-10 px-3 py-1.5 text-[10px] font-medium text-quill-accent-2 hover:bg-quill-glow-22 hover:text-white"
       title="Open this artifact"
       aria-label="Open this artifact"
     >
@@ -450,7 +450,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
               <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
                 {artifactBadge}
               </span>
-              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-quill-glow-green-08 px-2.5 py-1 text-[10px] font-medium text-quill-green">
                 Preview ready
               </span>
             </div>
@@ -475,7 +475,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
               <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
                 {artifactBadge}
               </span>
-              <span className="rounded-full border border-[rgba(239,68,68,0.18)] bg-[rgba(239,68,68,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f7b0b0]">
+              <span className="rounded-full border border-[rgba(239,68,68,0.18)] bg-quill-glow-10 px-2.5 py-1 text-[10px] font-medium text-quill-accent-2">
                 {fileCount} files
               </span>
               <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] text-quill-muted">
@@ -506,7 +506,7 @@ function ArtifactSummary({ text, onOpenCanvas }: { text: string; onOpenCanvas?: 
               <span className="rounded-full border border-quill-border bg-quill-surface px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-quill-muted">
                 {artifactBadge}
               </span>
-              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-[rgba(52,211,153,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9be7b5]">
+              <span className="rounded-full border border-[rgba(52,211,153,0.2)] bg-quill-glow-green-08 px-2.5 py-1 text-[10px] font-medium text-quill-green">
                 Readable
               </span>
             </div>
@@ -590,7 +590,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
       const hasArtifact = !isUser && Boolean(parseBuilderArtifact(text));
 
       const node = isUser ? (
-        <div key={i} className="px-4 py-3 rounded-2xl rounded-tr-sm bg-[#EF4444] text-white text-[15px] leading-[1.65]">
+        <div key={i} className="px-4 py-3 rounded-2xl rounded-tr-sm bg-quill-accent text-white text-[15px] leading-[1.65]">
           {text}
         </div>
       ) : (
@@ -650,9 +650,9 @@ export const RealMessageBubble = memo(function RealMessageBubble({
             rel="noreferrer noopener"
             download={filePart.filename ?? true}
             title="Open attachment"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-[#a8a8c0]"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-quill-border border border-quill-border-2 text-xs text-quill-muted"
           >
-            <PaperClipIcon className="h-3.25 w-3.25 text-[#EF4444]" aria-hidden="true" />
+            <PaperClipIcon className="h-3.25 w-3.25 text-quill-accent" aria-hidden="true" />
             <span className="max-w-40 truncate">{filePart.filename ?? "Attached file"}</span>
           </a>
         ),
@@ -807,7 +807,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         {primaryParts}
         {showResponseActions && (
           <div
-            className={`relative mt-1 flex items-center gap-px rounded-full border border-quill-border bg-[rgba(17,17,24,0.75)] px-1 py-1 transition-opacity sm:gap-0.5 ${
+            className={`relative mt-1 flex items-center gap-px rounded-full border border-quill-border bg-quill-overlay px-1 py-1 transition-opacity sm:gap-0.5 ${
               contextualActions ? "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" : "opacity-100"
             }`}
           >
@@ -816,7 +816,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
               onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
               className={`${actionButtonBaseClass} ${
                 reaction === "like"
-                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                  ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
                   : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
               }`}
               title="Good response"
@@ -829,7 +829,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
               onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
               className={`${actionButtonBaseClass} ${
                 reaction === "dislike"
-                  ? "border-[rgba(248,113,113,0.18)] bg-[rgba(248,113,113,0.12)] text-[#f87171]"
+                  ? "border-[rgba(248,113,113,0.18)] bg-quill-glow-10 text-quill-accent-2"
                   : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
               }`}
               title="Bad response"
@@ -853,7 +853,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
               onClick={handleCopy}
               className={`${actionButtonBaseClass} ${
                 copied
-                  ? "border-[rgba(52,211,153,0.18)] bg-[rgba(52,211,153,0.12)] text-quill-green"
+                  ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
                   : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
               }`}
               title={copied ? "Copied!" : "Copy"}
@@ -867,7 +867,7 @@ export const RealMessageBubble = memo(function RealMessageBubble({
             </button>
             {copied && (
               <span
-                className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.1)] px-2 py-0.5 text-[10px] font-medium text-quill-green whitespace-nowrap pointer-events-none"
+                className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-quill-glow-green-10 px-2 py-0.5 text-[10px] font-medium text-quill-green whitespace-nowrap pointer-events-none"
                 aria-live="polite"
               >
                 Copied!
