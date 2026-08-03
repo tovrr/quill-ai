@@ -37,7 +37,7 @@ export function SecondaryRightRail({
   activeSessions,
 }: SecondaryRightRailProps) {
   return (
-    <aside className="hidden xl:flex h-full w-[320px] shrink-0 flex-col border-l border-quill-border bg-[#0f1218] p-3">
+    <aside className="hidden xl:flex h-full w-[320px] shrink-0 flex-col border-l border-quill-border bg-quill-surface-2 p-3">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-quill-text">Operations</h2>
         <Link href="/missions" className="text-xs text-quill-muted hover:text-quill-text">
@@ -81,7 +81,7 @@ export function SecondaryRightRail({
             <span>Status</span>
             <Badge
               variant="secondary"
-              className={`ml-auto text-[10px] ${isWorking ? "bg-[rgba(239,68,68,0.15)] text-[#f7b0b0]" : "bg-quill-surface-2 text-quill-text"}`}
+              className={`ml-auto text-[10px] ${isWorking ? "bg-quill-glow-22 text-quill-accent" : "bg-quill-surface-2 text-quill-text"}`}
             >
               {isWorking ? "Running" : "Idle"}
             </Badge>

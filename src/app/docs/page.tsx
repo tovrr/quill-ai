@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { DocsExplorer, type DocsSection } from "@/components/docs/DocsExplorer";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 
 export const metadata: Metadata = {
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Learn how to use Quill AI chat, specialist agents, and no-code/low-code app builder workflows.",
 };
 
-const sections = [
+const sections: DocsSection[] = [
   {
     category: "Getting Started",
     color: "#EF4444",
@@ -107,46 +107,11 @@ export default function DocsPage() {
           Everything you need to get the most out of Quill AI and the artifact-based app builder.
         </p>
 
-        {/* Search placeholder */}
-        <div className="mt-6 max-w-md mx-auto">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-quill-surface border border-quill-border text-sm text-quill-muted">
-            <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
-            Search docs…
-          </div>
-        </div>
+        <DocsExplorer sections={sections} />
       </div>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12">
-        {sections.map((section) => (
-          <div key={section.category}>
-            {/* Section header */}
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-1 h-5 rounded-full" style={{ background: section.color }} />
-              <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: section.color }}>
-                {section.category}
-              </h2>
-            </div>
-
-            {/* Article grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {section.articles.map((article) => (
-                <div
-                  key={article.slug}
-                  className="group flex flex-col gap-1.5 p-4 rounded-xl border border-quill-border bg-quill-surface-2 hover:border-quill-border-2 hover:bg-quill-surface transition-all duration-150 cursor-default"
-                >
-                  <p className="text-sm font-medium text-quill-text transition-colors leading-snug">
-                    {article.title}
-                  </p>
-                  <p className="text-xs text-quill-muted leading-relaxed">{article.desc}</p>
-                  <span className="mt-1 text-[11px]" style={{ color: section.color }}>Coming soon →</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Bottom note */}
+      {/* Bottom note */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <div className="pt-8 border-t border-quill-border text-center">
           <p className="text-sm text-quill-muted">
             Can&apos;t find what you&apos;re looking for?{" "}

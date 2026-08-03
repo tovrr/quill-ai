@@ -9,7 +9,10 @@ const REPORT_PATH = path.join(ROOT, "UI_STANDARDS_BASELINE.md");
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mdx", ".html"]);
 const IMPORT_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 
-const SVG_ALLOWLIST = new Set(["src/components/ui/QuillLogo.tsx"]);
+const SVG_ALLOWLIST = new Set([
+  "src/components/ui/QuillLogo.tsx",
+  "src/components/ui/GoogleLogo.tsx",
+]);
 
 const RAW_PRIMITIVE_ALLOWLIST = new Set([
   "src/components/ui/button.tsx",
