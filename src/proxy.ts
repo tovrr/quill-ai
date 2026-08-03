@@ -24,8 +24,8 @@ function buildCsp(nonce: string, isDev: boolean): string {
     : "'self' wss: https://vitals.vercel-insights.com https://*.vercel-insights.com";
 
   const scriptSrc = isDev
-    ? `'self' 'nonce-${nonce}' 'unsafe-eval'`
-    : `'self' 'nonce-${nonce}'`;
+    ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval'`
+    : `script-src 'self' 'nonce-${nonce}'`;
 
   const parts = [
     "default-src 'self'",
