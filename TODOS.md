@@ -1,277 +1,122 @@
-# Quill AI TODOs
+# Quill AI — TODOs
 
-## System Documentation Rollout (2026-04-20)
+**Last consolidated:** 2026-08-03. Flat, checkable task list. For narrative/priority context
+see `ROADMAP.md` — this file is the granular checklist version of the same 4 tracks.
 
-- [x] **Create Core Documentation Framework**
-  - Scope: Implement missing BRAIN.md, SYSTEMS.md, and ARCHITECTURE.md for complete system understanding
-  - Acceptance: All core documentation files created and properly linked; team can understand architecture, technical specs, and component relationships
-  - Verification: Review documentation completeness via grep and team feedback
-  - Outcome: ✅ Complete documentation framework established (BRAIN.md, SYSTEMS.md, ARCHITECTURE.md)
+**Rules for keeping this file useful (carried forward from the old TODOS.md, still good
+advice):**
+- Every task: scope + acceptance criteria + where it's verified (local/CI/prod).
+- Limit active work-in-progress to ~3 major tasks at a time.
+- Link the PR/commit next to a task when it's done; add a one-line outcome note.
+- Re-prioritize weekly — stale tasks move down, blockers move up.
+- If a task sits untouched for a month, either do it, cut it, or move it to
+  `docs/archive/` with a reason. Don't let this file become another `REMEDIATION_PLAN_30D.md`.
 
-## Execution Rules (Keep This Doc Effective)
+---
 
-- Every new task should include: scope, acceptance criteria, and where it will be verified (local, CI, production).
-- Limit active work-in-progress to 3 major tasks at a time to reduce context switching.
-- When a task is completed, link the PR/commit next to it and add a one-line outcome note.
-- Re-prioritize weekly: move stale tasks down, pull blockers up.
+## Track A — Finish what's broken (do first)
 
-## 🔴 CRITICAL Commercial Viability Blockers (Updated 2026-04-20)
+- [ ] Migrate hardcoded-dark colors to theme tokens in: `pricing/page.tsx`, `docs/page.tsx`,
+      `agent/page.tsx`, `login/page.tsx`, `settings/page.tsx`, `success/page.tsx`,
+      `share/[chatId]/page.tsx`, `admin/analytics/page.tsx`, `admin/sandbox-monitoring/page.tsx`,
+      `components/layout/Sidebar.tsx`, `components/agent/{AgentStatusBar,CanvasPanel,RealMessageBubble}.tsx`,
+      `components/ui/SettingsModal.tsx`
+  - Acceptance: `grep -rn "bg-\[#\|text-\[#" src/` returns zero hardcoded-dark hits outside
+    intentional brand-color usages (e.g. the red accent, which is deliberately the same in
+    both themes)
+  - Verification: manually toggle theme on every route, confirm no page has mixed light/dark
+    surfaces
+- [ ] Confirm `ThemeToggle` is mounted and reachable from every top-level page, not just home
+- [ ] Real `next` version bump to close the remaining Dependabot alerts (prior claim that it
+      "auto-resolved" was checked post-merge and found false — package.json still pins the old
+      range)
+  - Acceptance: `next` alert count is 0 after merge + a real Dependabot rescan (not just local
+    `npm ls next`)
+- [ ] Wire `vercel-api-deploy.yml` (or Vercel's native GitHub integration) to trigger
+      automatically on `push: [main]` so "merged but never deployed" (the PR #9 incident)
+      can't recur silently
+- [ ] Add a post-deploy smoke step (CI or documented manual step) that curls the live CSP
+      header and confirms `script-src` directive is present with a nonce — this exact bug
+      class (malformed CSP string) already happened once
 
-These are the 4 foundational gaps blocking product viability and revenue generation. **Must be completed before scaling user acquisition or generating revenue.**
+## Track B — MiniMax-style interface
 
-### Phase 1: Commercial Infrastructure (Next 2-3 weeks)
+- [ ] Rewrite home page (`src/app/page.tsx`): minimal nav + centered input only
+- [ ] Create `/about` and move the marketing surface (feature grid, testimonials, deep
+      product copy) there from home
+- [ ] Rewrite `Sidebar.tsx`: cut from 1192 lines / 4+ nav groups down to recent chats + a
+      couple of top-level links. Slide-in, not a permanent column, hidden by default.
+- [ ] Strip `/agent` page to 3 elements: nav, scrollback, composer
+- [ ] Remove killer selector from the default composer; killers live at `/personas` only
+- [ ] Restyle the mode picker (fast/thinking/advanced) as a small pill, not a prominent control
+- [ ] **Decision needed before starting:** adopt shadcn/ui or Vercel AI Elements for the chat
+      surface (`MessageBubble`, `ChatWindow`, `ToolCallCard`), or keep hand-rolling? Ask the
+      user — see `ROADMAP.md` §4.1
+- [ ] `Cmd/Ctrl+Shift+L` shortcut — verify still works after nav restructure (already shipped
+      in PR #6, just needs re-verification once Sidebar/agent page change)
 
-- [x] **Implement payment processor (Stripe / Paddle)**
-  - Scope: Add Stripe checkout session → webhook handler → plan activation flow. Update entitlements model to track `stripeCustomerId` + `stripeSubscriptionId`. Wire billing portal link in settings.
-  - Acceptance: User can purchase $12 or $29 plan from pricing page, entitlements update on webhook, portal link works in settings.
-  - Verification: Run end-to-end purchase flow in Stripe test mode on staging; verify DB reflects purchase; confirm paid features unlock immediately.
-  - Priority: **HIGHEST** - Revenue generation depends on this.
-  - Status: ✅ **COMPLETED** - Full Stripe integration implemented with webhooks, entitlements, and user flows
+## Track C — Real agent integrations
 
-- [ ] **Add OAuth / social login (Google minimum)**
-  - Scope: Wire Google OAuth provider into Better Auth. Add Google Sign In button on login/registration pages. Update auth server/client.
-  - Acceptance: User can sign up and log in via Google accounts. Email/password still works as fallback.
-  - Verification: Create test Google project, test sign-up flow, verify session created, test subsequent login.
-  - Priority: **HIGHEST** - User acquisition friction depends on this.
+- [ ] Add `src/lib/models/hermes.ts`, wire into `src/lib/chat/model-selection.ts`
+- [ ] Propagate Hermes selection through `src/lib/chat/request-utils.ts` and
+      `src/app/api/chat/route.ts`
+- [ ] Gate Hermes behind `HERMES_BASE_URL` (unset = no-op, doesn't affect Gemini/OpenRouter
+      users)
+- [ ] Add "Hermes" pill option in the mode/provider picker
+- [ ] Add OpenClaw branch to `src/lib/execution/service.ts`
+- [ ] Harden + live-test `src/app/api/agent/delegate/route.ts` (code exists, never tested
+      against a real gateway)
+- [ ] Add "Execution Runtime" radio in `/settings` (OpenClaw vs. default)
+- [ ] **Decision needed before starting:** does the user have a live Hermes instance and/or
+      OpenClaw gateway to test against? See `ROADMAP.md` §4.3
+- [ ] **New scope, needs explicit go-ahead:** GitHub publish capability — push generated code
+      to a repo, open a PR, merge. Design the auth flow (GitHub App vs PAT), repo-picker UI,
+      and authorization boundaries (never silent-push to `main`) before writing any code. See
+      `ROADMAP.md` §4.2 and Track C.3.
 
-### Phase 2: Commercial Hardening (Weeks 2-4)
+## Track D — Desktop + mobile (deferred until Track B ships)
 
-- [ ] **Implement persistent observability system**
-  - Scope: Replace in-memory metrics with persistent storage. Add external uptime monitoring, log aggregation, and performance analytics.
-  - Acceptance: Metrics survive app restarts, external monitoring system in place, comprehensive logging implemented.
-  - Verification: Simulate app restart → metrics persist; test external monitoring alerts; verify log aggregation works.
-  - Priority: **HIGH** - Production reliability and customer trust depend on this.
+- [ ] Tauri: native feel (menu, hotkeys, command palette, custom title bar)
+- [ ] Tauri: system theme sync, file system access
+- [ ] Windows MSI/NSIS build + self-signed cert (EV cert later, once there are paying users)
+- [ ] Auto-update via Tauri updater + GitHub Releases
+- [ ] Capacitor: iOS + Android shells once PWA itself is solid
+- [ ] `.well-known/assetlinks.json` for Android Trusted Web Activity
+- [ ] App store packaging checklist (signing, screenshots, privacy labels)
 
-- [ ] **Enhanced execution sandbox validation**
-  - Scope: Either implement real sandbox with isolation boundaries OR strengthen the "no execution" claims in system prompts and user communication.
-  - Acceptance: Clear communication between code generation vs execution capabilities; proper testing of sandbox security boundaries.
-  - Verification: Security audit of sandbox implementation; user testing of capability clarity; legal review of claims.
-  - Priority: **MEDIUM** - Legal compliance and user safety depend on this.
+## Ongoing / not tied to a specific track
 
-## 🔧 Recent Commercial Foundation Updates (Completed 2026-04-20)
+These are real, still-open items carried forward from the old `TODOS.md` that don't block any
+of the 4 tracks above but shouldn't be lost either. Re-triage into a track or cut when picked
+up.
 
-- [x] **Distributed rate limiting (Upstash Redis)** — Migration completed with Redis pipeline and in-memory fallback
-- [x] **Streamed two-pass builder** — Real-time artifact updates prevent UI blocking
-- [x] **Message persistence fix** — Images and file attachments now properly stored and retrieved
-- [x] **False sandbox claims removed** — Code Wizard updated with honest language about local testing
-- [x] **Core documentation framework** — BRAIN.md, SYSTEMS.md, ARCHITECTURE.md created
+- [ ] External uptime + latency monitoring (Better Stack / UptimeRobot) for `/`, `/agent`,
+      `/api/health`, `/api/chat`
+- [ ] Bundle analysis in CI with per-route JS/CSS budgets that fail the build on regression
+- [ ] Quarterly dependency upgrade routine for Next.js/AI SDK/Auth stack (would have caught
+      the 4-month CVE backlog earlier)
+- [ ] Service worker + offline fallback for critical routes
+- [ ] `partsJson` column for full `UIMessagePart[]` persistence (currently flattened text) —
+      images/attachments should be URLs (S3/R2), not data-URLs in the DB
+- [ ] Upload guardrails: max file size, max files per message, allowed MIME types (client +
+      server validation)
+- [ ] Migrate chat identity from `?chat=<id>` query param to `/agent/[chatId]` path segment,
+      with backward-compatible redirect for old links
+- [ ] Set real pricing env vars in Vercel (currently only set locally) so the admin cost
+      dashboard shows real numbers in production
+- [ ] Move entitlements from env vars (`PAID_USER_EMAILS`/`PAID_USER_IDS`) to a DB
+      billing/subscription table so plan changes don't require a redeploy
+- [ ] Replace the placeholder demo GIF in `README.md` with a real one before any social
+      distribution (launch content is archived in `docs/archive/2026-launch-prep/` until
+      Track B ships — don't un-archive it on autopilot)
 
-## Audit-Driven Remediation Backlog (Live Audit - 2026-03-30)
+## Recently completed (for context, not action)
 
-### Critical - Security
-
-- [x] Add a strict Content Security Policy in `next.config.ts`. — commit `77408d8`, enforcing CSP live.
-- [x] Roll out CSP in two phases: `Content-Security-Policy-Report-Only` first, then enforcing `Content-Security-Policy`. — both phases complete.
-- [ ] Add CSP reporting endpoint and alerting for violations. — report-only telemetry active; no dedicated ingest endpoint yet.
-- [x] Define trusted script/connect/font/image origins explicitly (avoid wildcard sources). — explicit origins set in `next.config.ts`.
-- [x] Verify no regressions in auth, streaming chat, and image generation under enforced CSP. — build + typecheck pass, no violations observed.
-
-### High - Reliability
-
-- [x] Upgrade `/api/health` from shallow status check to readiness checks (DB, auth/session, model provider reachability). — commit `124be4c`, verifies database ping, session table access, and provider reachability.
-- [x] Add timeout-bounded checks so readiness cannot hang and cause cascading failures. — commit `124be4c`, configurable via `HEALTH_CHECK_TIMEOUT_MS`.
-- [x] Return a structured readiness payload with component-level status and degraded mode hints. — commit `124be4c`, includes per-check details and fallback guidance.
-- [ ] Add external uptime + latency monitoring (e.g., Better Stack/UptimeRobot) for `/`, `/agent`, `/api/health`, `/api/chat`.
-- [ ] Define and document SLO targets (availability, p95 latency) and alert thresholds.
-
-### High - Maintainability
-
-- [ ] Add bundle analysis in CI (`@next/bundle-analyzer`) with per-route JS/CSS budgets.
-- [ ] Fail CI when budgets regress beyond agreed thresholds.
-- [ ] Add dependency security checks (`npm audit` gate or equivalent) with an explicit policy for moderate/high vulnerabilities.
-- [ ] Create a quarterly dependency upgrade routine for Next.js/AI SDK/Auth stack.
-
-### PWA/App Readiness (from audit)
-
-- [ ] Add service worker + offline fallback strategy for critical routes.
-- [ ] Add maskable icon entry in `manifest.ts` with `purpose: "maskable"`.
-- [ ] Add `.well-known/assetlinks.json` for Android Trusted Web Activity readiness.
-- [ ] Validate installability and offline behavior using Lighthouse PWA audits in CI.
-
-## Next 7 Execution Targets
-
-- [x] Security Sprint 1: ship CSP report-only + violation collection. — commit `77408d8`.
-- [x] Security Sprint 2: enforce CSP after fixing violations. — commit `77408d8`, enforcing header live.
-- [x] Reliability Sprint: implement readiness checks with dependency probes. — commit `124be4c`; external uptime/alerting still pending.
-- [x] **Multi-Agent Integration**: abstract code execution into service layer (local Docker, E2B, Modal, custom). — Created `src/lib/execution/service.ts`, updated chat route + policy runtime, documented in `MULTI_AGENT_INTEGRATION.md`. Supports: dev (local), staging (E2B free), production (E2B paid / Modal / self-hosted).
-- [ ] Observability Sprint: uptime checks + alert routing to on-call channel.
-- [ ] Performance Sprint: bundle analyzer + baseline budgets.
-- [ ] PWA Sprint: service worker + offline shell.
-- [ ] Mobile Distribution Prep: maskable icons + assetlinks + store packaging checklist.
-
-## Quill Parity Execution Plan (M1-M5 Catch-Up vs Coworker)
-
-See `EXECUTION_PLAN_QUILL_PARITY.md` for full roadmap.
-
-- [x] **M1: MCP Registry V1** (Weeks 1-2, 2026-04-17)
-  - [x] Add curated MCP registry source (`src/lib/mcp-registry.ts`) with trust metadata and categories
-  - [x] Ship auth-gated search/list endpoint (`GET /api/mcp/registry`) with pagination and filtering
-  - [x] Integrate one-click registry install flow in MCP UI (`src/app/mcp/page.tsx`)
-  - [x] Revalidated with passing `npm run typecheck` and `npm run build`
-  - Outcome: Users can discover and install curated MCP servers in one click from MCP page
-
-- [ ] **M2: MCP OAuth Lifecycle** (Weeks 3-4)
-  - [x] Extend MCP server model with OAuth state + encrypted token storage
-  - [x] Add OAuth start/callback/revoke endpoints
-  - [x] Add MCP UI connect/reconnect/revoke actions with token lifecycle management
-
-- [ ] **M3: Scheduled Autopilot Execution** (Weeks 5-6)
-  - [ ] Wire real cron/scheduler trigger (Inngest or platform-native)
-  - [ ] Implement retries and run status telemetry
-  - [ ] Move from manual `POST /api/autopilot/workflows/[id]/run` to time-triggered execution
-
-- [ ] **M4: A2A MVP** (Weeks 7-8)
-  - [ ] Define agent card contract (metadata, capabilities, rate limits)
-  - [ ] Implement minimal task execution interface with auth + allowlist
-  - [ ] Add usage metrics and policy enforcement
-
-- [ ] **M5: Skills Marketplace Adapters** (Weeks 7-8, parallel with M4)
-  - [ ] Design external skills adapter interface
-  - [ ] Implement at least one external provider (e.g., OpenRegistry)
-  - [ ] Add UI for install/version management and rollback
-
-## Builder Roadmap (2026-04)
-
-- [x] Step 1: Typed artifact schema/parser + canvas integration + telemetry.
-- [x] Step 2: Builder target selector + deterministic artifact routing.
-- [x] Step 3: Page quality hardening + quick refine actions + parse-failure UX.
-- [x] Step 4: Iteration memory + lock constraints (layout, colors, section order, copy).
-- [x] Step 5: React preview sandbox (CSP-safe blob URL runtime).
-- [x] Step 6: Next.js bundle export-first hardening (prompt constraints, type inference, readiness diagnostics, setup script export).
-- [x] Phase 7: Isolated local validation runner (materialize bundle, install, build) behind an env flag (`BUILDER_LOCAL_VALIDATE_ENABLED`).
-- [x] Phase 7.5: User customization profiles (preset + additional instructions) wired into builder and chat prompts.
-- [ ] Phase 8: One-click apply/export into target project with execution summary.
-- [ ] Phase 9: Dependency conflict guardrails + peer dependency diagnostics.
-- [ ] Phase 10: Publish/deploy pipeline scaffolding.
-- [ ] Phase 11: Autonomy policy layer (assist/propose/checkpointed-auto) with per-killer permission maps.
-
-## 🔧 Technical Debt & Improvements (Next 2-4 weeks)
-
-### Observable Issues (Today)
-- [ ] **CI/CD visibility improvements** - Add deployment monitoring and status reporting
-- [ ] **Database optimization** - Index optimization, query performance improvements  
-- [ ] **Error handling enhancement** - Better error recovery and user feedback
-- [ ] **Testing coverage expansion** - Integration tests for critical user journeys
-
-### Infrastructure Modernization (Weeks 3-4)
-- [ ] **Performance budget enforcement** - Bundle size limits and performance monitoring
-- [ ] **Advanced caching strategies** - Redis integration for session and API caching
-- [ ] **Load testing framework** - Performance validation under load
-- [ ] **Infrastructure as Code** - Terraform or similar for deployment automation
-
-### Developer Experience (Weeks 4-6)
-- [ ] **Enhanced type safety** - Stricter TypeScript and runtime validation
-- [ ] **Documentation automation** - Auto-generated API docs and guides
-- [ ] **Local development setup** - Docker-based local environment with dependencies
-- [ ] **Monitoring tooling** - Developer-friendly error tracking and debugging
-
-**NOTE: This is subsumed by the "Fix message persistence" blocker above. Unified implementation:**
-
-- [ ] Add `partsJson` column to store full `UIMessagePart[]` structures (not flattened text)
-- [ ] Stop storing generated images as data URLs; upload to S3/R2 or equivalent
-- [ ] Persist only image URLs and metadata; deserialize on chat reload
-- [ ] Add migration script for existing data-URL messages
-- [ ] Verify file attachments (PDF, CSV, etc.) also deserialize and show proper badges
-
-## Medium Priority (Upload Reliability)
-
-- [ ] Add upload guardrails: max file size, max files per message, allowed MIME types
-- [ ] Add clear user-facing validation errors before send
-- [ ] Add server-side validation for attachments to mirror client checks
-- [ ] Add telemetry for attachment validation failures
-
-## Medium Priority (Chat UX)
-
-- [x] Separate Attach action from mode selector
-- [x] Remove Attach option from dropdown
-- [x] Move mode selector next to Send button
-- [x] Make non-image attachments clickable/downloadable in message bubble
-- [x] Persist useful fallback content for file-only user turns
-- [ ] Show explicit in-chat confirmation that files were sent to model
-- [ ] Add richer file preview cards (type, size, open/download)
-
-## Medium Priority (URL & Navigation UX - 2026 Assessment)
-
-- [ ] Migrate primary chat identity from query param to path segment (`/agent/[chatId]`) while preserving backward compatibility for existing `/agent?chat=<id>` links
-  - Scope: Introduce dynamic App Router route for chat sessions, keep query-param support with canonical redirect/replaceState for old links
-  - Acceptance: Opening a chat from history lands on `/agent/<chatId>`; existing shared/internal links using `?chat=` still resolve correctly
-  - Verification: Open 10 historical chats from sidebar and direct-paste old `?chat=` URLs; all resolve to the same chat and canonicalize URL
-- [ ] Keep query params for transient UI state only (mode, draft, panel), not primary resource identity
-  - Scope: Audit `page.tsx` URL sync logic and remove `chat` as canonical query field once path migration is complete
-  - Acceptance: `chatId` is derived from route segment, not query param; query params only represent optional view state
-  - Verification: Trigger send/new-chat/share/refresh flows and confirm stable route-based chat identity
-- [ ] Add canonical URL policy for chat routes and document it in developer docs
-  - Scope: Define route conventions for internal navigation, share URLs, and migration behavior to avoid route drift
-  - Acceptance: Route policy is documented and followed by sidebar navigation + chat page URL sync
-  - Verification: Code review checklist includes route policy item; no new `?chat=` links introduced in new features
-
-## Medium Priority (Observability)
-
-- [x] Per-model usage + cost telemetry (`model_usage_event` table, `recordModelUsage()` lib, `/api/admin/model-usage`, `/admin/model-usage` UI). — commit `a590f99`.
-- [x] Set local pricing env vars for Gemini Flash Lite / Flash / Pro / Imagen 4 Fast so admin cost telemetry is meaningful during development. — `.env.local` updated from official Google pricing.
-- [ ] Set pricing env vars in Vercel (Flash Lite/Flash/Pro/Imagen 4 Fast) so estimated cost shows real numbers in admin dashboard.
-- [ ] Track feature metrics: attachment usage, image generation failure rate, OpenRouter fallback rate
-- [ ] Add request-level correlation from API logs to user-visible errors
-- [ ] Add alert thresholds for 5xx spikes and repeated quota/rate-limit errors
-
-## Medium Priority (Model Routing)
-
-- [x] Auto-select OpenRouter free model when key is configured
-- [x] Cache auto-selection result (48h)
-- [x] Fix model tier ordering: `advanced` now correctly maps to `gemini-2.5-pro` (was `gemini-2.5-flash`). — commit `a590f99`.
-- [x] **Implement 3-tier model ladder: `fast` → `gemini-2.5-flash-lite`, `thinking` → `gemini-2.5-flash`, `advanced` → `gemini-2.5-pro`.** — commit `124be4c`, with per-tier env overrides for zero-redeploy switching.
-- [ ] Add optional health check to proactively rotate to next-best free model on provider failures
-- [ ] Add manual allowlist/denylist for free model candidates
-- [ ] Keep the paid-user workflow documented around `PAID_USER_EMAILS`, since paid access is currently managed by email
-- [ ] Add admin flow to discover/copy current user IDs for `PAID_USER_IDS` without manual guessing when ID-based overrides are needed
-- [ ] Move entitlements from env vars to a DB billing/subscription table so plan changes do not require a redeploy
-
-## Low Priority (Data Model Hardening)
-
-- [ ] Add DB-level constraint/enum for message role values
-- [ ] Add targeted indexes for verification lookups if usage grows
-- [ ] Add periodic cleanup policy for stale sessions/verifications
-
-## PWA & App Store
-
-- [ ] Keep this section focused on distribution packaging tasks; implementation tasks are tracked in "Audit-Driven Remediation Backlog"
-- [ ] **Google Play Store**: wrap the PWA as a TWA (Trusted Web Activity) using Bubblewrap — requires offline support first
-- [ ] **Apple App Store**: wrap with Capacitor or Expo — Apple does not accept bare PWAs in the store
-- [ ] Add `assetlinks.json` validation in release pipeline for TWA verification
-- [ ] Add store-release checklist with signing, screenshots, privacy labels, and rollback steps
-
-## Community Growth (Later)
-
-- [ ] Execute post-blocker community plan in `launch/COMMUNITY_MASTERPLAN_30D.md` after critical business blockers are stabilized
-- [ ] Replace README demo placeholder with a real GIF before major social distribution
-- [ ] Enable and seed GitHub Discussions with pinned starter threads (show and tell, feature requests, bugs)
-- [ ] Open and maintain 5 `good first issue` / `help wanted` tickets with explicit acceptance criteria
-- [ ] Start weekly KPI review (stars delta, discussion participants, external PRs, response SLA)
-
-## Release Readiness Checklist
-
-- [ ] Verify all required env vars are set in hosting platform
-- [ ] Run typecheck and lint in CI and pre-merge
-- [ ] Run API smoke tests on every push/PR
-- [ ] Verify metrics endpoint auth in production
-- [ ] Perform post-deploy smoke: chat, attachments, image generation, share, delete
-- [ ] Verify CSP is enforced with no critical violations
-- [ ] Verify readiness endpoint reports dependency health (DB, auth, provider)
-- [ ] Verify external uptime checks and alert routing are active
-
-## Next.js / Vercel Architecture - Phase 2 Prep
-
-- [x] **Replace cookie-presence login redirect with session-validity redirect**
-  - Scope: move auth redirect logic from cookie check in `src/proxy.ts` to server-validated session checks in protected route/layout boundaries.
-  - Acceptance: stale or invalid cookies do not redirect users away from login.
-  - Verification: simulate invalid session cookie and confirm `/login` remains accessible until real auth is established.
-
-- [x] **Make metadata base URL environment-driven**
-  - Scope: remove hardcoded production origin in `src/app/layout.tsx`; resolve metadata base from `NEXT_PUBLIC_APP_URL`/`VERCEL_URL` with safe fallback.
-  - Acceptance: preview deployments generate correct OG/canonical host values.
-  - Verification: compare metadata output between local, preview, and production deployments.
-
-- [x] **Adopt Vercel-native frontend telemetry or tighten CSP if intentionally unused**
-  - Scope: either add `@vercel/analytics` + `@vercel/speed-insights` in root layout, or remove unused Vercel insights CSP allowances from `next.config.ts`.
-  - Acceptance: platform telemetry strategy is explicit and consistent with CSP connect-src.
-  - Verification: if enabled, telemetry events appear in Vercel dashboard; if disabled, CSP no longer includes unused insights endpoints.
+- [x] CI fully green — PRs #5, #9, #10 (Next 16 proxy/middleware fix, missing Stripe client
+      accessor, CSP nonce restoration, script-src directive bug)
+- [x] CVE remediation pass — PR #7 (axios, better-auth, sharp, vitest bumped; `next` still
+      needs a real follow-up, see Track A)
+- [x] Theme system infrastructure — PR #6 ("Days 1-4"): tokens, `next-themes`, toggle,
+      shortcut, PWA manifest. Incomplete rollout tracked in Track A.
+- [x] Doc cleanup + this roadmap/TODOs consolidation — see `docs/archive/` for what moved
+      and why
