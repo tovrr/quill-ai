@@ -54,6 +54,7 @@ jobs:
       - name: Enforce bundle budgets
         env:
           BUNDLE_MAX_TOTAL_JS_KB: 2400
+          BUNDLE_MAX_SINGLE_CSS_KB: 100
         run: npm run bundle:check
 
       - name: Start app
