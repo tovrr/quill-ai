@@ -46,7 +46,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-[#1a1a28]">
+    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-quill-border-2">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-quill-text">{label}</p>
         {hint && <p className="text-xs text-quill-muted mt-0.5">{hint}</p>}
@@ -63,7 +63,7 @@ function SettingSelect({ value, onChange, options }: {
 }) {
   return (
     <UiSelect value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 w-44 rounded-lg border-quill-border-2 bg-[#1a1a28] text-sm">
+      <SelectTrigger className="h-9 w-44 rounded-lg border-quill-border-2 bg-quill-surface-2 text-sm">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -225,7 +225,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative flex flex-col bg-[#0d0d15] border border-quill-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+        className="relative flex flex-col bg-quill-surface-2 border border-quill-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
         style={{ width: "680px", maxWidth: "95vw", height: "520px", maxHeight: "90vh" }}
       >
         {/* Header */}
@@ -256,7 +256,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 onClick={() => setSection(s.id)}
                 className={`flex h-auto w-full items-center justify-start gap-2.5 rounded-lg px-3 py-2 text-left text-sm ${
                   section === s.id
-                    ? "bg-[#EF4444] text-white"
+                    ? "bg-quill-accent text-white"
                     : "text-quill-muted hover:text-quill-text hover:bg-quill-surface-2"
                 }`}
               >
@@ -293,8 +293,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         aria-label={m.desc}
                         className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
                           settings.defaultMode === m.value
-                            ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#A1A7B0]"
+                            ? "bg-quill-accent text-white"
+                            : "text-quill-muted hover:text-quill-muted"
                         }`}
                       >
                         {m.label}
@@ -339,7 +339,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                           })
                         }
                         placeholder="Example: Always keep responses concise, avoid placeholders, and prioritize practical execution steps."
-                        className="h-22 resize-none rounded-lg bg-[#121220] text-xs"
+                        className="h-22 resize-none rounded-lg bg-quill-surface-2 text-xs"
                       />
                     </div>
                   </div>
@@ -353,7 +353,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Live usage</p>
 
                 {usageLoading && (
-                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#A1A7B0]">
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-quill-muted">
                     Loading usage data...
                   </div>
                 )}
@@ -363,7 +363,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     <div className="p-4 rounded-xl bg-quill-surface border border-quill-border space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-quill-text">Messages today</span>
-                        <span className="text-sm font-semibold text-[#F87171]">
+                        <span className="text-sm font-semibold text-quill-accent-2">
                           {usageData.messagesUsedToday} / {usageData.recommendedDailyLimit}
                         </span>
                       </div>
@@ -377,17 +377,17 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     </div>
 
                     <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Per-mode limits</p>
-                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#A1A7B0]">
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-quill-muted">
                       <div className="flex items-center justify-between"><span>Fast</span><span>{usageData.limits.fast}/day</span></div>
                       <div className="flex items-center justify-between"><span>Think</span><span>{usageData.limits.thinking}/day</span></div>
                       <div className="flex items-center justify-between"><span>Pro</span><span>{usageData.limits.advanced}/day</span></div>
                     </div>
 
                     <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Feature status</p>
-                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-[#A1A7B0]">
+                    <div className="p-3 rounded-xl bg-quill-surface border border-quill-border space-y-2 text-sm text-quill-muted">
                       <div className="flex items-center justify-between">
                         <span>Web search</span>
-                        <span className={usageData.webSearchState === "available" ? "text-quill-green" : "text-[#f59e0b]"}>
+                        <span className={usageData.webSearchState === "available" ? "text-quill-green" : "text-quill-yellow"}>
                           {usageData.webSearchState === "available" ? "Available" : "Coming soon"}
                         </span>
                       </div>
@@ -400,7 +400,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 )}
 
                 {!usageLoading && !usageData && (
-                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-[#A1A7B0]">
+                  <div className="p-4 rounded-xl bg-quill-surface border border-quill-border text-sm text-quill-muted">
                     Unable to load usage data right now.
                   </div>
                 )}
@@ -424,8 +424,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         variant="ghost"
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           t.value === "dark"
-                            ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#A1A7B0]"
+                            ? "bg-quill-accent text-white"
+                            : "text-quill-muted hover:text-quill-muted"
                         }`}
                       >
                         {t.label}
@@ -451,8 +451,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         onClick={() => update("conversationLayout", layout.value)}
                         className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
                           settings.conversationLayout === layout.value
-                            ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#A1A7B0]"
+                            ? "bg-quill-accent text-white"
+                            : "text-quill-muted hover:text-quill-muted"
                         }`}
                       >
                         {layout.label}
@@ -490,8 +490,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         onClick={() => update("statusSurface", surface.value)}
                         className={`h-auto rounded-md px-2.5 py-1 text-xs font-medium ${
                           settings.statusSurface === surface.value
-                            ? "bg-[#EF4444] text-white"
-                            : "text-quill-muted hover:text-[#A1A7B0]"
+                            ? "bg-quill-accent text-white"
+                            : "text-quill-muted hover:text-quill-muted"
                         }`}
                       >
                         {surface.label}
@@ -530,11 +530,11 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </Row>
 
                 <div className="mt-4 p-3 rounded-xl bg-quill-surface border border-quill-border space-y-1.5">
-                  <p className="text-xs font-medium text-[#A1A7B0]">Data & Privacy</p>
+                  <p className="text-xs font-medium text-quill-muted">Data & Privacy</p>
                   <p className="text-xs text-quill-muted">
                     Your conversations are encrypted and stored securely. We never sell your data.
                   </p>
-                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 text-xs text-[#EF4444] hover:bg-transparent hover:text-[#F87171]">
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 text-xs text-quill-accent hover:bg-transparent hover:text-quill-accent-2">
                     Download your data
                   </Button>
                 </div>
@@ -546,7 +546,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               <div>
                 <p className="text-[11px] font-semibold text-quill-muted uppercase tracking-wider pt-3 pb-1">Account</p>
 
-                <div className="flex items-center gap-3 py-3.5 border-b border-[#1a1a28]">
+                <div className="flex items-center gap-3 py-3.5 border-b border-quill-border-2">
                   <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#F87171] to-[#F87171] flex items-center justify-center text-sm font-bold text-white shrink-0">
                     {(accountName || accountEmail || "U")[0]?.toUpperCase() ?? "U"}
                   </div>
@@ -557,13 +557,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </div>
 
                 <Row label="Current plan" hint="Your active subscription tier">
-                  <span className="px-2.5 py-1 rounded-full bg-quill-border text-xs font-medium text-[#A1A7B0]">
+                  <span className="px-2.5 py-1 rounded-full bg-quill-border text-xs font-medium text-quill-muted">
                     {planLabel}
                   </span>
                 </Row>
 
                 {planLabel === "Free" && (
-                  <div className="mt-3 p-4 rounded-xl border border-[#EF444430] bg-[rgba(239,68,68,0.05)]">
+                  <div className="mt-3 p-4 rounded-xl border border-quill-glow-22 bg-quill-glow-05">
                     <p className="text-sm font-semibold text-quill-text">Upgrade to Pro</p>
                     <p className="text-xs text-quill-muted mt-1 mb-3">
                       Unlimited messages, priority access to all models, and advanced features.
@@ -571,7 +571,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     <Button
                       onClick={() => router.push("/pricing")}
                       type="button"
-                      className="h-auto rounded-xl bg-[#EF4444] px-4 py-2 text-xs font-medium text-white hover:bg-[#DC2626]"
+                      className="h-auto rounded-xl bg-quill-accent px-4 py-2 text-xs font-medium text-white hover:bg-quill-accent-2"
                     >
                       View plans
                     </Button>
@@ -579,10 +579,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 )}
 
                 <div className="pt-4 flex flex-col gap-1">
-                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-quill-muted hover:bg-transparent hover:text-[#A1A7B0]">
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-quill-muted hover:bg-transparent hover:text-quill-muted">
                     Sign out
                   </Button>
-                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-[#f87171] hover:bg-transparent hover:text-[#fca5a5]">
+                  <Button type="button" variant="ghost" className="h-auto justify-start p-0 py-1 text-left text-xs text-quill-accent-2 hover:bg-transparent hover:text-quill-accent-2">
                     Delete account
                   </Button>
                 </div>
@@ -600,7 +600,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               saved
                 ? "bg-quill-green text-white"
-                : "bg-[#EF4444] hover:bg-[#DC2626] text-white"
+                : "bg-quill-accent hover:bg-quill-accent-2 text-white"
             }`}
           >
             {saved ? (
