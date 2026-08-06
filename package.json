@@ -112,6 +112,7 @@
   "overrides": {
     "defu": "^6.1.5",
     "esbuild": "^0.25.0",
+    "tar": "^7.5.19",
     "vite": "^6.4.2",
     "@esbuild-kit/core-utils": {
       "esbuild": "0.27.5"
