@@ -2,40 +2,34 @@
 
 import { useState, useCallback, useEffect, type ComponentType, type SVGProps } from "react";
 import { authClient } from "@/lib/auth/client";
-import Link from "next/link";
 import {
-  InboxStackIcon,
+  ArchiveBoxIcon,
   BookOpenIcon,
-  ChartBarSquareIcon,
-  ChevronDownIcon,
   ClockIcon,
-  CodeBracketIcon,
   CpuChipIcon,
-  DocumentTextIcon,
-  EllipsisVerticalIcon,
-  FolderIcon,
-  GlobeAltIcon,
-  HomeIcon,
+  EllipsisHorizontalIcon,
+  InboxStackIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   RectangleGroupIcon,
   ShareIcon,
-  Squares2X2Icon,
   StarIcon as StarIconOutline,
   TrashIcon,
-  UserCircleIcon,
-  ArchiveBoxIcon,
   WrenchScrewdriverIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { ArrowTopRightOnSquareIcon, BoltIcon } from "@heroicons/react/24/outline";
-import { SparklesIcon, StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
+import { StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { SettingsModal } from "@/components/ui/SettingsModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { KILLERS } from "@/lib/ai/killers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type SessionData = {
   user: { id: string; name: string; email: string; image?: string | null } | null;
@@ -47,35 +41,8 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 interface CommandLink {
   id: string;
   label: string;
-  subtitle: string;
   href: string;
   icon: IconComponent;
-}
-
-interface PromptShortcut {
-  id: string;
-  label: string;
-  subtitle: string;
-  prompt: string;
-  launchMode?: "q" | "draft";
-}
-
-interface MemoryShortcut {
-  id: string;
-  label: string;
-  subtitle: string;
-  icon: IconComponent;
-  action: "settings" | "prompt";
-  prompt?: string;
-  launchMode?: "q" | "draft";
-}
-
-interface ArtifactGroup {
-  id: string;
-  label: string;
-  subtitle: string;
-  icon: IconComponent;
-  items: PromptShortcut[];
 }
 
 interface HealthPayload {
@@ -83,295 +50,27 @@ interface HealthPayload {
 }
 
 const PINNED_KEY = "quill-pinned-chats";
-const sidebarSectionToggleClass =
-  "flex h-auto w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-quill-muted hover:text-quill-muted";
-const sidebarRowButtonClass =
-  "flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all duration-150 hover:border-quill-glow-22 hover:bg-quill-surface-2";
+const sidebarHistoryActionClass = "h-7 w-7 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted";
 
 interface SidebarProps {
   onClose?: () => void;
   mobileCompact?: boolean;
 }
 
-const PRIMARY_WORKSPACE_LINKS: CommandLink[] = [
-  {
-    id: "missions",
-    label: "Mission Inbox",
-    subtitle: "Triage tasks and sub-agent runs",
-    href: "/missions",
-    icon: InboxStackIcon,
-  },
-  {
-    id: "workspace",
-    label: "Workspace",
-    subtitle: "Open the main agent console",
-    href: "/agent",
-    icon: Squares2X2Icon,
-  },
-  {
-    id: "autopilot",
-    label: "Autopilot",
-    subtitle: "Run recurring workflows",
-    href: "/autopilot",
-    icon: ClockIcon,
-  },
-  {
-    id: "artifacts",
-    label: "Artifact History",
-    subtitle: "Browse every builder version",
-    href: "/artifacts",
-    icon: ArchiveBoxIcon,
-  },
+// MiniMax-style minimal nav: a couple of direct top-level links, everything else
+// (Missions, Autopilot, Artifacts, MCP, Google Workspace, Pricing) lives in "More".
+const TOP_LEVEL_LINKS: CommandLink[] = [
+  { id: "workspace", label: "Workspace", href: "/agent", icon: RectangleGroupIcon },
+  { id: "docs", label: "Docs", href: "/docs", icon: BookOpenIcon },
 ];
 
-const EXPLORE_LINKS: CommandLink[] = [
-  {
-    id: "overview",
-    label: "Overview",
-    subtitle: "Home, docs, and product context",
-    href: "/",
-    icon: HomeIcon,
-  },
-  {
-    id: "docs",
-    label: "Docs",
-    subtitle: "Patterns, canvas rules, and builder guides",
-    href: "/docs",
-    icon: BookOpenIcon,
-  },
-  {
-    id: "mcp",
-    label: "MCP Catalog",
-    subtitle: "Connect MCP servers and tools",
-    href: "/mcp",
-    icon: WrenchScrewdriverIcon,
-  },
-  {
-    id: "google-workspace",
-    label: "Google Workspace",
-    subtitle: "Docs, Drive, and Calendar",
-    href: "/workspace",
-    icon: GlobeAltIcon,
-  },
-  {
-    id: "skills",
-    label: "Skills",
-    subtitle: "Install and manage agent skills",
-    href: "/skills",
-    icon: CpuChipIcon,
-  },
-  {
-    id: "pricing",
-    label: "Pricing",
-    subtitle: "Plans, limits, and upgrade path",
-    href: "/pricing",
-    icon: RectangleGroupIcon,
-  },
-];
-
-interface GatewayEntry {
-  id: string;
-  label: string;
-  subtitle: string;
-  href: string;
-  badge?: string;
-}
-
-const AGENT_GATEWAY_ENTRIES: GatewayEntry[] = [
-  {
-    id: "openclaw",
-    label: "OpenClaw",
-    subtitle: "Connect your OpenClaw agent directly",
-    href: "/agent?connect=openclaw",
-    badge: "Gateway",
-  },
-  {
-    id: "hermes",
-    label: "Hermes",
-    subtitle: "Bridge external agents via Hermes protocol",
-    href: "/agent?connect=hermes",
-    badge: "Bridge",
-  },
-];
-
-const DOCUMENT_SHORTCUTS: PromptShortcut[] = [
-  {
-    id: "docs",
-    label: "Docs",
-    subtitle: "Write clear documents and specs",
-    prompt: "Create a polished project document with summary, goals, scope, timeline, and next steps.",
-  },
-  {
-    id: "slides",
-    label: "Slides",
-    subtitle: "Build a presentation outline fast",
-    prompt: "Create a 10-slide presentation outline with title, key points, visuals, and speaker notes.",
-  },
-  {
-    id: "sheets",
-    label: "Sheets",
-    subtitle: "Plan data tables and formulas",
-    prompt: "Create a spreadsheet structure for weekly KPI tracking with columns, formulas, and a summary view.",
-  },
-];
-
-const WEBSITE_SHORTCUTS: PromptShortcut[] = [
-  {
-    id: "landing-page",
-    label: "Landing Page",
-    subtitle: "High-converting marketing page",
-    prompt: "Create a modern landing page for my business with hero, benefits, pricing, testimonials, and contact CTA.",
-  },
-  {
-    id: "waitlist-page",
-    label: "Waitlist Page",
-    subtitle: "Capture emails before launch",
-    prompt: "Create a waitlist page with value proposition, launch timeline, FAQ, and email signup CTA.",
-  },
-  {
-    id: "product-page",
-    label: "Product Page",
-    subtitle: "Show features and pricing",
-    prompt: "Create a product page with feature highlights, pricing tiers, social proof, and a strong buy CTA.",
-  },
-];
-
-const APP_SHORTCUTS: PromptShortcut[] = [
-  {
-    id: "internal-tool",
-    label: "Internal Tool",
-    subtitle: "Simple operations workflow UI",
-    prompt: "Design an internal tool interface for operations with tasks table, status filters, and action panel.",
-  },
-  {
-    id: "client-portal",
-    label: "Client Portal",
-    subtitle: "Secure customer workspace",
-    prompt: "Design a client portal with login, project status, file area, and support request flow.",
-  },
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    subtitle: "Visualize key business metrics",
-    prompt: "Create a business KPI dashboard app with summary cards, trends, and action recommendations.",
-  },
-];
-
-const WORKSPACE_SHORTCUTS: PromptShortcut[] = [
-  {
-    id: "open-workspace",
-    label: "Connect my files",
-    subtitle: "Point Quill at your project folder",
-    prompt:
-      "I want to connect my project folder so Quill can read and update files. Walk me through the steps and confirm what it will touch before making changes.",
-    launchMode: "draft",
-  },
-  {
-    id: "import-project",
-    label: "Review my project",
-    subtitle: "Get a plain-language summary",
-    prompt:
-      "Look at my project files and give me a plain-language summary: what it does, how it is structured, and what might need attention.",
-    launchMode: "draft",
-  },
-  {
-    id: "run-task",
-    label: "Plan before execution",
-    subtitle: "Draft a task and require approval first",
-    prompt:
-      "I need you to handle a task in my project. Before starting, show me a step-by-step plan and ask for my approval. Only proceed once I confirm.",
-    launchMode: "draft",
-  },
-];
-
-const MEMORY_SHORTCUTS: MemoryShortcut[] = [
-  {
-    id: "profile",
-    label: "My profile",
-    subtitle: "Tune Quill's memory and working style",
-    icon: UserCircleIcon,
-    action: "settings",
-  },
-  {
-    id: "project-memory",
-    label: "Project memory",
-    subtitle: "Summarize what Quill knows about this repo",
-    icon: FolderIcon,
-    action: "prompt",
-    prompt:
-      "Review the current project and summarize what you know so far: goals, architecture, active risks, and likely next priorities.",
-    launchMode: "draft",
-  },
-  {
-    id: "mistake-journal",
-    label: "Mistake journal",
-    subtitle: "Turn recent errors into reusable lessons",
-    icon: WrenchScrewdriverIcon,
-    action: "prompt",
-    prompt:
-      "Review our recent work, identify mistakes or near-misses, and convert them into a concise operating journal with lessons and safeguards.",
-    launchMode: "draft",
-  },
-];
-
-const SKILL_SHORTCUTS: PromptShortcut[] = [
-  {
-    id: "research",
-    label: "Research",
-    subtitle: "Find and summarize information",
-    prompt: "Help me with research for my business goals. Show a clear plan, then execute it step by step.",
-  },
-  {
-    id: "writing",
-    label: "Writing",
-    subtitle: "Draft and improve content",
-    prompt:
-      "Help me write polished content for my business goals. Start by clarifying audience, goal, and deliverable.",
-  },
-  {
-    id: "design",
-    label: "Design",
-    subtitle: "Plan UI and UX structure",
-    prompt: "Help me design a UI flow for my business goals. Prioritize structure, hierarchy, and interaction clarity.",
-  },
-  {
-    id: "automation",
-    label: "Automation",
-    subtitle: "Build repeatable workflows",
-    prompt:
-      "Help me design an automation workflow for my business goals, including triggers, steps, fallback handling, and review points.",
-  },
-];
-
-const ARTIFACT_GROUPS: ArtifactGroup[] = [
-  {
-    id: "documents",
-    label: "Documents",
-    subtitle: "Reports, decks, and structured deliverables",
-    icon: DocumentTextIcon,
-    items: DOCUMENT_SHORTCUTS,
-  },
-  {
-    id: "websites",
-    label: "Web pages",
-    subtitle: "Landing, waitlist, and product pages",
-    icon: GlobeAltIcon,
-    items: WEBSITE_SHORTCUTS,
-  },
-  {
-    id: "apps",
-    label: "Apps",
-    subtitle: "Dashboards, portals, and internal tools",
-    icon: ChartBarSquareIcon,
-    items: APP_SHORTCUTS,
-  },
-  {
-    id: "workspace",
-    label: "Workspace flows",
-    subtitle: "Repo-aware prompts and guarded execution",
-    icon: CodeBracketIcon,
-    items: WORKSPACE_SHORTCUTS,
-  },
+const MORE_LINKS: CommandLink[] = [
+  { id: "missions", label: "Mission Inbox", href: "/missions", icon: InboxStackIcon },
+  { id: "autopilot", label: "Autopilot", href: "/autopilot", icon: ClockIcon },
+  { id: "artifacts", label: "Artifact History", href: "/artifacts", icon: ArchiveBoxIcon },
+  { id: "mcp", label: "MCP Catalog", href: "/mcp", icon: WrenchScrewdriverIcon },
+  { id: "skills", label: "Skills", href: "/skills", icon: CpuChipIcon },
+  { id: "pricing", label: "Pricing", href: "/pricing", icon: RectangleGroupIcon },
 ];
 
 function matchesQuery(query: string, ...values: Array<string | undefined>) {
@@ -380,21 +79,15 @@ function matchesQuery(query: string, ...values: Array<string | undefined>) {
 }
 
 export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
-  const [session, setSession] = useState<SessionData>(null);
+  const [, setSession] = useState<SessionData>(null);
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
   const [recentChats, setRecentChats] = useState<Chat[]>([]);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [pendingDeleteChat, setPendingDeleteChat] = useState<Chat | null>(null);
-  const [workspaceOpen, setWorkspaceOpen] = useState(true);
-  const [exploreOpen, setExploreOpen] = useState(false);
-  const [agentsOpen, setAgentsOpen] = useState(true);
-  const [buildOpen, setBuildOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const searchPlaceholder = mobileCompact ? "Search chats, agents..." : "Search chats, agents, shortcuts";
+  const searchPlaceholder = "Search chats";
   const [engineStatus, setEngineStatus] = useState<"loading" | "ok" | "degraded" | "down">("loading");
   const [engineDetail, setEngineDetail] = useState("Checking runtime health");
   const [pinned, setPinned] = useState<string[]>(() => {
@@ -463,26 +156,6 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
     [onClose],
   );
 
-  const openAgentPrompt = useCallback(
-    (prompt: string, mode: "q" | "draft" = "q") => {
-      const url = new URL("/agent", window.location.origin);
-      url.searchParams.set(mode, prompt);
-      onClose?.();
-      window.location.assign(url.toString());
-    },
-    [onClose],
-  );
-
-  const openAgentForKiller = useCallback(
-    (killerId: string) => {
-      const url = new URL("/agent", window.location.origin);
-      url.searchParams.set("killer", killerId);
-      onClose?.();
-      window.location.assign(url.toString());
-    },
-    [onClose],
-  );
-
   const openChat = useCallback(
     (chatId: string) => {
       const url = new URL("/agent", window.location.origin);
@@ -546,39 +219,7 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
     ...recentChats.filter((c) => pinned.includes(c.id)),
     ...recentChats.filter((c) => !pinned.includes(c.id)),
   ];
-  const filteredPrimaryLinks = PRIMARY_WORKSPACE_LINKS.filter((item) =>
-    matchesQuery(normalizedQuery, item.label, item.subtitle),
-  );
-  const filteredExploreLinks = EXPLORE_LINKS.filter((item) => matchesQuery(normalizedQuery, item.label, item.subtitle));
-  const filteredAgents = KILLERS.filter((killer) =>
-    matchesQuery(normalizedQuery, killer.name, killer.shortName, killer.tagline, killer.description),
-  );
-  const filteredMemoryShortcuts = MEMORY_SHORTCUTS.filter((item) =>
-    matchesQuery(normalizedQuery, item.label, item.subtitle),
-  );
-  const filteredSkillShortcuts = SKILL_SHORTCUTS.filter((item) =>
-    matchesQuery(normalizedQuery, item.label, item.subtitle),
-  );
-  const filteredGatewayEntries = AGENT_GATEWAY_ENTRIES.filter((item) =>
-    matchesQuery(normalizedQuery, item.label, item.subtitle),
-  );
-  const filteredArtifactGroups = ARTIFACT_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) =>
-      matchesQuery(normalizedQuery, group.label, group.subtitle, item.label, item.subtitle),
-    ),
-  })).filter((group) => group.items.length > 0 || matchesQuery(normalizedQuery, group.label, group.subtitle));
   const filteredChats = sortedChats.filter((chat) => matchesQuery(normalizedQuery, chat.title));
-  const hasMatches =
-    filteredPrimaryLinks.length > 0 ||
-    (!mobileCompact && filteredExploreLinks.length > 0) ||
-    filteredAgents.length > 0 ||
-    filteredMemoryShortcuts.length > 0 ||
-    filteredSkillShortcuts.length > 0 ||
-    filteredGatewayEntries.length > 0 ||
-    filteredArtifactGroups.length > 0 ||
-    filteredChats.length > 0;
-    filteredChats.length > 0;
 
   const engineTone =
     engineStatus === "ok"
@@ -596,7 +237,6 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         : engineStatus === "down"
           ? "Offline"
           : "Checking";
-  const sidebarHistoryActionClass = "h-7 w-7 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted";
 
   return (
     <TooltipProvider delayDuration={500}>
@@ -604,14 +244,11 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
         className="flex h-full w-full shrink-0 flex-col overflow-y-auto border-r border-quill-border bg-quill-surface-2 scroll-smooth overscroll-contain"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="shrink-0 border-b border-quill-border px-5 py-4">
+        <div className="shrink-0 border-b border-quill-border px-4 py-3.5">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <QuillLogo size={24} />
-              <div>
-                <span className="block text-sm font-semibold gradient-text tracking-tight">Quill AI</span>
-                <span className="block text-[11px] text-quill-muted">Workspace OS for agents and artifacts</span>
-              </div>
+            <div className="flex items-center gap-2.5">
+              <QuillLogo size={22} />
+              <span className="text-sm font-semibold gradient-text tracking-tight">Quill AI</span>
             </div>
             {onClose && (
               <Tooltip>
@@ -632,14 +269,14 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
             )}
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 space-y-2.5">
             <Button
               onClick={() => navigateTo("/agent")}
               type="button"
-              className="flex h-auto w-full items-center justify-center gap-2.5 rounded-xl bg-quill-accent px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-quill-glow-22 transition-all duration-150 hover:bg-quill-accent-2"
+              className="flex h-auto w-full items-center justify-center gap-2 rounded-xl bg-quill-accent px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-quill-glow-22 transition-all duration-150 hover:bg-quill-accent-2"
             >
               <PlusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              New mission
+              New chat
             </Button>
 
             <div className="flex items-center gap-2 rounded-xl border border-quill-border bg-quill-surface px-3 py-2">
@@ -649,507 +286,286 @@ export function Sidebar({ onClose, mobileCompact = false }: SidebarProps = {}) {
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder={searchPlaceholder}
                 className="h-auto w-full border-0 bg-transparent px-0 py-0 text-sm text-quill-text shadow-none focus-visible:ring-0 placeholder:text-quill-muted"
-                aria-label="Search sidebar"
+                aria-label="Search chats"
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 px-3 py-3">
-          {!hasMatches && normalizedQuery && (
-            <div className="mb-3 rounded-xl border border-quill-border bg-quill-surface px-3 py-2.5 text-xs text-quill-muted">
-              No sidebar matches for &quot;{searchQuery}&quot;.
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setWorkspaceOpen((value) => !value)}
-              className={sidebarSectionToggleClass}
-            >
-              <span className="flex items-center gap-1.5">
-                <Squares2X2Icon className="h-2.5 w-2.5" aria-hidden="true" />
-                Workspace
-              </span>
-              <ChevronDownIcon
-                className="h-2.75 w-2.75 transition-transform"
-                aria-hidden="true"
-                style={{ transform: workspaceOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-              />
-            </Button>
-
-            <div
-              className="overflow-hidden transition-all duration-200"
-              style={{ maxHeight: workspaceOpen ? "320px" : "0px", opacity: workspaceOpen ? 1 : 0 }}
-            >
-              <div className="flex flex-col gap-1 pb-2 pt-1">
-                {filteredPrimaryLinks.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant="ghost"
-                      onClick={() => navigateTo(item.href)}
-                      className={sidebarRowButtonClass}
-                    >
-                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                      <span className="min-w-0">
-                        <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
-                        <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
           {!mobileCompact && (
-            <div className="space-y-1 pt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setExploreOpen((value) => !value)}
-                className={sidebarSectionToggleClass}
-              >
-                <span className="flex items-center gap-1.5">
-                  <HomeIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                  Explore
-                </span>
-                <ChevronDownIcon
-                  className="h-2.75 w-2.75 transition-transform"
-                  aria-hidden="true"
-                  style={{ transform: exploreOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-                />
-              </Button>
-
-              <div
-                className="overflow-hidden transition-all duration-200"
-                style={{ maxHeight: exploreOpen ? "640px" : "0px", opacity: exploreOpen ? 1 : 0 }}
-              >
-                <div className="flex flex-col gap-1 pb-2 pt-1">
-                  {filteredExploreLinks.map((item) => {
-                    const Icon = item.icon;
-                    return (
+            <div className="mt-3 flex items-center gap-1">
+              {TOP_LEVEL_LINKS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
                       <Button
-                        key={item.id}
                         type="button"
                         variant="ghost"
                         onClick={() => navigateTo(item.href)}
-                        className={sidebarRowButtonClass}
+                        aria-label={item.label}
+                        className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium text-quill-muted hover:bg-quill-surface hover:text-quill-text"
                       >
-                        <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                        <span className="min-w-0">
-                          <span className="block text-[13px] font-medium leading-tight text-quill-muted">
-                            {item.label}
-                          </span>
-                          <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">
-                            {item.subtitle}
-                          </span>
-                        </span>
+                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span className="truncate">{item.label}</span>
                       </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{item.label}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        aria-label="More"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-quill-muted hover:bg-quill-surface hover:text-quill-text"
+                      >
+                        <EllipsisHorizontalIcon className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">More</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" className="w-52 bg-quill-surface-2 border-quill-border">
+                  {MORE_LINKS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onClick={() => navigateTo(item.href)}
+                        className="gap-2.5 py-2 px-2.5 text-xs cursor-pointer"
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
+                        {item.label}
+                      </DropdownMenuItem>
                     );
                   })}
-                </div>
-              </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
+        </div>
 
-          <div className="space-y-1 pt-1">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setAgentsOpen((value) => !value)}
-              className={sidebarSectionToggleClass}
-            >
-              <span className="flex items-center gap-1.5">
-                <SparklesIcon className="h-2.5 w-2.5 text-quill-accent-2" aria-hidden="true" />
-                Agents
-              </span>
-              <ChevronDownIcon
-                className="h-2.75 w-2.75 transition-transform"
-                aria-hidden="true"
-                style={{ transform: agentsOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-              />
-            </Button>
-
-            <div
-              className="overflow-hidden transition-all duration-200"
-              style={{ maxHeight: agentsOpen ? "1400px" : "0px", opacity: agentsOpen ? 1 : 0 }}
-            >
-              <div className="flex flex-col gap-1 pb-2 pt-1">
-                {/* Specialists */}
-                <div className="px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">
-                  Specialists
+        <div className="flex-1 px-3 py-3">
+          <div className="flex flex-col gap-0.5 pb-3">
+            {filteredChats.length === 0 &&
+              (sessionStatus === "unauthenticated" ? (
+                <div className="px-2 py-2">
+                  <p className="text-xs leading-relaxed text-quill-muted">
+                    Sign in to save and search conversation history.
+                  </p>
                 </div>
-                {filteredAgents.map((killer) => (
+              ) : normalizedQuery ? (
+                <p className="px-3 py-2 text-xs italic text-quill-muted">No chats match your search</p>
+              ) : (
+                <p className="px-3 py-2 text-xs italic text-quill-muted">No conversations yet</p>
+              ))}
+
+            {filteredChats.map((chat) => {
+              const isPinned = pinned.includes(chat.id);
+              const isHovered = hoveredChat === chat.id;
+              return (
+                <div
+                  key={chat.id}
+                  className="group relative flex items-start rounded-lg transition-all duration-150 hover:bg-quill-surface-2"
+                  onMouseEnter={() => setHoveredChat(chat.id)}
+                  onMouseLeave={() => setHoveredChat(null)}
+                >
                   <Button
-                    key={killer.id}
                     type="button"
                     variant="ghost"
-                    onClick={() => openAgentForKiller(killer.id)}
-                    className={sidebarRowButtonClass}
+                    onClick={() => openChat(chat.id)}
+                    className="flex h-auto min-w-0 flex-1 items-start justify-start gap-2 px-3 py-2 pr-11 text-left md:pr-3"
                   >
                     <span
-                      className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: killer.accent }}
+                      className="mt-1.5 h-1 w-1 shrink-0 rounded-full transition-colors"
+                      style={{ background: isPinned ? "#EF4444" : "#343944" }}
                     />
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-quill-muted">{killer.name}</span>
-                      <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{killer.tagline}</span>
+                    <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-quill-muted">
+                      {chat.title}
                     </span>
                   </Button>
-                ))}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => navigateTo("/skills")}
-                  className="flex h-auto w-full items-start justify-start gap-2.5 rounded-xl border border-dashed border-quill-border px-3 py-2.5 text-left transition-all duration-150 hover:border-quill-glow-22 hover:bg-quill-surface-2"
-                >
-                  <PlusIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <span className="block text-[13px] font-medium leading-tight text-quill-muted">Add custom expert</span>
-                    <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">Install a specialized agent</span>
-                  </span>
-                </Button>
 
-                {/* Connect / Gateway */}
-                <div className="mx-1 my-2 border-t border-quill-border/60" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setConnectOpen((v) => !v)}
-                  className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted hover:text-quill-muted"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <BoltIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                    Connect
-                  </span>
-                  <ChevronDownIcon
-                    className="h-2.5 w-2.5"
-                    aria-hidden="true"
-                    style={{ transform: connectOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-                  />
-                </Button>
-                <div
-                  className="overflow-hidden transition-all duration-200"
-                  style={{ maxHeight: connectOpen ? "300px" : "0px", opacity: connectOpen ? 1 : 0 }}
-                >
-                  <div className="flex flex-col gap-1 pt-1">
-                    {filteredGatewayEntries.map((entry) => (
-                      <Button
-                        key={entry.id}
-                        type="button"
-                        variant="ghost"
-                        onClick={() => navigateTo(entry.href)}
-                        className={sidebarRowButtonClass}
-                      >
-                        <ArrowTopRightOnSquareIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5">
-                            <span className="block text-[13px] font-medium leading-tight text-quill-muted">{entry.label}</span>
-                            {entry.badge && (
-                              <span className="rounded-full bg-quill-glow-10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-quill-accent-2">
-                                {entry.badge}
-                              </span>
-                            )}
-                          </span>
-                          <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{entry.subtitle}</span>
-                        </span>
-                      </Button>
-                    ))}
+                  <div
+                    className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 transition-opacity duration-150 md:flex"
+                    style={{ opacity: isHovered ? 1 : 0 }}
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            togglePin(chat.id);
+                          }}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={isPinned ? "Unpin chat" : "Pin chat to top"}
+                          className={sidebarHistoryActionClass}
+                          style={{ color: isPinned ? "#EF4444" : "#838387" }}
+                        >
+                          {isPinned ? (
+                            <StarIconSolid className="h-2.75 w-2.75" aria-hidden="true" />
+                          ) : (
+                            <StarIconOutline className="h-2.75 w-2.75" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">{isPinned ? "Unpin" : "Pin to top"}</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const url = `${window.location.origin}/share/${chat.id}`;
+                            navigator.clipboard
+                              .writeText(url)
+                              .then(() => {
+                                setShareToast(chat.id);
+                                setTimeout(() => setShareToast(null), 1500);
+                              })
+                              .catch(() => {
+                                setShareToast(`error-${chat.id}`);
+                                setTimeout(() => setShareToast(null), 1500);
+                              });
+                          }}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={shareToast === chat.id ? "Share link copied" : "Copy share link"}
+                          className={`${sidebarHistoryActionClass} ${shareToast === chat.id ? "bg-quill-glow-green-10 text-quill-green" : "text-quill-muted hover:bg-quill-border hover:text-quill-muted"}`}
+                        >
+                          <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        {shareToast === chat.id ? "Copied!" : "Copy share link"}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestDeleteChat(chat);
+                          }}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={deletingChatId === chat.id}
+                          aria-label="Delete chat"
+                          className="h-7 w-7 rounded-md text-quill-muted transition-all hover:bg-quill-border hover:text-quill-accent-2 disabled:opacity-50"
+                        >
+                          <TrashIcon className="h-2.75 w-2.75" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">Delete chat</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="absolute right-2 top-2 md:hidden">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenChatMenuId((prev) => (prev === chat.id ? null : chat.id));
+                          }}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="More chat actions"
+                          className="h-8 w-8 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted"
+                        >
+                          <EllipsisHorizontalIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">More actions</TooltipContent>
+                    </Tooltip>
+
+                    {openChatMenuId === chat.id && (
+                      <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-quill-border bg-quill-surface-2 p-1.5 shadow-xl">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            togglePin(chat.id);
+                            setOpenChatMenuId(null);
+                          }}
+                          className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
+                        >
+                          {isPinned ? "Unpin" : "Pin to top"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const url = `${window.location.origin}/share/${chat.id}`;
+                            navigator.clipboard
+                              .writeText(url)
+                              .then(() => {
+                                setShareToast(chat.id);
+                                setTimeout(() => setShareToast(null), 1500);
+                              })
+                              .catch(() => {
+                                setShareToast(`error-${chat.id}`);
+                                setTimeout(() => setShareToast(null), 1500);
+                              });
+                            setOpenChatMenuId(null);
+                          }}
+                          className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
+                        >
+                          Copy share link
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestDeleteChat(chat);
+                            setOpenChatMenuId(null);
+                          }}
+                          disabled={deletingChatId === chat.id}
+                          className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-accent-2 hover:bg-quill-border disabled:opacity-50"
+                        >
+                          Delete chat
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Skills & Memory */}
-                <div className="mx-1 my-2 border-t border-quill-border/60" />
-                <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">
-                  Skills &amp; Memory
-                </div>
-                {filteredMemoryShortcuts.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        if (item.action === "settings") { setSettingsOpen(true); return; }
-                        if (item.prompt) openAgentPrompt(item.prompt, item.launchMode ?? "draft");
-                      }}
-                      className={sidebarRowButtonClass}
-                    >
-                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-muted" aria-hidden="true" />
-                      <span className="min-w-0">
-                        <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
-                        <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
-                      </span>
-                    </Button>
-                  );
-                })}
-                {filteredSkillShortcuts.map((item) => (
-                  <Button
-                    key={item.id}
-                    type="button"
-                    variant="ghost"
-                    onClick={() => openAgentPrompt(item.prompt, item.launchMode ?? "q")}
-                    className={sidebarRowButtonClass}
-                  >
-                    <SparklesIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quill-accent-2" aria-hidden="true" />
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight text-quill-muted">{item.label}</span>
-                      <span className="mt-0.5 block text-[11px] leading-tight text-quill-muted">{item.subtitle}</span>
-                    </span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mx-4 my-2 border-t border-quill-border" />
-
-          <div className="space-y-1">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setHistoryOpen((value) => !value)}
-              className={sidebarSectionToggleClass}
-            >
-              <span className="flex items-center gap-1.5">
-                <ClockIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                History
-              </span>
-              <ChevronDownIcon
-                className="h-2.75 w-2.75 transition-transform"
-                aria-hidden="true"
-                style={{ transform: historyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-              />
-            </Button>
-
-            <div
-              className="overflow-hidden transition-all duration-200"
-              style={{ maxHeight: historyOpen ? "2000px" : "0px", opacity: historyOpen ? 1 : 0 }}
-            >
-              <div className="flex flex-col gap-0.5 pb-3 pt-1">
-                {filteredChats.length === 0 &&
-                  (sessionStatus === "unauthenticated" ? (
-                    <div className="px-2 py-2">
-                      <p className="text-xs leading-relaxed text-quill-muted">
-                        Sign in to save and search conversation history.
-                      </p>
-                    </div>
-                  ) : normalizedQuery ? (
-                    <p className="px-3 py-2 text-xs italic text-quill-muted">No chats match your search</p>
-                  ) : (
-                    <p className="px-3 py-2 text-xs italic text-quill-muted">No conversations yet</p>
-                  ))}
-
-                {filteredChats.map((chat) => {
-                  const isPinned = pinned.includes(chat.id);
-                  const isHovered = hoveredChat === chat.id;
-                  return (
-                    <div
-                      key={chat.id}
-                      className="group relative flex items-start rounded-lg transition-all duration-150 hover:bg-quill-surface-2"
-                      onMouseEnter={() => setHoveredChat(chat.id)}
-                      onMouseLeave={() => setHoveredChat(null)}
-                    >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => openChat(chat.id)}
-                        className="flex h-auto min-w-0 flex-1 items-start justify-start gap-2 px-3 py-2 pr-11 text-left md:pr-3"
-                      >
-                        <span
-                          className="mt-1.5 h-1 w-1 shrink-0 rounded-full transition-colors"
-                          style={{ background: isPinned ? "#EF4444" : "#343944" }}
-                        />
-                        <span className="line-clamp-2 pr-5 text-[13px] leading-snug text-quill-muted transition-colors group-hover:text-quill-muted">
-                          {chat.title}
-                        </span>
-                      </Button>
-
-                      <div
-                        className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 transition-opacity duration-150 md:flex"
-                        style={{ opacity: isHovered ? 1 : 0 }}
-                      >
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                togglePin(chat.id);
-                              }}
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={isPinned ? "Unpin chat" : "Pin chat to top"}
-                              className={sidebarHistoryActionClass}
-                              style={{ color: isPinned ? "#EF4444" : "#838387" }}
-                            >
-                              {isPinned ? (
-                                <StarIconSolid className="h-2.75 w-2.75" aria-hidden="true" />
-                              ) : (
-                                <StarIconOutline className="h-2.75 w-2.75" aria-hidden="true" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">{isPinned ? "Unpin" : "Pin to top"}</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                const url = `${window.location.origin}/share/${chat.id}`;
-                                navigator.clipboard
-                                  .writeText(url)
-                                  .then(() => {
-                                    setShareToast(chat.id);
-                                    setTimeout(() => setShareToast(null), 1500);
-                                  })
-                                  .catch(() => {
-                                    setShareToast(`error-${chat.id}`);
-                                    setTimeout(() => setShareToast(null), 1500);
-                                  });
-                              }}
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={shareToast === chat.id ? "Share link copied" : "Copy share link"}
-                              className={`${sidebarHistoryActionClass} ${shareToast === chat.id ? "bg-quill-glow-green-10 text-quill-green" : "text-quill-muted hover:bg-quill-border hover:text-quill-muted"}`}
-                            >
-                              <ShareIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">
-                            {shareToast === chat.id ? "Copied!" : "Copy share link"}
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                requestDeleteChat(chat);
-                              }}
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              disabled={deletingChatId === chat.id}
-                              aria-label="Delete chat"
-                              className="h-7 w-7 rounded-md text-quill-muted transition-all hover:bg-quill-border hover:text-quill-accent-2 disabled:opacity-50"
-                            >
-                              <TrashIcon className="h-2.75 w-2.75" aria-hidden="true" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">Delete chat</TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      <div className="absolute right-2 top-2 md:hidden">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setOpenChatMenuId((prev) => (prev === chat.id ? null : chat.id));
-                              }}
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label="More chat actions"
-                              className="h-8 w-8 rounded-md text-quill-muted hover:bg-quill-border hover:text-quill-muted"
-                            >
-                              <EllipsisVerticalIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">More actions</TooltipContent>
-                        </Tooltip>
-
-                        {openChatMenuId === chat.id && (
-                          <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-quill-border bg-quill-surface-2 p-1.5 shadow-xl">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                togglePin(chat.id);
-                                setOpenChatMenuId(null);
-                              }}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
-                            >
-                              {isPinned ? "Unpin" : "Pin to top"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                const url = `${window.location.origin}/share/${chat.id}`;
-                                navigator.clipboard
-                                  .writeText(url)
-                                  .then(() => {
-                                    setShareToast(chat.id);
-                                    setTimeout(() => setShareToast(null), 1500);
-                                  })
-                                  .catch(() => {
-                                    setShareToast(`error-${chat.id}`);
-                                    setTimeout(() => setShareToast(null), 1500);
-                                  });
-                                setOpenChatMenuId(null);
-                              }}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-muted hover:bg-quill-border"
-                            >
-                              Copy share link
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                requestDeleteChat(chat);
-                                setOpenChatMenuId(null);
-                              }}
-                              disabled={deletingChatId === chat.id}
-                              className="h-auto w-full justify-start rounded-md px-2 py-1.5 text-left text-xs text-quill-accent-2 hover:bg-quill-border disabled:opacity-50"
-                            >
-                              Delete chat
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
         <div className="shrink-0 space-y-2 border-t border-quill-border px-3 py-3">
-          <div className="rounded-xl border border-quill-border bg-quill-surface/60 px-3 py-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-quill-muted">Engine Status</p>
-                <p className="mt-0.5 text-[12px] font-medium text-quill-text">Apex runtime</p>
-              </div>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-medium ${engineTone}`}
-              >
-                <CpuChipIcon className="h-3 w-3" aria-hidden="true" />
-                {engineLabel}
-              </span>
-            </div>
-            <p className="mt-1 text-[11px] text-quill-muted">{engineDetail}</p>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setSettingsOpen(true)}
+              className="flex h-auto items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-quill-muted hover:bg-quill-surface hover:text-quill-text"
+            >
+              Settings
+            </Button>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-medium ${engineTone}`}
+              title={engineDetail}
+            >
+              <CpuChipIcon className="h-3 w-3" aria-hidden="true" />
+              {engineLabel}
+            </span>
           </div>
-
-          {/* Account and usage moved to header account dropdown to reduce duplicate controls. */}
         </div>
 
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
