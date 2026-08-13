@@ -507,7 +507,7 @@ export function TaskInput({
                     <TooltipContent side="top">Agent, Mode, Skills, and MCPs</TooltipContent>
                   </Tooltip>
 
-                  <DropdownMenuContent align="end" className="w-56 mb-2 bg-[#1A1D21] border-quill-border">
+                  <DropdownMenuContent align="end" className="w-56 mb-2 bg-quill-surface-2 border-quill-border">
                     <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 py-2">
                       Configuration
                     </DropdownMenuLabel>
@@ -517,7 +517,7 @@ export function TaskInput({
                       <DropdownMenuSubTrigger className="gap-3 w-full py-2.5 px-3">
                         <span>Agent: {AGENT_SOURCES.find((a) => a.id === agentSource)?.label ?? "Quill Agent"}</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-48 bg-[#1A1D21] border-quill-border z-100">
+                      <DropdownMenuSubContent className="w-48 bg-quill-surface-2 border-quill-border z-100">
                         <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-2 py-2">
                           Select Agent
                         </DropdownMenuLabel>
@@ -540,7 +540,7 @@ export function TaskInput({
                       <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full">
                         <span>Mode: {currentModeLabel}</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-64 bg-[#1A1D21] border-quill-border z-100">
+                      <DropdownMenuSubContent className="w-64 bg-quill-surface-2 border-quill-border z-100">
                         <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-quill-muted px-3 pt-2">
                           Model Engine
                         </DropdownMenuLabel>
@@ -590,7 +590,7 @@ export function TaskInput({
                       <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full opacity-60">
                         <span>Skills (0)</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56 bg-[#1A1D21] border-quill-border z-100">
+                      <DropdownMenuSubContent className="w-56 bg-quill-surface-2 border-quill-border z-100">
                         <div className="px-3 py-3 text-[11px] text-quill-muted text-center italic">
                           Configure specialized commands in your workspace&apos;s .kilocode/skills folder.
                         </div>
@@ -602,7 +602,7 @@ export function TaskInput({
                       <DropdownMenuSubTrigger className="py-2.5 px-3 gap-3 w-full opacity-60">
                         <span>MCP Servers (0)</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56 bg-[#1A1D21] border-quill-border z-100">
+                      <DropdownMenuSubContent className="w-56 bg-quill-surface-2 border-quill-border z-100">
                         <div className="px-3 py-3 text-[11px] text-quill-muted text-center italic">
                           Configure local Model Context Protocol integrations to enable DB access, git, or Figma.
                         </div>
