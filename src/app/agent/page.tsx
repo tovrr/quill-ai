@@ -16,7 +16,6 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SecondaryRightRail } from "@/components/layout/SecondaryRightRail";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import {
   AgentStatusBar,
@@ -1431,15 +1430,6 @@ export default function AgentPage() {
   }, [messages, setMessages, sendMessage, isLoading]);
 
   const modeLabels: Record<Mode, string> = { fast: "Flash", thinking: "Thinking", advanced: "Pro" };
-  const outputFormatLabel =
-    builderTarget === "auto"
-      ? "Smart (auto)"
-      : builderTarget === "page"
-        ? "Live Page"
-        : builderTarget === "react-app"
-          ? "React App"
-          : "Next.js Bundle";
-  const activeSessionCount = Number(isLoading || isGeneratingImage);
   // trustIndicators removed for minimal UI
   const hasCanvasContent = canvasContent.trim().length > 0;
   const mobileWorkspaceView: "menu" | "chat" | "canvas" = mobileSidebarOpen ? "menu" : canvasMode ? "canvas" : "chat";
@@ -1955,16 +1945,6 @@ export default function AgentPage() {
             <div className="md:hidden fixed inset-0 z-40 animate-slide-up">
               <CanvasPanel content={canvasContent} onClose={() => setCanvasMode(false)} isWorking={isLoading} />
             </div>
-          )}
-
-          {!canvasMode && (
-            <SecondaryRightRail
-              modeLabel={modeLabels[selectedMode]}
-              outputFormatLabel={outputFormatLabel}
-              isCanvasOpen={canvasMode}
-              isWorking={isLoading || isGeneratingImage}
-              activeSessions={activeSessionCount}
-            />
           )}
         </div>
       </div>
