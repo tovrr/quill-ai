@@ -12,6 +12,7 @@ import {
   PaperClipIcon,
 } from "@heroicons/react/24/outline";
 import type { UIMessage } from "ai";
+import { MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { QuillLogo } from "@/components/ui/QuillLogo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,6 +296,50 @@ function renderInline(text: string) {
   });
 }
 
+function CodeBlock({ lang, code }: { lang: string; code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore clipboard failures
+    }
+  };
+
+  return (
+    <div className="my-2 rounded-xl overflow-hidden border border-quill-border">
+      <div className="flex items-center justify-between gap-2 bg-quill-surface-2 border-b border-quill-border px-3 py-1.5">
+        <span className="text-[10px] text-quill-muted font-mono uppercase tracking-wide">
+          {lang || "code"}
+        </span>
+        <MessageActions>
+          <MessageAction tooltip={copied ? "Copied!" : "Copy code"} label={copied ? "Copied" : "Copy code"} onClick={handleCopy}>
+            {copied ? (
+              <CheckIcon className="h-3 w-3 text-quill-green" aria-hidden="true" />
+            ) : (
+              <ClipboardDocumentIcon className="h-3 w-3 text-quill-muted" aria-hidden="true" />
+            )}
+          </MessageAction>
+        </MessageActions>
+      </div>
+      <div className="relative bg-quill-surface-2">
+        <pre className="p-4 md:p-4 overflow-x-auto text-[11px] md:text-[12px] font-mono text-quill-muted leading-relaxed">
+          <code>{code}</code>
+        </pre>
+        {/* Mobile scroll hint */}
+        <div className="md:hidden absolute right-0 top-0 bottom-0 w-6 bg-linear-to-l from-quill-surface-2 to-transparent pointer-events-none flex items-center justify-end pr-1">
+          <svg className="w-3 h-3 text-quill-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MarkdownText({ text }: { text: string }) {
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
@@ -312,26 +357,7 @@ function MarkdownText({ text }: { text: string }) {
         codeLines.push(lines[i]);
         i++;
       }
-      elements.push(
-        <div key={i} className="my-2 rounded-xl overflow-hidden border border-quill-border">
-          {lang && (
-            <div className="px-3 py-1.5 bg-quill-surface-2 border-b border-quill-border text-[10px] text-quill-muted font-mono uppercase tracking-wide">
-              {lang}
-            </div>
-          )}
-          <div className="relative bg-quill-surface-2">
-            <pre className="p-4 md:p-4 overflow-x-auto text-[11px] md:text-[12px] font-mono text-quill-muted leading-relaxed">
-              <code>{codeLines.join("\n")}</code>
-            </pre>
-            {/* Mobile scroll hint */}
-            <div className="md:hidden absolute right-0 top-0 bottom-0 w-6 bg-linear-to-l from-[#0d0d15] to-transparent pointer-events-none flex items-center justify-end pr-1">
-              <svg className="w-3 h-3 text-quill-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        </div>,
-      );
+      elements.push(<CodeBlock key={i} lang={lang} code={codeLines.join("\n")} />);
       i++;
       continue;
     }
