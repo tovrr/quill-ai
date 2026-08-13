@@ -9,23 +9,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
-  memo,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
 
 // Adapted from ai-elements' Message component (https://elements.ai-sdk.dev)
 // for quill's theme token system -- generic shadcn tokens (bg-secondary,
@@ -33,6 +27,15 @@ import { Streamdown } from "streamdown";
 // quill-* equivalents defined in src/app/globals.css so this doesn't
 // become a 15th file needing a theme-completeness fix later (see
 // ROADMAP.md Track A / Track B.4).
+//
+// NOTE: MessageResponse (the Streamdown wrapper, which pulls in
+// @streamdown/{cjk,code,math,mermaid} -- mermaid alone is a large diagram
+// renderer) intentionally lives in a separate file, message-response.tsx.
+// Splitting it out keeps this file's consumers (MessageAction, used for
+// small things like a code-block copy button) from pulling ~700KB of
+// unrelated diagram/math rendering code into their bundle. Verified via
+// `npm run bundle:check` -- importing Streamdown transitively here pushed
+// the /agent route's largest JS chunk over the CI budget (773KB > 650KB).
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -279,24 +282,6 @@ export const MessageBranchPage = ({ className, ...props }: MessageBranchPageProp
     </ButtonGroupText>
   );
 };
-
-export type MessageResponseProps = ComponentProps<typeof Streamdown>;
-
-const streamdownPlugins = { cjk, code, math, mermaid };
-
-export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn("size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0", className)}
-      plugins={streamdownPlugins}
-      {...props}
-    />
-  ),
-  (prevProps, nextProps) =>
-    prevProps.children === nextProps.children && nextProps.isAnimating === prevProps.isAnimating,
-);
-
-MessageResponse.displayName = "MessageResponse";
 
 export type MessageToolbarProps = ComponentProps<"div">;
 
