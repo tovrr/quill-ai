@@ -18,6 +18,7 @@ type AuditAction =
   | "google.workspace.rollback"
   | "github.connection.created"
   | "github.connection.deleted"
+  | "github.publish.created"
   | "skill.installed"
   | "skill.uninstalled"
   | "skill.config_updated";

@@ -336,3 +336,139 @@ export async function pullRepoFiles(
     return { ok: false, error: err instanceof Error ? err.message : "github_pull_error" };
   }
 }
+
+// ─── Publish (Track C.3 PR 4) ────────────────────────────────────────────────
+//
+// Commits a set of files to a NEW branch and opens a pull request against
+// the repo's default branch. Deliberately never pushes to the default
+// branch directly -- Boss Rule #2/#7 (main-branch protection) and
+// ROADMAP.md's own requirement ("a user should never have Quill silently
+// pushing to main") apply here exactly as they do to every other repo this
+// agent touches. Uses the standard Git Data API sequence: base ref -> new
+// branch ref -> blobs -> tree -> commit -> update ref -> open PR.
+
+export type GithubPublishResult =
+  | { ok: true; branch: string; prUrl: string; prNumber: number }
+  | { ok: false; error: string };
+
+export async function publishFilesAsPullRequest(
+  installationToken: string,
+  repoFullName: string,
+  baseBranch: string,
+  newBranch: string,
+  files: Record<string, string>,
+  commitMessage: string,
+  prTitle: string,
+  prBody: string,
+): Promise<GithubPublishResult> {
+  const headers = {
+    Authorization: `token ${installationToken}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Content-Type": "application/json",
+  };
+
+  try {
+    // 1. Resolve the base branch to its current commit SHA + tree SHA.
+    const baseRes = await fetch(
+      `https://api.github.com/repos/${repoFullName}/branches/${encodeURIComponent(baseBranch)}`,
+      { headers },
+    );
+    if (!baseRes.ok) {
+      return { ok: false, error: `github_base_branch_lookup_failed_${baseRes.status}` };
+    }
+    const baseData = (await baseRes.json()) as {
+      commit: { sha: string; commit: { tree: { sha: string } } };
+    };
+    const baseCommitSha = baseData.commit.sha;
+    const baseTreeSha = baseData.commit.commit.tree.sha;
+
+    // 2. Create the new branch ref pointing at the base commit.
+    const createRefRes = await fetch(`https://api.github.com/repos/${repoFullName}/git/refs`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ref: `refs/heads/${newBranch}`, sha: baseCommitSha }),
+    });
+    if (!createRefRes.ok) {
+      const status = createRefRes.status;
+      if (status === 422) {
+        return { ok: false, error: "github_branch_already_exists" };
+      }
+      return { ok: false, error: `github_branch_create_failed_${status}` };
+    }
+
+    // 3. Create a blob for each file.
+    const treeEntries: Array<{ path: string; mode: "100644"; type: "blob"; sha: string }> = [];
+    for (const [path, content] of Object.entries(files)) {
+      const blobRes = await fetch(`https://api.github.com/repos/${repoFullName}/git/blobs`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ content, encoding: "utf-8" }),
+      });
+      if (!blobRes.ok) {
+        return { ok: false, error: `github_blob_create_failed_${blobRes.status}_${path}` };
+      }
+      const blobData = (await blobRes.json()) as { sha: string };
+      treeEntries.push({ path, mode: "100644", type: "blob", sha: blobData.sha });
+    }
+
+    // 4. Create a new tree layered on top of the base tree.
+    const treeRes = await fetch(`https://api.github.com/repos/${repoFullName}/git/trees`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries }),
+    });
+    if (!treeRes.ok) {
+      return { ok: false, error: `github_tree_create_failed_${treeRes.status}` };
+    }
+    const newTreeData = (await treeRes.json()) as { sha: string };
+
+    // 5. Create the commit.
+    const commitRes = await fetch(`https://api.github.com/repos/${repoFullName}/git/commits`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        message: commitMessage,
+        tree: newTreeData.sha,
+        parents: [baseCommitSha],
+      }),
+    });
+    if (!commitRes.ok) {
+      return { ok: false, error: `github_commit_create_failed_${commitRes.status}` };
+    }
+    const newCommitData = (await commitRes.json()) as { sha: string };
+
+    // 6. Point the new branch ref at the new commit.
+    const updateRefRes = await fetch(
+      `https://api.github.com/repos/${repoFullName}/git/refs/heads/${encodeURIComponent(newBranch)}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ sha: newCommitData.sha }),
+      },
+    );
+    if (!updateRefRes.ok) {
+      return { ok: false, error: `github_ref_update_failed_${updateRefRes.status}` };
+    }
+
+    // 7. Open the pull request -- newBranch -> baseBranch. Never the reverse.
+    const prRes = await fetch(`https://api.github.com/repos/${repoFullName}/pulls`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        title: prTitle,
+        body: prBody,
+        head: newBranch,
+        base: baseBranch,
+      }),
+    });
+    if (!prRes.ok) {
+      return { ok: false, error: `github_pr_create_failed_${prRes.status}` };
+    }
+    const prData = (await prRes.json()) as { html_url: string; number: number };
+
+    return { ok: true, branch: newBranch, prUrl: prData.html_url, prNumber: prData.number };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "github_publish_error" };
+  }
+}
