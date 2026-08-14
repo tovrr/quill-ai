@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
+import { CheckIcon, ArrowPathIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
+
+const GITHUB_PULL_HANDOFF_PREFIX = "quill_github_pull_handoff_v1:";
 
 type GithubRepo = {
   id: number;
@@ -25,12 +28,14 @@ type LoadState = "idle" | "loading" | "ready" | "error";
  * the user picked when installing the GitHub App on github.com.
  */
 export function GithubRepoPicker() {
+  const router = useRouter();
   const [state, setState] = useState<LoadState>("idle");
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [connected, setConnected] = useState(false);
   const [repos, setRepos] = useState<GithubRepo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<number | null>(null);
+  const [pullingId, setPullingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +103,29 @@ export function GithubRepoPicker() {
     }
   }
 
+  async function pullToCanvas(repo: GithubRepo) {
+    setPullingId(repo.id);
+    setError(null);
+    try {
+      const res = await fetch("/api/github/pull", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repoId: String(repo.id) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? `Failed to pull repo (${res.status})`);
+      }
+
+      const handoffId = crypto.randomUUID();
+      sessionStorage.setItem(`${GITHUB_PULL_HANDOFF_PREFIX}${handoffId}`, JSON.stringify(data.artifact));
+      router.push(`/agent?ghp=${handoffId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to pull repo into Canvas");
+      setPullingId(null);
+    }
+  }
+
   if (state === "loading" || state === "idle") {
     return (
       <div className="flex items-center gap-2 text-xs text-quill-muted">
@@ -147,21 +175,38 @@ export function GithubRepoPicker() {
               {repo.private ? "Private" : "Public"} · {repo.defaultBranch}
             </p>
           </div>
-          <Button
-            variant={repo.selected ? "secondary" : "outline"}
-            size="sm"
-            disabled={pendingId === repo.id}
-            onClick={() => toggleRepo(repo)}
-          >
-            {repo.selected ? (
-              <>
-                <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                Selected
-              </>
-            ) : (
-              "Select"
+          <div className="flex items-center gap-2 shrink-0">
+            {repo.selected && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pullingId === repo.id}
+                onClick={() => pullToCanvas(repo)}
+              >
+                {pullingId === repo.id ? (
+                  <ArrowPathIcon className="h-3.5 w-3.5 animate-spin-slow" aria-hidden="true" />
+                ) : (
+                  <ArrowDownTrayIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                Pull to Canvas
+              </Button>
             )}
-          </Button>
+            <Button
+              variant={repo.selected ? "secondary" : "outline"}
+              size="sm"
+              disabled={pendingId === repo.id}
+              onClick={() => toggleRepo(repo)}
+            >
+              {repo.selected ? (
+                <>
+                  <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                  Selected
+                </>
+              ) : (
+                "Select"
+              )}
+            </Button>
+          </div>
         </div>
       ))}
     </div>

@@ -52,6 +52,7 @@ const GUEST_SESSION_KEY = "quill_guest_active_session_v1";
 const GUEST_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 const ASSISTANT_STREAM_WATCHDOG_MS = 90000;
 const HOMEPAGE_FILE_HANDOFF_PREFIX = "quill_home_file_handoff_v1:";
+const GITHUB_PULL_HANDOFF_PREFIX = "quill_github_pull_handoff_v1:";
 const GUEST_CHAT_TITLE_PREFIX = "quill_guest_chat_title_v1:";
 const MESSAGE_WINDOW_SIZE = 40;
 const MESSAGE_WINDOW_INCREMENT = 40;
@@ -467,6 +468,32 @@ export default function AgentPage() {
       // Ignore malformed handoff payloads.
     } finally {
       sessionStorage.removeItem(`${HOMEPAGE_FILE_HANDOFF_PREFIX}${handoffId}`);
+    }
+  }, []);
+
+  // GitHub repo pull handoff (Track C.3 PR 3, ROADMAP.md). Settings page's
+  // GithubRepoPicker writes a FileBundleArtifact-shaped payload to
+  // sessionStorage under a one-time key, then navigates here with ?ghp=<id>.
+  // Mirrors the homepage-file handoff pattern immediately above -- same
+  // one-shot sessionStorage handoff, same cleanup-in-finally discipline.
+  useEffect(() => {
+    const pullHandoffId = getSearchParam("ghp");
+    if (!pullHandoffId) return;
+
+    try {
+      const raw = sessionStorage.getItem(`${GITHUB_PULL_HANDOFF_PREFIX}${pullHandoffId}`);
+      if (!raw) return;
+
+      const artifact = JSON.parse(raw) as Record<string, unknown>;
+      if (!artifact || typeof artifact !== "object") return;
+
+      const wrapped = `<quill-artifact>\n${JSON.stringify(artifact)}\n</quill-artifact>`;
+      setCanvasContent(wrapped);
+      setCanvasMode(true);
+    } catch {
+      // Ignore malformed handoff payloads.
+    } finally {
+      sessionStorage.removeItem(`${GITHUB_PULL_HANDOFF_PREFIX}${pullHandoffId}`);
     }
   }, []);
 
