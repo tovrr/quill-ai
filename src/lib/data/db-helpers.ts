@@ -4,6 +4,8 @@ import {
   autopilotRuns,
   autopilotWorkflows,
   chats,
+  githubConnections,
+  githubRepoSelections,
   googleConnections,
   googleWorkspaceSnapshots,
   mcpServerTools,
@@ -17,6 +19,7 @@ import {
 import { sanitizeStoredMessage } from "@/lib/ai/assistant-message-utils";
 import { eq, desc, and, gte, count, sql } from "drizzle-orm";
 import { computeNextRunAt } from "@/lib/extensions/autopilot";
+import { encryptSecret, decryptSecret } from "@/lib/auth/secret-box";
 
 const MAX_DB_FILE_BYTES = Number(process.env.MAX_DB_FILE_BYTES ?? "5242880");
 
@@ -590,6 +593,104 @@ export async function upsertGoogleConnection(input: {
 
 export async function deleteGoogleConnectionByUserId(userId: string) {
   await db.delete(googleConnections).where(eq(googleConnections.userId, userId));
+}
+
+// ─── GitHub connection (Track C.3 -- safe skeleton) ──────────────────────────
+//
+// Mirrors the googleConnections helpers above, but encrypts the stored
+// access token (see secret-box.ts) since GitHub App installation tokens
+// are worth protecting at rest -- matches the pattern already used for
+// MCP OAuth tokens in mcp-oauth.ts, not the plain-text Google columns.
+
+export async function getGithubConnectionByUserId(userId: string) {
+  const row = await db.query.githubConnections.findFirst({
+    where: eq(githubConnections.userId, userId),
+  });
+  if (!row) return null;
+  return {
+    ...row,
+    accessToken: row.accessTokenEnc ? decryptSecret(row.accessTokenEnc) : null,
+  };
+}
+
+export async function upsertGithubConnection(input: {
+  userId: string;
+  installationId: string;
+  accountLogin: string;
+  accountType: "User" | "Organization";
+  accessToken?: string;
+  accessTokenExpiresAt?: Date;
+}) {
+  const accessTokenEnc = input.accessToken ? encryptSecret(input.accessToken) : undefined;
+  const existing = await db.query.githubConnections.findFirst({
+    where: eq(githubConnections.userId, input.userId),
+  });
+
+  if (existing) {
+    const [row] = await db
+      .update(githubConnections)
+      .set({
+        installationId: input.installationId,
+        accountLogin: input.accountLogin,
+        accountType: input.accountType,
+        accessTokenEnc: accessTokenEnc ?? existing.accessTokenEnc,
+        accessTokenExpiresAt: input.accessTokenExpiresAt ?? existing.accessTokenExpiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(githubConnections.userId, input.userId))
+      .returning();
+    return row;
+  }
+
+  const [row] = await db
+    .insert(githubConnections)
+    .values({
+      userId: input.userId,
+      installationId: input.installationId,
+      accountLogin: input.accountLogin,
+      accountType: input.accountType,
+      accessTokenEnc,
+      accessTokenExpiresAt: input.accessTokenExpiresAt,
+    })
+    .returning();
+  return row;
+}
+
+export async function deleteGithubConnectionByUserId(userId: string) {
+  await db.delete(githubConnections).where(eq(githubConnections.userId, userId));
+}
+
+export async function getGithubRepoSelectionsByUserId(userId: string) {
+  return db.query.githubRepoSelections.findMany({
+    where: eq(githubRepoSelections.userId, userId),
+    orderBy: [desc(githubRepoSelections.createdAt)],
+  });
+}
+
+export async function addGithubRepoSelection(input: {
+  userId: string;
+  repoId: string;
+  repoFullName: string;
+  defaultBranch?: string;
+}) {
+  const [row] = await db
+    .insert(githubRepoSelections)
+    .values(input)
+    .onConflictDoUpdate({
+      target: [githubRepoSelections.userId, githubRepoSelections.repoId],
+      set: {
+        repoFullName: input.repoFullName,
+        defaultBranch: input.defaultBranch,
+      },
+    })
+    .returning();
+  return row;
+}
+
+export async function removeGithubRepoSelection(userId: string, repoId: string) {
+  await db
+    .delete(githubRepoSelections)
+    .where(and(eq(githubRepoSelections.userId, userId), eq(githubRepoSelections.repoId, repoId)));
 }
 
 export async function createGoogleWorkspaceSnapshot(input: {

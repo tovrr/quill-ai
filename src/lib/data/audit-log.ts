@@ -16,6 +16,8 @@ type AuditAction =
   | "google.docs.created"
   | "google.docs.updated"
   | "google.workspace.rollback"
+  | "github.connection.created"
+  | "github.connection.deleted"
   | "skill.installed"
   | "skill.uninstalled"
   | "skill.config_updated";
