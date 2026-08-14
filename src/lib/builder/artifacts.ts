@@ -82,7 +82,7 @@ function isStringRecord(value: unknown): value is Record<string, string> {
   return Object.values(value).every((entry) => typeof entry === "string");
 }
 
-function inferEntryFromFiles(files: Record<string, string>): string | undefined {
+export function inferEntryFromFiles(files: Record<string, string>): string | undefined {
   const candidates = [
     "src/main.ts",
     "src/main.js",
@@ -130,7 +130,7 @@ function packageJsonLooksNextJs(pkgSource: string | undefined): boolean {
   return hasNextDep;
 }
 
-function inferBundleTypeFromFiles(files: Record<string, string>): "react-app" | "nextjs-bundle" {
+export function inferBundleTypeFromFiles(files: Record<string, string>): "react-app" | "nextjs-bundle" {
   if (hasNextAppRouterFiles(files)) return "nextjs-bundle";
   if (files["next.config.ts"] || files["next.config.js"] || files["next.config.mjs"]) return "nextjs-bundle";
   if (packageJsonLooksNextJs(files["package.json"])) return "nextjs-bundle";

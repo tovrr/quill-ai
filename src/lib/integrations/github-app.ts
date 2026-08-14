@@ -202,3 +202,137 @@ export async function fetchInstallationRepos(installationToken: string): Promise
     return { ok: false, error: err instanceof Error ? err.message : "github_repo_list_error" };
   }
 }
+
+// ─── Repo file pull (Track C.3 PR 3) ─────────────────────────────────────────
+//
+// Fetches a repo's file tree + blob contents via GitHub's Git Data API
+// (recursive tree + individual blob fetches). Text files only -- binary
+// blobs (images, fonts, etc.) are skipped since Canvas artifacts are
+// source-file bundles, not asset bundles. Hard caps on file count and total
+// size to keep this a quick synchronous pull rather than something that
+// needs background job infrastructure we don't have.
+
+const PULL_MAX_FILES = 200;
+const PULL_MAX_TOTAL_BYTES = 2 * 1024 * 1024; // 2 MB
+const PULL_MAX_FILE_BYTES = 256 * 1024; // 256 KB per file
+
+// Paths/extensions that are almost always binary or noise we don't want in
+// a Canvas artifact -- skipped without even attempting a blob fetch.
+const PULL_SKIP_PATTERNS = [
+  /^node_modules\//,
+  /^\.git\//,
+  /^dist\//,
+  /^build\//,
+  /^\.next\//,
+  /\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|pdf|zip|tar|gz|mp4|mov|mp3|wav|lock)$/i,
+];
+
+export type GithubPullResult =
+  | { ok: true; files: Record<string, string>; skipped: string[]; truncated: boolean }
+  | { ok: false; error: string };
+
+/**
+ * Pull a repo's text files into a flat { path: content } map, suitable for
+ * FileBundleArtifact.payload.files (src/lib/builder/artifacts.ts). Uses the
+ * Git Data API's recursive tree endpoint (one call to list everything) then
+ * fetches blobs individually for files under the size/count caps.
+ */
+export async function pullRepoFiles(
+  installationToken: string,
+  repoFullName: string,
+  branch: string,
+): Promise<GithubPullResult> {
+  const headers = {
+    Authorization: `token ${installationToken}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  try {
+    // 1. Resolve the branch to a commit SHA, then the commit to a tree SHA.
+    const branchRes = await fetch(
+      `https://api.github.com/repos/${repoFullName}/branches/${encodeURIComponent(branch)}`,
+      { headers },
+    );
+    if (!branchRes.ok) {
+      return { ok: false, error: `github_branch_lookup_failed_${branchRes.status}` };
+    }
+    const branchData = (await branchRes.json()) as { commit: { commit: { tree: { sha: string } } } };
+    const treeSha = branchData.commit.commit.tree.sha;
+
+    // 2. Fetch the full recursive tree in one call.
+    const treeRes = await fetch(
+      `https://api.github.com/repos/${repoFullName}/git/trees/${treeSha}?recursive=1`,
+      { headers },
+    );
+    if (!treeRes.ok) {
+      return { ok: false, error: `github_tree_fetch_failed_${treeRes.status}` };
+    }
+    const treeData = (await treeRes.json()) as {
+      tree: Array<{ path: string; type: string; sha: string; size?: number }>;
+      truncated?: boolean;
+    };
+
+    const blobs = treeData.tree.filter((entry) => entry.type === "blob");
+
+    const files: Record<string, string> = {};
+    const skipped: string[] = [];
+    let totalBytes = 0;
+
+    for (const entry of blobs) {
+      if (Object.keys(files).length >= PULL_MAX_FILES) {
+        skipped.push(entry.path);
+        continue;
+      }
+      if (PULL_SKIP_PATTERNS.some((pattern) => pattern.test(entry.path))) {
+        skipped.push(entry.path);
+        continue;
+      }
+      if (entry.size !== undefined && entry.size > PULL_MAX_FILE_BYTES) {
+        skipped.push(entry.path);
+        continue;
+      }
+      if (totalBytes + (entry.size ?? 0) > PULL_MAX_TOTAL_BYTES) {
+        skipped.push(entry.path);
+        continue;
+      }
+
+      const blobRes = await fetch(`https://api.github.com/repos/${repoFullName}/git/blobs/${entry.sha}`, {
+        headers,
+      });
+      if (!blobRes.ok) {
+        skipped.push(entry.path);
+        continue;
+      }
+      const blobData = (await blobRes.json()) as { content: string; encoding: string; size: number };
+
+      if (blobData.encoding !== "base64") {
+        skipped.push(entry.path);
+        continue;
+      }
+
+      let decoded: string;
+      try {
+        decoded = Buffer.from(blobData.content, "base64").toString("utf8");
+      } catch {
+        skipped.push(entry.path);
+        continue;
+      }
+
+      // Heuristic binary detection: a null byte anywhere means this almost
+      // certainly isn't a text file GitHub's API just handed us as base64
+      // without the earlier extension-based skip catching it.
+      if (decoded.includes("\u0000")) {
+        skipped.push(entry.path);
+        continue;
+      }
+
+      files[entry.path] = decoded;
+      totalBytes += blobData.size;
+    }
+
+    return { ok: true, files, skipped, truncated: Boolean(treeData.truncated) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "github_pull_error" };
+  }
+}
