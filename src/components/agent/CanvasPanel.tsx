@@ -8,6 +8,7 @@ import {
   CheckIcon,
   CodeBracketIcon,
   DocumentTextIcon,
+  CloudArrowUpIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/lib/builder/artifacts";
 import { isCanvasRenderableContent, isHTMLContent } from "@/components/agent/canvas-utils";
 import { exportArtifactAsZip, flattenArtifactFiles } from "@/lib/export/client";
+import { GithubPublishDialog } from "@/components/agent/GithubPublishDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -587,6 +589,7 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
   const [copied, setCopied] = useState(false);
   const [preview, dispatchPreview] = useReducer(previewReducer, { status: "idle" });
   const streamContainerRef = useRef<HTMLDivElement>(null);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [bundleValidation, setBundleValidation] = useState<{
     running: boolean;
     ok: boolean | null;
@@ -1074,6 +1077,25 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
               </Button>
             )}
 
+            {/* Publish to GitHub — For bundled artifacts (Track C.3 PR 4/4) */}
+            {fileBundle && (
+              <Button
+                onClick={() => setPublishDialogOpen(true)}
+                type="button"
+                variant="ghost"
+                disabled={!content}
+                aria-label="Publish to GitHub"
+                className={`hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40 ${
+                  dark
+                    ? "text-quill-muted hover:text-quill-text hover:bg-quill-border"
+                    : "text-quill-code-preview-muted hover:bg-quill-code-preview-bg hover:text-quill-accent"
+                }`}
+              >
+                <CloudArrowUpIcon className="h-3.25 w-3.25" aria-hidden="true" />
+                Publish
+              </Button>
+            )}
+
             {fileBundle?.type === "nextjs-bundle" && (
               <Button
                 onClick={handleLivePreview}
@@ -1392,6 +1414,15 @@ export function CanvasPanel({ content, onClose, isWorking = false }: CanvasPanel
           </div>
         )}
       </div>
+
+      {fileBundle && (
+        <GithubPublishDialog
+          open={publishDialogOpen}
+          onClose={() => setPublishDialogOpen(false)}
+          files={fileBundle.payload.files}
+          defaultTitle={fileBundle.title ?? "Quill artifact"}
+        />
+      )}
     </TooltipProvider>
   );
 }
