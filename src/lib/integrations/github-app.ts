@@ -107,3 +107,98 @@ export async function fetchInstallationAccessToken(installationId: string): Prom
     return { ok: false, error: err instanceof Error ? err.message : "github_token_exchange_error" };
   }
 }
+
+export type GithubInstallationInfoResult =
+  | { ok: true; accountLogin: string; accountType: "User" | "Organization" }
+  | { ok: false; error: string };
+
+/**
+ * Fetch installation metadata (account login/type) via GET
+ * /app/installations/{id}, authenticated with the App JWT (not an
+ * installation token -- this is an App-level endpoint). Verified against a
+ * real installation 2026-08-14 (id=153732547, account=tovrr/User) while
+ * testing this feature end-to-end from the VPS -- this is the same
+ * follow-up call flagged as a TODO in the callback route when PR 1 shipped.
+ */
+export async function fetchInstallationInfo(installationId: string): Promise<GithubInstallationInfoResult> {
+  if (!isGithubAppConfigured()) {
+    return { ok: false, error: "github_app_not_configured" };
+  }
+
+  let jwt: string;
+  try {
+    jwt = signAppJwt();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "jwt_sign_failed" };
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/app/installations/${installationId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: `github_installation_lookup_failed_${res.status}` };
+    }
+
+    const data = (await res.json()) as { account: { login: string; type: "User" | "Organization" } };
+    return { ok: true, accountLogin: data.account.login, accountType: data.account.type };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "github_installation_lookup_error" };
+  }
+}
+
+export type GithubRepo = {
+  id: number;
+  fullName: string;
+  private: boolean;
+  defaultBranch: string;
+};
+
+export type GithubRepoListResult =
+  | { ok: true; repos: GithubRepo[] }
+  | { ok: false; error: string };
+
+/**
+ * List repositories accessible to an installation token, via GET
+ * /installation/repositories. Distinct from fetchInstallationInfo() above:
+ * this call is authenticated with the per-installation access token (not
+ * the App JWT), matching GitHub's requirement for this endpoint.
+ */
+export async function fetchInstallationRepos(installationToken: string): Promise<GithubRepoListResult> {
+  try {
+    const res = await fetch("https://api.github.com/installation/repositories", {
+      method: "GET",
+      headers: {
+        Authorization: `token ${installationToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: `github_repo_list_failed_${res.status}` };
+    }
+
+    const data = (await res.json()) as {
+      repositories: Array<{ id: number; full_name: string; private: boolean; default_branch: string }>;
+    };
+
+    return {
+      ok: true,
+      repos: data.repositories.map((r) => ({
+        id: r.id,
+        fullName: r.full_name,
+        private: r.private,
+        defaultBranch: r.default_branch,
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "github_repo_list_error" };
+  }
+}

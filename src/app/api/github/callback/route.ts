@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { logAuditEvent } from "@/lib/data/audit-log";
 import { createApiRequestContext, logApiCompletion, logApiStart, withRequestHeaders } from "@/lib/observability/logging";
-import { isGithubAppConfigured, fetchInstallationAccessToken } from "@/lib/integrations/github-app";
+import { isGithubAppConfigured, fetchInstallationAccessToken, fetchInstallationInfo } from "@/lib/integrations/github-app";
 import { upsertGithubConnection } from "@/lib/data/db-helpers";
 
 export const dynamic = "force-dynamic";
@@ -65,15 +65,19 @@ export async function GET(req: NextRequest) {
     }
 
     // GitHub's installation access-token response doesn't include account
-    // login/type directly -- a real implementation fetches
-    // GET /app/installations/{id} for that metadata. Left as a follow-up:
-    // this callback is unreachable today (isGithubAppConfigured() gates
-    // above), so there's no live installation to fetch metadata for yet.
+    // login/type directly, so we fetch it separately via
+    // GET /app/installations/{id} (App-JWT authenticated, not the
+    // installation token). Verified against a real installation 2026-08-14
+    // (id=153732547, account=tovrr/User) -- see fetchInstallationInfo in
+    // github-app.ts. Falls back to "unknown"/"User" if this secondary call
+    // fails so the connection still gets saved (the access token itself is
+    // what matters for repo operations; display metadata is best-effort).
+    const infoResult = await fetchInstallationInfo(installationId);
     await upsertGithubConnection({
       userId: session.user.id,
       installationId,
-      accountLogin: "unknown",
-      accountType: "User",
+      accountLogin: infoResult.ok ? infoResult.accountLogin : "unknown",
+      accountType: infoResult.ok ? infoResult.accountType : "User",
       accessToken: tokenResult.token,
       accessTokenExpiresAt: tokenResult.expiresAt,
     });
