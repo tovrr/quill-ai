@@ -388,6 +388,72 @@ export const googleWorkspaceSnapshots = pgTable(
   ],
 );
 
+// ─── GitHub connection (Track C.3 -- safe skeleton, ROADMAP.md) ─────────────
+//
+// User-installed GitHub App connection. One row per user per GitHub App
+// installation. Tokens are stored encrypted (see src/lib/auth/secret-box.ts,
+// AES-256-GCM) -- following the mcp-oauth.ts pattern rather than the
+// plain-text googleConnections columns above, since App installation
+// tokens are short-lived credentials worth protecting at rest even though
+// they auto-expire.
+//
+// NOTE: this table has no live GitHub App behind it yet. installationId
+// stays unpopulated until a real GitHub App is registered and its App
+// ID / private key are set in GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY.
+export const githubConnections = pgTable(
+  "github_connection",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** GitHub App installation ID (numeric, GitHub-assigned at install time) */
+    installationId: text("installationId").notNull(),
+    /** GitHub account (user or org) the App was installed on */
+    accountLogin: varchar("accountLogin").notNull(),
+    accountType: varchar("accountType", { enum: ["User", "Organization"] }).notNull(),
+    /** Encrypted short-lived installation access token (see secret-box.ts) */
+    accessTokenEnc: text("accessTokenEnc"),
+    accessTokenExpiresAt: timestamp("accessTokenExpiresAt", { mode: "date" }),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("github_connection_user_id_idx").on(table.userId),
+    index("github_connection_installation_id_idx").on(table.installationId),
+  ],
+);
+
+// ─── GitHub repo selections ──────────────────────────────────────────────────
+//
+// Per-user record of which repos the user has explicitly authorized Quill
+// to read/write in (GitHub App installs are already repo-scoped by GitHub
+// itself, but we keep our own mirror so the UI can show "connected repos"
+// without an extra GitHub API round trip on every page load).
+export const githubRepoSelections = pgTable(
+  "github_repo_selection",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** GitHub repo ID (numeric, GitHub-assigned, stable across renames) */
+    repoId: text("repoId").notNull(),
+    repoFullName: varchar("repoFullName").notNull(),
+    defaultBranch: varchar("defaultBranch"),
+    createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("github_repo_selection_user_id_idx").on(table.userId),
+    unique("github_repo_selection_user_repo_uniq").on(table.userId, table.repoId),
+  ],
+);
+
 // ─── Skills marketplace ───────────────────────────────────────────────────────
 
 export const userSkills = pgTable(
