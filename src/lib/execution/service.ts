@@ -28,10 +28,10 @@ export type ExecuteCodeResult = {
   error?: string;
 };
 
-// ─── Remote Execution (E2B / Modal / Custom) ────────────────────────────────
+// ─── Remote Execution (E2B / Modal / Custom / OpenClaw) ─────────────────────
 
 type RemoteExecutionConfig = {
-  provider: "e2b" | "modal" | "custom";
+  provider: "e2b" | "modal" | "custom" | "openclaw";
   apiKey?: string;
   baseUrl?: string;
   sandboxId?: string;
@@ -47,6 +47,10 @@ function isRemoteExecutionReady(config: RemoteExecutionConfig): boolean {
   }
 
   if (config.provider === "custom") {
+    return Boolean(config.baseUrl);
+  }
+
+  if (config.provider === "openclaw") {
     return Boolean(config.baseUrl);
   }
 
@@ -77,6 +81,24 @@ function getRemoteExecutionConfig(): RemoteExecutionConfig | null {
       provider: "custom",
       baseUrl: process.env.EXECUTION_SERVICE_URL,
       apiKey: process.env.EXECUTION_SERVICE_API_KEY,
+    };
+  }
+
+  // OpenClaw as an execution runtime (ROADMAP.md Track C.2). Ships as a safe,
+  // inert skeleton -- there is no verified OpenClaw HTTP endpoint that accepts
+  // { code, language, timeoutMs } and returns ExecuteCodeResult-shaped JSON
+  // (confirmed with the user 2026-08-14: "aynen guvenli iskelet" -- same safe
+  // skeleton treatment as the Hermes provider in model-selection.ts). This
+  // branch assumes the same generic POST {baseUrl}/execute contract already
+  // used by the "custom" provider above, rather than inventing an
+  // OpenClaw-specific API shape that hasn't been verified against a real
+  // instance -- do not add OpenClaw-specific request/response fields here
+  // without confirming them against an actual running OpenClaw gateway first.
+  if (provider === "openclaw") {
+    return {
+      provider: "openclaw",
+      baseUrl: process.env.OPENCLAW_GATEWAY_URL,
+      apiKey: process.env.OPENCLAW_API_KEY,
     };
   }
 
@@ -244,6 +266,61 @@ async function executeRemote(request: ExecuteCodeRequest, config: RemoteExecutio
     }
   }
 
+  // OpenClaw execution integration -- see the safe-skeleton note in
+  // getRemoteExecutionConfig() above. Uses the same generic POST
+  // {baseUrl}/execute contract as the "custom" provider, since there is no
+  // verified OpenClaw-specific execution API to target yet.
+  if (config.provider === "openclaw") {
+    if (!config.baseUrl) {
+      return {
+        ok: false,
+        stdout: "",
+        stderr: "",
+        exitCode: 1,
+        durationMs: 0,
+        error: "OpenClaw execution requires OPENCLAW_GATEWAY_URL.",
+      };
+    }
+
+    try {
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      if (config.apiKey) {
+        headers["Authorization"] = `Bearer ${config.apiKey}`;
+      }
+
+      const response = await fetch(`${config.baseUrl}/execute`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          stdout: "",
+          stderr: await response.text(),
+          exitCode: 1,
+          durationMs: 0,
+          error: `OpenClaw execution error: ${response.status}`,
+        };
+      }
+
+      return (await response.json()) as ExecuteCodeResult;
+    } catch (err) {
+      return {
+        ok: false,
+        stdout: "",
+        stderr: err instanceof Error ? err.message : String(err),
+        exitCode: 1,
+        durationMs: 0,
+        error: "OpenClaw execution request failed",
+      };
+    }
+  }
+
   return {
     ok: false,
     stdout: "",
@@ -320,10 +397,10 @@ export function isExecutionAvailable(): boolean {
 /**
  * Get the current execution backend (for debugging/telemetry).
  */
-export function getExecutionBackend(): "local" | "e2b" | "modal" | "custom" | "disabled" {
+export function getExecutionBackend(): "local" | "e2b" | "modal" | "custom" | "openclaw" | "disabled" {
   const remoteConfig = getRemoteExecutionConfig();
   if (remoteConfig && isRemoteExecutionReady(remoteConfig)) {
-    return remoteConfig.provider as "e2b" | "modal" | "custom";
+    return remoteConfig.provider;
   }
   if (isSandboxEnabled()) {
     return "local";
