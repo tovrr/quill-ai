@@ -833,64 +833,66 @@ export const RealMessageBubble = memo(function RealMessageBubble({
         {primaryParts}
         {showResponseActions && (
           <div
-            className={`relative mt-1 flex items-center gap-px rounded-full border border-quill-border bg-quill-overlay px-1 py-1 transition-opacity sm:gap-0.5 ${
+            className={`relative mt-1 transition-opacity ${
               contextualActions ? "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" : "opacity-100"
             }`}
           >
-            {/* Like */}
-            <button
-              onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
-              className={`${actionButtonBaseClass} ${
-                reaction === "like"
-                  ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title="Good response"
-              aria-label="Like assistant message"
-            >
-              <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
-            </button>
-            {/* Dislike */}
-            <button
-              onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
-              className={`${actionButtonBaseClass} ${
-                reaction === "dislike"
-                  ? "border-[rgba(248,113,113,0.18)] bg-quill-glow-10 text-quill-accent-2"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title="Bad response"
-              aria-label="Dislike assistant message"
-            >
-              <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
-            </button>
-            {/* Regenerate */}
-            {onRegenerate && (
-              <button
-                onClick={onRegenerate}
-                className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
-                title="Regenerate response"
-                aria-label="Regenerate response"
+            <MessageActions className="gap-px rounded-full border border-quill-border bg-quill-overlay px-1 py-1 sm:gap-0.5">
+              {/* Like */}
+              <MessageAction
+                tooltip="Good response"
+                label="Like assistant message"
+                onClick={() => setReaction((r) => (r === "like" ? null : "like"))}
+                className={`${actionButtonBaseClass} ${
+                  reaction === "like"
+                    ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
               >
-                <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
-              </button>
-            )}
-            {/* Copy */}
-            <button
-              onClick={handleCopy}
-              className={`${actionButtonBaseClass} ${
-                copied
-                  ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
-                  : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
-              }`}
-              title={copied ? "Copied!" : "Copy"}
-              aria-label="Copy assistant message"
-            >
-              {copied ? (
-                <CheckIcon className={actionIconClass} aria-hidden="true" />
-              ) : (
-                <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
+                <HandThumbUpIcon className={actionIconClass} aria-hidden="true" />
+              </MessageAction>
+              {/* Dislike */}
+              <MessageAction
+                tooltip="Bad response"
+                label="Dislike assistant message"
+                onClick={() => setReaction((r) => (r === "dislike" ? null : "dislike"))}
+                className={`${actionButtonBaseClass} ${
+                  reaction === "dislike"
+                    ? "border-[rgba(248,113,113,0.18)] bg-quill-glow-10 text-quill-accent-2"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
+              >
+                <HandThumbDownIcon className={actionIconClass} aria-hidden="true" />
+              </MessageAction>
+              {/* Regenerate */}
+              {onRegenerate && (
+                <MessageAction
+                  tooltip="Regenerate response"
+                  label="Regenerate response"
+                  onClick={onRegenerate}
+                  className={`${actionButtonBaseClass} text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5`}
+                >
+                  <ArrowPathIcon className={actionIconClass} aria-hidden="true" />
+                </MessageAction>
               )}
-            </button>
+              {/* Copy */}
+              <MessageAction
+                tooltip={copied ? "Copied!" : "Copy"}
+                label="Copy assistant message"
+                onClick={handleCopy}
+                className={`${actionButtonBaseClass} ${
+                  copied
+                    ? "border-[rgba(52,211,153,0.18)] bg-quill-glow-green-12 text-quill-green"
+                    : "text-quill-muted hover:border-quill-border hover:text-quill-text hover:bg-white/5"
+                }`}
+              >
+                {copied ? (
+                  <CheckIcon className={actionIconClass} aria-hidden="true" />
+                ) : (
+                  <ClipboardDocumentIcon className={actionIconClass} aria-hidden="true" />
+                )}
+              </MessageAction>
+            </MessageActions>
             {copied && (
               <span
                 className="absolute -top-7 right-2 rounded-md border border-[rgba(52,211,153,0.25)] bg-quill-glow-green-10 px-2 py-0.5 text-[10px] font-medium text-quill-green whitespace-nowrap pointer-events-none"
