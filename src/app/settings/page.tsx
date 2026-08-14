@@ -8,8 +8,9 @@ import { AccountMenu } from "@/components/layout/AccountMenu";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/db";
 import { userApiKeys, userSkills } from "@/db/schema";
-import { getGoogleConnectionByUserId, getMcpServersByUserId, getUserEntitlementByUserId } from "@/lib/data/db-helpers";
+import { getGoogleConnectionByUserId, getGithubConnectionByUserId, getMcpServersByUserId, getUserEntitlementByUserId } from "@/lib/data/db-helpers";
 import { eq } from "drizzle-orm";
+import { GithubRepoPicker } from "@/components/settings/GithubRepoPicker";
 
 export const metadata: Metadata = {
   title: "Settings — Quill AI",
@@ -86,12 +87,14 @@ export default async function SettingsPage() {
   const [
     entitlement,
     googleConnection,
+    githubConnection,
     mcpServers,
     installedSkills,
     apiKeys,
   ] = await Promise.all([
     getUserEntitlementByUserId(userId),
     getGoogleConnectionByUserId(userId),
+    getGithubConnectionByUserId(userId),
     getMcpServersByUserId(userId),
     db.query.userSkills.findMany({ where: eq(userSkills.userId, userId) }),
     db.query.userApiKeys.findMany({ where: eq(userApiKeys.userId, userId) }),
@@ -254,8 +257,8 @@ export default async function SettingsPage() {
               <h3 className="text-lg font-semibold mb-3">Developer Tools</h3>
               <div className="space-y-3">
                 <IntegrationRow
-                  name="GitHub"
-                  description="Code operations and repository workflows"
+                  name="GitHub Skill (MCP)"
+                  description="Code operations and repository workflows via Skills"
                   status={githubStatus}
                   href="/skills"
                 />
@@ -271,6 +274,25 @@ export default async function SettingsPage() {
                   status={mcpStatus}
                   href="/mcp"
                 />
+              </div>
+
+              <div className="mt-6 rounded-xl border border-quill-border bg-quill-surface px-4 py-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">GitHub App (Publish & Pull)</p>
+                    <p className="text-xs text-quill-muted mt-0.5">
+                      Push generated code to a branch and open a PR, or pull an existing repo into Canvas.
+                    </p>
+                  </div>
+                  <span
+                    className={`px-2 py-0.5 text-[11px] rounded-full shrink-0 ${
+                      githubConnection ? "bg-[var(--color-quill-green)]/15 text-quill-green" : "bg-quill-surface-2 text-quill-muted"
+                    }`}
+                  >
+                    {githubConnection ? "Connected" : "Not connected"}
+                  </span>
+                </div>
+                <GithubRepoPicker />
               </div>
             </div>
 
