@@ -6,7 +6,7 @@ export type ChatMode = "fast" | "thinking" | "advanced";
 
 export type ResolvedModel = {
   model: ReturnType<typeof google> | ReturnType<typeof openrouter>;
-  provider: "google" | "openrouter" | "apex";
+  provider: "google" | "openrouter" | "apex" | "hermes";
   modelId: string;
 };
 
@@ -22,6 +22,22 @@ const APEX_BASE_URL = process.env.APEX_BASE_URL?.replace(/\/$/, "") ?? "";
 const APEX_API_KEY = (process.env.APEX_API_KEY ?? process.env.APEX_SECRET_KEY)?.trim() ?? "";
 const APEX_MODEL_ID = process.env.APEX_MODEL ?? "apex:fast";
 
+// Hermes provider (ROADMAP.md Track C.1) -- ships as a safe, inert skeleton only. There is
+// no live Hermes chat-completions endpoint reachable from Vercel today (confirmed with the
+// user 2026-08-14: "guvenli bir iskelet" -- a safe skeleton, not a real integration), so this
+// stays double-gated and defaults to fully off:
+//   1. HERMES_CHAT_ENABLED must be explicitly "true" (mirrors APEX_CHAT_ENABLED's pattern)
+//   2. HERMES_BASE_URL must be set to an actual OpenAI-compatible /v1 endpoint
+// With both unset (the default), none of this code runs and behavior for existing
+// Gemini/OpenRouter/Apex users is byte-for-byte unchanged. Do NOT flip HERMES_CHAT_ENABLED
+// to true without first confirming a real, internet-reachable Hermes endpoint exists --
+// see the Apex incident (2026-08-13) where an enabled-but-unreachable provider silently
+// broke the entire chat feature for every mode/user until diagnosed.
+const HERMES_CHAT_ENABLED = process.env.HERMES_CHAT_ENABLED === "true";
+const HERMES_BASE_URL = process.env.HERMES_BASE_URL?.replace(/\/$/, "") ?? "";
+const HERMES_API_KEY = (process.env.HERMES_API_KEY ?? "").trim();
+const HERMES_MODEL_ID = process.env.HERMES_MODEL ?? "hermes:default";
+
 const openrouter = createOpenAI({
   apiKey: AI_GATEWAY_ENABLED ? AI_GATEWAY_API_KEY : OPENROUTER_API_KEY,
   baseURL: AI_GATEWAY_ENABLED ? AI_GATEWAY_BASE_URL : OPENROUTER_DEFAULT_BASE_URL,
@@ -30,6 +46,11 @@ const openrouter = createOpenAI({
 const apex = createOpenAI({
   apiKey: APEX_API_KEY || "missing-apex-api-key",
   baseURL: APEX_BASE_URL ? `${APEX_BASE_URL}/v1` : "https://invalid.local/v1",
+});
+
+const hermes = createOpenAI({
+  apiKey: HERMES_API_KEY || "missing-hermes-api-key",
+  baseURL: HERMES_BASE_URL ? `${HERMES_BASE_URL}/v1` : "https://invalid.local/v1",
 });
 
 // Tier IDs can be overridden per tier via env vars without redeploying.
@@ -85,6 +106,18 @@ export async function resolveModelForMode(mode: ChatMode, preferVision: boolean)
       model: apex.chat(APEX_MODEL_ID as never),
       provider: "apex",
       modelId: APEX_MODEL_ID,
+    };
+  }
+
+  if (HERMES_CHAT_ENABLED) {
+    if (!HERMES_BASE_URL || !HERMES_API_KEY) {
+      throw new Error("HERMES_CHAT_ENABLED=true requires HERMES_BASE_URL and HERMES_API_KEY");
+    }
+
+    return {
+      model: hermes.chat(HERMES_MODEL_ID as never),
+      provider: "hermes",
+      modelId: HERMES_MODEL_ID,
     };
   }
 

@@ -671,7 +671,7 @@ export async function POST(req: Request) {
       stopWhen: stepCountIs(canRunCode ? 10 : 5),
     };
 
-    if (resolvedModel.provider === "apex" && !canRunCode) {
+    if ((resolvedModel.provider === "apex" || resolvedModel.provider === "hermes") && !canRunCode) {
       const result = streamText(streamParams);
       const stream = createUIMessageStream({
         originalMessages,
