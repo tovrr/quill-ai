@@ -1,0 +1,37 @@
+# Dependabot configuration — automated dependency updates
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+#
+# Pattern copied from belmobile (/root/projects/belmobile/.github/dependabot.yml),
+# the fleet's reference implementation for this: weekly cadence, minor+patch
+# batched into one PR to cut review noise, majors raised separately.
+# github-actions ecosystem added here (unlike the simpler admin-next/ordexa-lite
+# configs) because this repo actually has a non-trivial .github/workflows/ tree.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    groups:
+      # Batch all non-breaking (minor + patch) updates into one PR.
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
