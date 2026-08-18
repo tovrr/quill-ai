@@ -144,7 +144,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.3.1",
-    "husky": "^8.0.0",
+    "husky": "^9.1.7",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.23.12",
