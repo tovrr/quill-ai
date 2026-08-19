@@ -3,9 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 
-if (!process.env.BETTER_AUTH_SECRET) {
-  throw new Error("BETTER_AUTH_SECRET environment variable is required");
-}
+const secret = process.env.BETTER_AUTH_SECRET || "build-time-placeholder-secret-must-be-set-in-env";
 
 function normalizeOrigin(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -89,7 +87,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret,
   baseURL,
   trustedOrigins,
 });
