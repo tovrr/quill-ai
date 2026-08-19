@@ -10,7 +10,7 @@ function ensureStripe(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   stripeInstance = new Stripe(key, {
-    apiVersion: "2026-07-29.dahlia",
+    apiVersion: "2025-08-27.basil",
     typescript: true,
   });
   return stripeInstance;
