@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { experimental_generateImage as generateImage } from "ai";
+import { generateImage } from "ai";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { checkRateLimit } from "@/lib/observability/rate-limit";
