@@ -14,9 +14,16 @@ function asString(value: string | Stripe.Customer | Stripe.DeletedCustomer | nul
   return null;
 }
 
-function getUnixTimestamp(record: unknown, key: string): number | null {
-  const value = (record as Record<string, unknown>)[key];
-  return typeof value === "number" ? value : null;
+// Stripe removed the top-level Subscription.current_period_start/end fields
+// (apiVersion 2026-08-26.dahlia); the billing period now only lives on each
+// subscription item. Reading it from there works on both classic and
+// flexible billing mode subscriptions.
+function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: number | null; end: number | null } {
+  const item = subscription.items.data[0];
+  return {
+    start: typeof item?.current_period_start === "number" ? item.current_period_start : null,
+    end: typeof item?.current_period_end === "number" ? item.current_period_end : null,
+  };
 }
 
 async function handleCheckoutCompleted(event: Stripe.Event) {
@@ -33,8 +40,7 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
     subscriptionId,
   )) as unknown as Stripe.Subscription;
   const customerId = asString(subscription.customer);
-  const periodStart = getUnixTimestamp(subscription, "current_period_start");
-  const periodEnd = getUnixTimestamp(subscription, "current_period_end");
+  const { start: periodStart, end: periodEnd } = getSubscriptionPeriod(subscription);
   const stripePriceId = subscription.items.data[0]?.price.id ?? null;
   const inferredPlan = getPlanFromStripePriceId(stripePriceId) ?? "pro";
 
@@ -78,8 +84,7 @@ async function handleInvoicePaid(event: Stripe.Event) {
   const subscription = (await stripeClient.stripe.subscriptions.retrieve(
     subscriptionId,
   )) as unknown as Stripe.Subscription;
-  const periodStart = getUnixTimestamp(subscription, "current_period_start");
-  const periodEnd = getUnixTimestamp(subscription, "current_period_end");
+  const { start: periodStart, end: periodEnd } = getSubscriptionPeriod(subscription);
   await db
     .update(userEntitlements)
     .set({

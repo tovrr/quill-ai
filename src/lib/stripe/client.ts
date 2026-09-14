@@ -10,7 +10,7 @@ function ensureStripe(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   stripeInstance = new Stripe(key, {
-    apiVersion: "2025-08-27.basil",
+    apiVersion: "2026-08-26.dahlia",
     typescript: true,
   });
   return stripeInstance;
@@ -87,6 +87,12 @@ export const stripeClient = {
       metadata: {
         userId,
       },
+      // apiVersion 2026-08-26.dahlia defaults new subscriptions to "flexible"
+      // billing mode, which changes proration/trial/cancellation math. Pin
+      // "classic" to keep existing billing behavior unchanged by this SDK bump.
+      ...(mode === "subscription"
+        ? { subscription_data: { billing_mode: { type: "classic" as const } } }
+        : {}),
     });
   },
 
