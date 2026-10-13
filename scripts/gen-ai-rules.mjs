@@ -1,37 +1,34 @@
 #!/usr/bin/env node
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const ROOT = process.cwd();
-const canonical = path.join(ROOT, "AGENTS.md");
-const claudeOut = path.join(ROOT, "CLAUDE.md");
-const cursorOut = path.join(ROOT, ".cursorrules");
+const CURSOR_MAX_LINES = 221;
 
-if (!fs.existsSync(canonical)) {
-  console.error("Canonical rules file AGENTS.md not found");
-  process.exit(2);
+// What each generated file must contain for a given AGENTS.md. Shared with
+// scripts/check-ai-rules.mjs so the check compares against the same rendering.
+export function renderAiRules(content) {
+  return {
+    // Claude gets the entire canonical content.
+    "CLAUDE.md": content,
+    // Cursor gets a trimmed variant: the first lines only.
+    ".cursorrules": content.split(/\r?\n/).slice(0, CURSOR_MAX_LINES).join("\n"),
+  };
 }
 
-const content = fs.readFileSync(canonical, "utf8");
-
-// Simple split: keep entire canonical content for Claude; for Cursor produce a trimmed variant
-fs.writeFileSync(claudeOut, content, "utf8");
-
-// For Cursor, keep only top sections and list of guardrails (max ~200 lines)
-const lines = content.split(/\r?\n/);
-const cursorLines = [];
-let count = 0;
-for (const line of lines) {
-  cursorLines.push(line);
-  count++;
-  if (count > 220) break;
+export function readCanonical(root = process.cwd()) {
+  const canonical = path.join(root, "AGENTS.md");
+  if (!fs.existsSync(canonical)) {
+    console.error("Canonical rules file AGENTS.md not found");
+    process.exit(2);
+  }
+  return fs.readFileSync(canonical, "utf8");
 }
 
-if (!fs.existsSync(path.dirname(cursorOut))) {
-  try {
-    fs.mkdirSync(path.dirname(cursorOut), { recursive: true });
-  } catch {}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const root = process.cwd();
+  for (const [name, text] of Object.entries(renderAiRules(readCanonical(root)))) {
+    fs.writeFileSync(path.join(root, name), text, "utf8");
+  }
+  console.log("Generated CLAUDE.md and .cursorrules from AGENTS.md");
 }
-
-fs.writeFileSync(cursorOut, cursorLines.join("\n"), "utf8");
-console.log("Generated CLAUDE.md and .cursorrules from AGENTS.md");

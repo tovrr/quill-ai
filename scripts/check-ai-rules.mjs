@@ -1,40 +1,27 @@
 #!/usr/bin/env node
+// Fails when CLAUDE.md or .cursorrules is not what scripts/gen-ai-rules.mjs would
+// produce from AGENTS.md. Reads only: it never rewrites the files it checks.
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
+import { readCanonical, renderAiRules } from "./gen-ai-rules.mjs";
 
-const ROOT = process.cwd();
-const gen = path.join(ROOT, "scripts", "gen-ai-rules.mjs");
+const root = process.cwd();
+const expected = renderAiRules(readCanonical(root));
+const stale = [];
 
-if (!fs.existsSync(gen)) {
-  console.error("Generator script not found at scripts/gen-ai-rules.mjs");
-  process.exit(2);
-}
-
-// Run generator to a temp folder
-const tmpOut = path.join(process.cwd(), ".tmp_ai_rules");
-try {
-  fs.rmSync(tmpOut, { recursive: true, force: true });
-} catch {}
-fs.mkdirSync(tmpOut, { recursive: true });
-
-// Execute generator but capture outputs by running it and then comparing files
-execSync(`node ${gen}`, { stdio: "inherit" });
-
-const filesToCheck = ["CLAUDE.md", ".cursorrules"];
-let failed = false;
-for (const f of filesToCheck) {
-  const generated = path.join(process.cwd(), f);
-  if (!fs.existsSync(generated)) {
-    console.error(`Expected generated file missing: ${f}`);
-    failed = true;
-    continue;
+for (const [name, text] of Object.entries(expected)) {
+  const file = path.join(root, name);
+  if (!fs.existsSync(file)) {
+    stale.push(`${name}: missing`);
+  } else if (fs.readFileSync(file, "utf8") !== text) {
+    stale.push(`${name}: differs from AGENTS.md`);
   }
-  const committed = fs.readFileSync(generated, "utf8");
-  // regenerate into a temp and compare
-  // here we just compare the existing files to themselves since generator writes in-place
-  // If you use CI, ensure working tree is clean and run this script to confirm no diffs
 }
 
-if (failed) process.exit(1);
-console.log("AI rules check passed (generator ran).");
+if (stale.length > 0) {
+  console.error("AI rules out of sync:");
+  for (const line of stale) console.error(`  ${line}`);
+  console.error("Edit AGENTS.md only, then run: npm run gen:ai-rules");
+  process.exit(1);
+}
+console.log("AI rules check passed: CLAUDE.md and .cursorrules match AGENTS.md.");
