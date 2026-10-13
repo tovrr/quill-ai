@@ -27,4 +27,4 @@ Use Next.js 16 App Router as the canonical runtime and routing model.
 - Contributors must avoid older framework idioms
 
 ## Notes
-See `AGENTS.md` hallucination risk section and `src/app/api/*/route.ts` pattern.
+See the `AGENTS.md` section "Next.js 16 — do not write from memory" and `src/app/api/*/route.ts` pattern.

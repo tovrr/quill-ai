@@ -12,7 +12,7 @@ code disagrees, the code is right and this file needs a fix.
 This project uses **Next.js 16** (React 19, Tailwind 4). Most training data covers Next.js
 13 to 15. Do not generate code from older assumptions for:
 
-- `middleware.ts` patterns and matchers
+- the request proxy: this repo uses `src/proxy.ts`, which replaces the deprecated `middleware.ts`
 - proxy / rewrites in `next.config.ts`
 - `next/headers`, `next/cookies`, async request APIs
 - API routes (`route.ts`, App Router only; there is no `pages/api/`)
@@ -49,17 +49,18 @@ Read the existing files in this repo for the pattern in use before writing new c
 | Ordinary feature or bug fix | `npm run guardrails:check`, `npm run typecheck` |
 | Throwaway experiment that will not be merged as is | `npm run guardrails:check` |
 
-When in doubt, use the first row. CI runs on every pull request: guardrails and typecheck,
-a build with the bundle budget and the smoke and regression scripts (`ci-smoke.yml`), the UI
-standards check, and the prompt examples. Unit tests are
-`npm test` (Vitest). Report what you ran and what you did not.
+When in doubt, use the first row. CI runs on every pull request: guardrails with typecheck,
+lint and build (`ci-guardrails.yml`), the generated rule files with typecheck
+(`ci-ai-rules.yml`), a build with the bundle budget and the smoke scripts (`ci-smoke.yml`), the
+UI standards check, and the prompt examples. Unit tests are Vitest: run them once with
+`npx vitest run` (`npm test` alone stays in watch mode). Report what you ran and what you did not.
 
 Non-negotiable:
 
 1. Do not modify `node_modules/`.
 2. `postcss.config.mjs`, `next.config.ts`, `package.json` and `src/app/globals.css` are
    high-risk: change them only when the task requires it. `guardrails:check` asserts part of
-   their content.
+   the content of the first, third and fourth.
 3. Remove temporary debug hooks and scripts before you finish.
 
 ## Builder behaviour (artifact discipline)
