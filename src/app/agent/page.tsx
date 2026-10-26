@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { Suspense, useCallback, useRef, useEffect, useState, useMemo } from "react";
+import { Suspense, useCallback, useRef, useEffect, useState, useMemo, useSyncExternalStore } from "react";
 import dynamicImport from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
@@ -95,6 +95,8 @@ type HomepageFileHandoffPayload = {
   lastModified: number;
   dataUrl: string;
 };
+
+const subscribeToNothing = () => () => {};
 
 function dataUrlToFile(payload: HomepageFileHandoffPayload): File | null {
   const match = payload.dataUrl.match(/^data:(.*?);base64,(.*)$/);
@@ -374,7 +376,8 @@ export default function AgentPage() {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [guestImportStatus, setGuestImportStatus] = useState<"idle" | "importing" | "done" | "error">("idle");
-  const [isMounted, setIsMounted] = useState(false);
+  // false on the server and during hydration, true afterwards.
+  const isMounted = useSyncExternalStore(subscribeToNothing, () => true, () => false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [uiSettings, setUiSettings] = useState<AppSettings>(() => loadAppSettings());
   const [historyWindowState, setHistoryWindowState] = useState<{ chatId: string; expandedCount: number }>({
@@ -441,6 +444,7 @@ export default function AgentPage() {
 
   useEffect(() => {
     const id = getSearchParam("killer");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the killer id comes from the URL, which is only read after mount (SSR-safe)
     setKiller(id ? (getKillerById(id) ?? null) : null);
   }, []);
 
@@ -450,6 +454,7 @@ export default function AgentPage() {
 
     const q = getSearchParam("q");
     if (q) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration of the composer from the homepage handoff (URL + sessionStorage)
       setInitialComposerDraft(q);
     }
 
@@ -488,6 +493,7 @@ export default function AgentPage() {
       if (!artifact || typeof artifact !== "object") return;
 
       const wrapped = `<quill-artifact>\n${JSON.stringify(artifact)}\n</quill-artifact>`;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration of the canvas from the GitHub pull handoff (URL + sessionStorage)
       setCanvasContent(wrapped);
       setCanvasMode(true);
     } catch {
@@ -501,6 +507,7 @@ export default function AgentPage() {
     if (typeof window === "undefined") return;
     const savedTitle = localStorage.getItem(`${GUEST_CHAT_TITLE_PREFIX}${chatId}`);
     if (savedTitle && savedTitle.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guest chat title lives in localStorage, readable only after mount
       setChatTitle(savedTitle.trim());
       setChatTitleDraft(savedTitle.trim());
     }
@@ -516,6 +523,7 @@ export default function AgentPage() {
   useEffect(() => {
     const draft = getSearchParam("draft");
     if (!draft) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration of the composer from the ?draft= URL param
     setInitialComposerDraft(draft);
     setIsDraftReview(true);
   }, []);
@@ -526,6 +534,7 @@ export default function AgentPage() {
     try {
       const loaded = loadAppSettings();
       userProfileRef.current = normalizeUserProfile(loaded.instructionProfile);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- settings live in localStorage, readable only after mount (SSR-safe)
       setUiSettings(loaded);
 
       const variant = getUiVariant();
@@ -560,10 +569,6 @@ export default function AgentPage() {
   }, []);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
     builderSessionRef.current = {
       lastArtifactType: artifact?.type,
       lastArtifactTitle: artifact?.title,
@@ -573,6 +578,7 @@ export default function AgentPage() {
 
   const transport = useMemo(
     () =>
+      // eslint-disable-next-line react-hooks/refs -- the refs are read inside prepareSendMessagesRequest when a message is sent, never during render
       new DefaultChatTransport({
         api: "/api/chat",
         prepareSendMessagesRequest: ({ body, id, messages }) => ({
@@ -828,6 +834,7 @@ export default function AgentPage() {
 
     setMessages(stored.messages);
     if (stored.selectedMode === "fast") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore of the guest session saved in localStorage
       setSelectedMode("fast");
     }
   }, [authResolved, isAuthenticated, messages.length, setMessages]);
@@ -894,6 +901,7 @@ export default function AgentPage() {
     const stored = readGuestSession();
     if (!stored || stored.messages.length === 0) {
       clearGuestSession();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time guest-session import once sign-in is resolved
       setGuestImportStatus("done");
       return;
     }
@@ -942,6 +950,7 @@ export default function AgentPage() {
 
   useEffect(() => {
     if (!canUsePaidModes && selectedMode !== "fast") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keeps a non-paid account on the fast mode (paid-plan gate)
       setSelectedMode("fast");
     }
   }, [canUsePaidModes, selectedMode]);
@@ -1099,6 +1108,7 @@ export default function AgentPage() {
       (isLoading && userCodeIntent && looksCodeLike);
 
     if (shouldTrackInCanvas) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the streamed assistant text into the canvas panel
       setCanvasContent(text);
     }
 
@@ -1158,21 +1168,22 @@ export default function AgentPage() {
 
   // Live elapsed timer — 100ms tick while a stream is active.
   useEffect(() => {
-    if (isLoading) {
-      if (streamStartRef.current === null) streamStartRef.current = Date.now();
-      setStreamClockMs(0);
-      const interval = setInterval(() => {
-        setStreamClockMs(Date.now() - (streamStartRef.current ?? Date.now()));
-      }, 100);
-      return () => clearInterval(interval);
-    } else {
+    if (!isLoading) return;
+
+    if (streamStartRef.current === null) streamStartRef.current = Date.now();
+    const interval = setInterval(() => {
+      setStreamClockMs(Date.now() - (streamStartRef.current ?? Date.now()));
+    }, 100);
+    return () => {
+      clearInterval(interval);
       streamStartRef.current = null;
       setStreamClockMs(0);
-    }
+    };
   }, [isLoading]);
 
   useEffect(() => {
     if (canvasMode && mobileSidebarOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the mobile sidebar must close whenever the canvas opens
       setMobileSidebarOpen(false);
     }
   }, [canvasMode, mobileSidebarOpen]);

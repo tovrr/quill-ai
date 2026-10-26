@@ -100,7 +100,7 @@ export default function AutopilotPage() {
   const [sessionStatus, setSessionStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
-  const [loadingWorkflows, setLoadingWorkflows] = useState(false);
+  const [loadingWorkflows, setLoadingWorkflows] = useState(true);
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [formError, setFormError] = useState<string | null>(null);
@@ -123,31 +123,33 @@ export default function AutopilotPage() {
     });
   }, [router]);
 
-  const loadData = useCallback(async () => {
-    setLoadingWorkflows(true);
-    try {
-      const [wRes, rRes] = await Promise.all([
-        fetch("/api/autopilot/workflows", { cache: "no-store" }),
-        fetch("/api/autopilot/runs?limit=20", { cache: "no-store" }),
-      ]);
-      if (wRes.ok) {
-        const { workflows: w } = await wRes.json() as { workflows: Workflow[] };
-        setWorkflows(w);
-      }
-      if (rRes.ok) {
-        const { runs: r } = await rRes.json() as { runs: Run[] };
-        setRuns(r);
-      }
-    } finally {
-      setLoadingWorkflows(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (sessionStatus === "authenticated") {
-      void loadData();
+    if (sessionStatus !== "authenticated") return;
+
+    let cancelled = false;
+    async function loadData() {
+      try {
+        const [wRes, rRes] = await Promise.all([
+          fetch("/api/autopilot/workflows", { cache: "no-store" }),
+          fetch("/api/autopilot/runs?limit=20", { cache: "no-store" }),
+        ]);
+        if (wRes.ok) {
+          const { workflows: w } = await wRes.json() as { workflows: Workflow[] };
+          if (!cancelled) setWorkflows(w);
+        }
+        if (rRes.ok) {
+          const { runs: r } = await rRes.json() as { runs: Run[] };
+          if (!cancelled) setRuns(r);
+        }
+      } finally {
+        if (!cancelled) setLoadingWorkflows(false);
+      }
     }
-  }, [sessionStatus, loadData]);
+    void loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus]);
 
   function showToast(message: string) {
     setSuccessToast(message);

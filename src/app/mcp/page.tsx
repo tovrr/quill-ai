@@ -65,6 +65,18 @@ interface RegistryItem {
   tags: string[];
 }
 
+async function fetchRegistryItems(query: string = ""): Promise<RegistryItem[] | null> {
+  const params = new URLSearchParams({ limit: "12" });
+  if (query.trim()) {
+    params.set("q", query.trim());
+  }
+
+  const res = await fetch(`/api/mcp/registry?${params.toString()}`);
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.items ?? [];
+}
+
 const STATUS_ICONS = {
   connected: <CheckCircleIcon className="h-4 w-4 text-quill-green" />,
   error: <ExclamationCircleIcon className="h-4 w-4 text-red-400" />,
@@ -103,7 +115,7 @@ export default function McpPage() {
   const [adding, setAdding] = useState(false);
   const [oauthPendingId, setOauthPendingId] = useState<string | null>(null);
   const [registryItems, setRegistryItems] = useState<RegistryItem[]>([]);
-  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registryLoading, setRegistryLoading] = useState(true);
   const [registryQuery, setRegistryQuery] = useState("");
 
   useEffect(() => {
@@ -112,42 +124,51 @@ export default function McpPage() {
     });
   }, [router]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/mcp/servers");
-      if (res.ok) {
-        const json = await res.json();
-        setServers(json.servers ?? []);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/mcp/servers");
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled) setServers(json.servers ?? []);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const loadRegistry = useCallback(async (query: string = "") => {
     setRegistryLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "12" });
-      if (query.trim()) {
-        params.set("q", query.trim());
-      }
-
-      const res = await fetch(`/api/mcp/registry?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        setRegistryItems(json.items ?? []);
-      }
+      const items = await fetchRegistryItems(query);
+      if (items) setRegistryItems(items);
     } finally {
       setRegistryLoading(false);
     }
   }, []);
 
+  // The first registry page loads on mount; `registryLoading` starts true so the effect sets no loading flag.
   useEffect(() => {
-    loadRegistry();
-  }, [loadRegistry]);
+    let cancelled = false;
+    async function loadInitialRegistry() {
+      try {
+        const items = await fetchRegistryItems();
+        if (!cancelled && items) setRegistryItems(items);
+      } finally {
+        if (!cancelled) setRegistryLoading(false);
+      }
+    }
+    void loadInitialRegistry();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function showToast(msg: string) {
     setToast(msg);
