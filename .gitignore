@@ -49,3 +49,11 @@ next-env.d.ts
 
 # temp for ai rules generator
 .tmp_ai_rules/
+
+# stray debug output (never commit)
+*.log
+*.tmp
+/build_out.txt
+/stderr.txt
+/stdout.txt
+/typecheck_output.txt
