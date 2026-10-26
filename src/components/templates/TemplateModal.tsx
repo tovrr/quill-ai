@@ -77,36 +77,47 @@ export function TemplateModal({
   const router = useRouter();
 
   // State
-  const [template, setTemplate] = useState<Template | undefined>(initialTemplate);
-  const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState<{ id: string; template: Template | undefined } | null>(null);
   const [customizations, setCustomizations] = useState<TemplateCustomizations>(DEFAULT_CUSTOMIZATIONS);
   const [activeTab, setActiveTab] = useState("preview");
   const [generating, setGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
 
   // Fetch template if only ID is provided
-  useEffect(() => {
-    if (isOpen && templateId && !initialTemplate) {
-      setLoading(true);
-      fetch(`/api/templates?id=${templateId}`)
-        .then((res) => res.json())
-        .then((data) => setTemplate(data))
-        .catch((err) => console.error("Failed to fetch template:", err))
-        .finally(() => setLoading(false));
-    } else if (isOpen && initialTemplate) {
-      setTemplate(initialTemplate);
-    }
-  }, [isOpen, templateId, initialTemplate]);
+  const needsFetch = isOpen && !!templateId && !initialTemplate;
+  const fetchedForThisId = fetched !== null && fetched.id === templateId ? fetched : null;
+  const template = initialTemplate ?? fetchedForThisId?.template;
+  const loading = needsFetch && fetchedForThisId === null;
 
-  // Reset state when modal closes
   useEffect(() => {
+    if (!needsFetch || !templateId) return;
+
+    let cancelled = false;
+    fetch(`/api/templates?id=${templateId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setFetched({ id: templateId, template: data });
+      })
+      .catch((err) => {
+        console.error("Failed to fetch template:", err);
+        if (!cancelled) setFetched({ id: templateId, template: undefined });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsFetch, templateId]);
+
+  // Reset state when modal closes (adjusted during render, not in an effect)
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
     if (!isOpen) {
       setGeneratedPrompt(null);
       setGenerating(false);
       setCustomizations(DEFAULT_CUSTOMIZATIONS);
       setActiveTab("preview");
     }
-  }, [isOpen]);
+  }
 
   // Event handlers
   const handleCustomizationChange = (field: keyof TemplateCustomizations, value: string) => {

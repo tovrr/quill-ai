@@ -72,6 +72,9 @@ export function HeroInput() {
     if (value) return; // stop animation when user is typing
 
     if (prefersReducedMotion) {
+      // This effect drives the typewriter animation and resets its text/typing flags whenever its inputs change
+      // (the setters further down do the same). The rule only reports the first one.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- animation reset belongs to this effect
       setDisplayed(PLACEHOLDERS[0]);
       setIsTyping(false);
       return;

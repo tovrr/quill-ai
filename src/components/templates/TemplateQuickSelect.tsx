@@ -29,11 +29,12 @@ export function TemplateQuickSelect({ onTemplateSelect, variant = "button" }: Te
   const [popularTemplates, setPopularTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && popularTemplates.length === 0) {
-      loadPopularTemplates();
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && popularTemplates.length === 0) {
+      void loadPopularTemplates();
     }
-  }, [isOpen, popularTemplates.length]);
+  };
 
   async function loadPopularTemplates() {
     setLoading(true);
@@ -105,7 +106,7 @@ export function TemplateQuickSelect({ onTemplateSelect, variant = "button" }: Te
   // Compact variant - just a small button
   if (variant === "compact") {
     return (
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" className="gap-1.5 h-8 px-2.5 text-xs">
             <SparklesIcon className="h-3.5 w-3.5" />
@@ -177,7 +178,7 @@ export function TemplateQuickSelect({ onTemplateSelect, variant = "button" }: Te
 
   // Default button variant - dropdown with templates
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="gap-2">
           <SparklesIcon className="h-4 w-4" />

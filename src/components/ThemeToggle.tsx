@@ -19,16 +19,15 @@ import { nextThemeMode, type ThemeMode } from "@/lib/theme";
  * - Renders a neutral placeholder on SSR/initial hydration to avoid
  *   a flash of the wrong icon (next-themes can't read localStorage on the server).
  */
+const subscribeToNothing = () => () => {};
+
 export function ThemeToggle({ className }: { className?: string }) {
   // Mount the global keyboard shortcut exactly once per app.
   useThemeShortcut();
 
-  const [mounted, setMounted] = React.useState(false);
+  // false on the server and during hydration, true afterwards: no effect-driven re-render needed.
+  const mounted = React.useSyncExternalStore(subscribeToNothing, () => true, () => false);
   const { theme, setTheme, resolvedTheme } = useTheme();
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const current = (theme ?? "system") as ThemeMode;
   const next = nextThemeMode(current);

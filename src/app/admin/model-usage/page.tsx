@@ -65,6 +65,8 @@ export default function AdminModelUsagePage() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
+      // Browser-only storage: reading it during render would break SSR hydration, so it is restored after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore of the saved metrics token
       if (stored) setToken(stored);
     } catch {
       // ignore

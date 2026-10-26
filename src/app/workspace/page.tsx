@@ -161,14 +161,17 @@ function WorkspaceContent() {
     if (error) showToast(`Connection failed: ${error.replace(/_/g, " ")}`);
   }, [searchParams]);
 
-  const loadStatus = useCallback(async () => {
-    const res = await fetch("/api/google/status");
-    if (res.ok) setStatus(await res.json());
-  }, []);
-
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    let cancelled = false;
+    void fetch("/api/google/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setStatus(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -200,6 +203,8 @@ function WorkspaceContent() {
   );
 
   useEffect(() => {
+    // loadTab is also the refresh path after every write action; it shows its spinner via setLoading(true).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on tab or connection change, not derivable state
     if (status?.connected) loadTab(tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status?.connected, tab]);
@@ -218,6 +223,8 @@ function WorkspaceContent() {
   }, []);
 
   useEffect(() => {
+    // loadSnapshots is also the refresh path after every write action; it shows its spinner via setSnapshotsLoading(true).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch when the panel opens, not derivable state
     if (snapshotsOpen && status?.connected) loadSnapshots();
   }, [snapshotsOpen, status?.connected, loadSnapshots]);
 

@@ -78,20 +78,24 @@ export default function ArtifactsPage() {
     });
   }, [router]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/artifacts/versions?limit=100");
-      if (res.ok) {
-        const json = await res.json();
-        setVersions(json.versions ?? []);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/artifacts/versions?limit=100");
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled) setVersions(json.versions ?? []);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this version?")) return;

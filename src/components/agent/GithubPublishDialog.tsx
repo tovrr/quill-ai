@@ -50,6 +50,7 @@ export function GithubPublishDialog({ open, onClose, files, defaultTitle }: Gith
     if (!open) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the form each time the dialog opens, then checks the GitHub connection
     setStage("loading");
     setError(null);
     setPrUrl(null);
