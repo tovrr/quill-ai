@@ -36,6 +36,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npx vitest run
+
       - name: Lint
         run: npm run lint
 
