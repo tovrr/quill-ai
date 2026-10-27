@@ -18,6 +18,18 @@ await check("health endpoint returns ok", async () => {
   if (body?.status !== "ok") throw new Error(`Unexpected health body: ${JSON.stringify(body)}`);
 });
 
+await check("home page sets a nonce CSP", async () => {
+  const res = await fetch(`${baseUrl}/`, { redirect: "manual" });
+  if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+  // The enforced policy comes from src/proxy.ts; the report-only one from next.config.ts
+  // has its own header name and is not matched by this lookup.
+  const csp = res.headers.get("content-security-policy");
+  if (!csp) throw new Error("Missing content-security-policy header on /");
+  if (!/script-src[^;]*'nonce-[A-Za-z0-9+/=]+'/.test(csp)) {
+    throw new Error(`CSP has no nonce in its script directive: ${csp}`);
+  }
+});
+
 await check("chat endpoint rejects empty payload", async () => {
   const res = await fetch(`${baseUrl}/api/chat`, {
     method: "POST",
