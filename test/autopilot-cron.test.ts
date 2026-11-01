@@ -10,7 +10,10 @@ type DueRow = {
   prompt: string;
   cronExpression: string;
   timezone: string;
+  nextRunAt: Date;
 };
+
+type OrderSpec = { dir: "asc" | "desc"; column: string };
 
 const mocks = vi.hoisted(() => ({
   dueRows: [] as unknown[],
@@ -26,15 +29,40 @@ const mocks = vi.hoisted(() => ({
   recordModelUsage: vi.fn(),
 }));
 
+// asc()/desc() return a marker the db mock below can sort by. Everything else in
+// drizzle-orm stays real, so the schema and the route's where() clauses still build.
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    asc: (column: { name: string }) => ({ dir: "asc", column: column.name }),
+    desc: (column: { name: string }) => ({ dir: "desc", column: column.name }),
+  };
+});
+
+// The chain honours orderBy (rows come back sorted) but not limit: it hands back every
+// row, so the route's own cap is what the "never runs more than" test exercises.
 vi.mock("@/db", () => {
+  let order: OrderSpec[] = [];
   const chain = {
-    select: () => chain,
+    select: () => {
+      order = [];
+      return chain;
+    },
     from: () => chain,
     where: () => chain,
-    orderBy: () => chain,
+    orderBy: (...specs: OrderSpec[]) => {
+      order = specs;
+      return chain;
+    },
     limit: (n: number) => {
       mocks.limit(n);
-      return Promise.resolve(mocks.dueRows);
+      const rows = [...(mocks.dueRows as Record<string, unknown>[])];
+      for (const { dir, column } of [...order].reverse()) {
+        const sign = dir === "asc" ? 1 : -1;
+        rows.sort((a, b) => sign * (new Date(a[column] as Date).getTime() - new Date(b[column] as Date).getTime()));
+      }
+      return Promise.resolve(rows);
     },
   };
   return { db: chain };
@@ -63,6 +91,8 @@ function workflow(n: number, overrides: Partial<DueRow> = {}): DueRow {
     prompt: `Summarize the news for workflow ${n}`,
     cronExpression: "0 9 * * *",
     timezone: "UTC",
+    // Workflow n is due n minutes after the previous one: a higher n is a later nextRunAt.
+    nextRunAt: new Date(Date.UTC(2026, 9, 1, 0, n)),
     ...overrides,
   };
 }
@@ -176,11 +206,19 @@ describe("autopilot cron: running a due workflow as its owner", () => {
     expect(run.summary).not.toMatch(/data:|\[DONE\]|"type":/);
     expect(run.errorMessage).toBeUndefined();
 
-    // The workflow is rescheduled in the future.
-    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith(
+    // The workflow is claimed (rescheduled) before the model is called, then the run is recorded.
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledTimes(2);
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenNthCalledWith(1, "wf-1", "owner-1", {
+      nextRunAt: expect.any(Date),
+    });
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenNthCalledWith(
+      2,
       "wf-1",
       "owner-1",
-      expect.objectContaining({ lastRunStatus: "success", nextRunAt: expect.any(Date) }),
+      expect.objectContaining({ lastRunAt: expect.any(Date), lastRunStatus: "success" }),
+    );
+    expect(mocks.updateAutopilotWorkflowByUserId.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.generateText.mock.invocationCallOrder[0],
     );
   });
 
@@ -226,10 +264,13 @@ describe("autopilot cron: failures", () => {
     expect(run.errorMessage).toBe(run.summary);
 
     // The workflow still moves on to its next slot instead of retrying every hour.
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith("wf-1", "owner-1", {
+      nextRunAt: expect.any(Date),
+    });
     expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith(
       "wf-1",
       "owner-1",
-      expect.objectContaining({ lastRunStatus: "failed", nextRunAt: expect.any(Date) }),
+      expect.objectContaining({ lastRunStatus: "failed" }),
     );
   });
 
@@ -282,7 +323,7 @@ describe("autopilot cron: failures", () => {
     );
   });
 
-  it("keeps going when one workflow's bookkeeping throws", async () => {
+  it("keeps going when one workflow's run record cannot be saved", async () => {
     mocks.dueRows = [workflow(1), workflow(2)];
     mocks.createAutopilotRun.mockRejectedValueOnce(new Error("insert failed")).mockResolvedValue({ id: "run-2" });
 
@@ -294,6 +335,200 @@ describe("autopilot cron: failures", () => {
       { id: "wf-1", status: "failed" },
       { id: "wf-2", status: "success" },
     ]);
+  });
+});
+
+describe("autopilot cron: bookkeeping failures", () => {
+  /** What a failed Drizzle write looks like: the message carries the SQL params. */
+  function drizzleWriteError(leaked: string) {
+    const err = new Error(`Failed query: insert into "autopilot_run" ...\nparams: ${leaked}`);
+    err.name = "DrizzleQueryError";
+    err.cause = Object.assign(new Error("connection terminated"), { code: "57P01" });
+    return err;
+  }
+
+  it("still moves nextRunAt forward when the run record cannot be saved", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.createAutopilotRun.mockRejectedValue(new Error("insert failed"));
+    const before = Date.now();
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    const nextRunAts = mocks.updateAutopilotWorkflowByUserId.mock.calls
+      .map(([, , updates]) => updates.nextRunAt as Date | undefined)
+      .filter((nextRunAt): nextRunAt is Date => nextRunAt instanceof Date);
+    expect(nextRunAts.length).toBeGreaterThan(0);
+    for (const nextRunAt of nextRunAts) {
+      expect(nextRunAt.getTime()).toBeGreaterThan(before);
+    }
+    // The last-run fields are written even though the run record was lost.
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith(
+      "wf-1",
+      "owner-1",
+      expect.objectContaining({ lastRunStatus: "success" }),
+    );
+  });
+
+  it("does not call the model, and logs the workflow id, when nextRunAt cannot be moved", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.updateAutopilotWorkflowByUserId.mockRejectedValue(drizzleWriteError("a prompt-sized secret"));
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(await res.json()).toMatchObject({ ran: 0, skipped: 1, results: [{ id: "wf-1", status: "skipped" }] });
+    expect(mocks.generateText).not.toHaveBeenCalled();
+    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.recordModelUsage).not.toHaveBeenCalled();
+    expect(mocks.createAutopilotRun).not.toHaveBeenCalled();
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(vi.mocked(console.error).mock.calls[0][0] as string)).toEqual({
+      event: "autopilot.cron.claim_failed",
+      workflowId: "wf-1",
+      errorName: "DrizzleQueryError",
+      errorCode: "57P01",
+    });
+  });
+
+  it("does not bill the workflow again on later ticks while its update keeps failing", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.updateAutopilotWorkflowByUserId.mockRejectedValue(new Error("db read-only"));
+
+    for (let tick = 0; tick < 3; tick += 1) {
+      await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    }
+
+    expect(mocks.generateText).not.toHaveBeenCalled();
+    expect(mocks.recordModelUsage).not.toHaveBeenCalled();
+  });
+
+  it("runs the other due workflows when one workflow's update fails", async () => {
+    mocks.dueRows = [workflow(1), workflow(2), workflow(3)];
+    mocks.updateAutopilotWorkflowByUserId.mockImplementation(async (workflowId: string) => {
+      if (workflowId === "wf-2") throw new Error("update failed");
+      return { id: workflowId };
+    });
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    const body = await res.json();
+
+    expect(body.results).toEqual([
+      { id: "wf-1", status: "success" },
+      { id: "wf-2", status: "skipped" },
+      { id: "wf-3", status: "success" },
+    ]);
+    expect(body).toMatchObject({ ran: 2, skipped: 1 });
+    expect(mocks.generateText.mock.calls.map(([args]) => args.prompt)).toEqual([
+      workflow(1).prompt,
+      workflow(3).prompt,
+    ]);
+  });
+
+  it("keeps the run record and the other workflows when only the last-run update fails", async () => {
+    mocks.dueRows = [workflow(1), workflow(2)];
+    // Call 1 is wf-1's claim, call 2 is wf-1's last-run update.
+    mocks.updateAutopilotWorkflowByUserId
+      .mockResolvedValueOnce({ id: "wf-1" })
+      .mockRejectedValueOnce(drizzleWriteError("run summary text"))
+      .mockResolvedValue({ id: "wf-2" });
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    const body = await res.json();
+
+    expect(mocks.createAutopilotRun).toHaveBeenCalledTimes(2);
+    expect(body.results).toEqual([
+      { id: "wf-1", status: "failed" },
+      { id: "wf-2", status: "success" },
+    ]);
+    expect(JSON.parse(vi.mocked(console.error).mock.calls[0][0] as string)).toMatchObject({
+      event: "autopilot.cron.workflow_update_failed",
+      workflowId: "wf-1",
+    });
+  });
+
+  it("logs a lost run record with the workflow id and no prompt, answer or SQL parameters", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.createAutopilotRun.mockRejectedValue(drizzleWriteError(MODEL_TEXT));
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    const line = vi.mocked(console.error).mock.calls[0][0] as string;
+    expect(JSON.parse(line)).toEqual({
+      event: "autopilot.cron.run_record_failed",
+      workflowId: "wf-1",
+      errorName: "DrizzleQueryError",
+      errorCode: "57P01",
+    });
+    expect(line).not.toContain(MODEL_TEXT);
+    expect(line).not.toContain(workflow(1).prompt);
+    expect(line).not.toContain(SECRET);
+  });
+
+  it("does not put the saved text in the log when the chat cannot be saved", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.saveMessage.mockRejectedValue(drizzleWriteError(MODEL_TEXT));
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    const line = vi.mocked(console.warn).mock.calls[0][0] as string;
+    expect(JSON.parse(line)).toMatchObject({ event: "autopilot.run.persist_failed", workflowId: "wf-1" });
+    expect(line).not.toContain(MODEL_TEXT);
+  });
+});
+
+describe("autopilot cron: model timeout", () => {
+  const TIMEOUT_SUMMARY = "The model did not answer within 50 s.";
+
+  function timeoutError() {
+    return new DOMException("The operation was aborted due to timeout", "TimeoutError");
+  }
+
+  // The AI SDK's own error classes name themselves AI_*; an abort can sit under `cause`
+  // (APICallError) or `lastError` (RetryError).
+  function aiSdkError(name: string, message: string, wrapped: Record<string, unknown>) {
+    const err = new Error(message);
+    err.name = name;
+    return Object.assign(err, wrapped);
+  }
+
+  async function summaryAfter(error: unknown) {
+    mocks.dueRows = [workflow(1)];
+    mocks.generateText.mockRejectedValue(error);
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    return mocks.createAutopilotRun.mock.calls[0][0].summary as string;
+  }
+
+  it("explains a plain timeout", async () => {
+    expect(await summaryAfter(timeoutError())).toBe(TIMEOUT_SUMMARY);
+  });
+
+  it("explains a timeout the AI SDK wrapped in its own error (cause)", async () => {
+    const wrapped = aiSdkError("AI_APICallError", "Cannot connect to API: The operation was aborted", {
+      cause: timeoutError(),
+    });
+    expect(await summaryAfter(wrapped)).toBe(TIMEOUT_SUMMARY);
+  });
+
+  it("explains a timeout under a RetryError (lastError)", async () => {
+    const wrapped = aiSdkError("AI_RetryError", "Failed after 3 attempts. Last error: aborted", {
+      reason: "maxRetriesExceeded",
+      errors: [timeoutError()],
+      lastError: timeoutError(),
+    });
+    expect(await summaryAfter(wrapped)).toBe(TIMEOUT_SUMMARY);
+  });
+
+  it("keeps the raw message for a wrapped error that is not an abort", async () => {
+    const wrapped = aiSdkError("AI_APICallError", "Quota exceeded", { cause: new Error("429 Too Many Requests") });
+    expect(await summaryAfter(wrapped)).toBe("Quota exceeded");
+  });
+
+  it("does not loop on an error whose cause points back at itself", async () => {
+    const loop = new Error("loop") as Error & { cause?: unknown };
+    loop.cause = loop;
+    expect(await summaryAfter(loop)).toBe("loop");
   });
 });
 
@@ -315,5 +550,19 @@ describe("autopilot cron: bounded batch", () => {
     expect(mocks.generateText).toHaveBeenCalledTimes(MAX_WORKFLOWS_PER_INVOCATION);
     expect(mocks.createChat).toHaveBeenCalledTimes(MAX_WORKFLOWS_PER_INVOCATION);
     expect(mocks.createAutopilotRun).toHaveBeenCalledTimes(MAX_WORKFLOWS_PER_INVOCATION);
+  });
+
+  it("runs the oldest nextRunAt first and leaves the newest due workflows for the next tick", async () => {
+    // Seven due workflows, handed out of order: wf-n is due n minutes into the day.
+    mocks.dueRows = [4, 7, 1, 6, 3, 5, 2].map((n) => workflow(n));
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    const body = await res.json();
+
+    const expected = [1, 2, 3, 4, 5].map((n) => `wf-${n}`);
+    expect(body.results.map((r: { id: string }) => r.id)).toEqual(expected);
+    expect(mocks.generateText.mock.calls.map(([args]) => args.prompt)).toEqual(
+      [1, 2, 3, 4, 5].map((n) => workflow(n).prompt),
+    );
   });
 });

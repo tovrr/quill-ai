@@ -13,6 +13,7 @@ import { checkTokenBudget } from "@/lib/chat/token-budgets";
 import { resolveUserEntitlements } from "@/lib/auth/entitlements";
 import { createChat, saveMessage } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/observability/metrics";
+import { describeErrorForLog, isTimeoutOrAbort } from "@/lib/autopilot/errors";
 
 /** Workflows executed per cron invocation; the rest stay due for the next one. */
 export const MAX_WORKFLOWS_PER_INVOCATION = 5;
@@ -100,11 +101,12 @@ export async function runWorkflow(workflow: WorkflowRow): Promise<WorkflowRunRes
         });
       } catch (err) {
         // The run summary still carries the result; do not lose the usage record below.
+        // The error message is left out: a failed insert's message carries the saved text.
         console.warn(
           JSON.stringify({
             event: "autopilot.run.persist_failed",
             workflowId: workflow.id,
-            error: errorText(err),
+            ...describeErrorForLog(err),
           }),
         );
       }
@@ -128,7 +130,8 @@ export async function runWorkflow(workflow: WorkflowRow): Promise<WorkflowRunRes
 
     return { status: "success", summary: text.slice(0, SUMMARY_MAX_CHARS), chatId };
   } catch (err) {
-    const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-    return failed(timedOut ? `The model did not answer within ${WORKFLOW_MODEL_TIMEOUT_MS / 1000} s.` : errorText(err));
+    return failed(
+      isTimeoutOrAbort(err) ? `The model did not answer within ${WORKFLOW_MODEL_TIMEOUT_MS / 1000} s.` : errorText(err),
+    );
   }
 }

@@ -7,6 +7,12 @@
  * MAX_WORKFLOWS_PER_INVOCATION per invocation, oldest first. Vercel invokes cron
  * jobs with GET, so GET is the handler that matters; POST stays for manual runs.
  *
+ * Per workflow: (1) claim it by moving nextRunAt to its next slot, (2) run it,
+ * (3) record the run and the last-run fields, each write on its own. The claim comes
+ * first so a database that keeps refusing the write cannot get the workflow picked
+ * (and billed) again on every tick: when the claim fails the model is not called. The
+ * cost is at-most-once delivery: a run lost after the claim waits for its next slot.
+ *
  * Protected by CRON_SECRET — Vercel injects Authorization: Bearer <secret>
  * automatically for cron invocations.
  */
@@ -21,9 +27,18 @@ import {
 } from "@/lib/data/db-helpers";
 import { computeNextRunAt } from "@/lib/extensions/autopilot";
 import { MAX_WORKFLOWS_PER_INVOCATION, runWorkflow } from "@/lib/autopilot/run-workflow";
+import { describeErrorForLog } from "@/lib/autopilot/errors";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
+
+/**
+ * One line per failed write, keyed by workflow id. The error message is left out on
+ * purpose (see describeErrorForLog): it can carry the prompt or the model's answer.
+ */
+function logBookkeepingFailure(event: string, workflowId: string, err: unknown) {
+  console.error(JSON.stringify({ event, workflowId, ...describeErrorForLog(err) }));
+}
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -57,17 +72,30 @@ async function handleCron(req: NextRequest) {
   ).slice(0, MAX_WORKFLOWS_PER_INVOCATION);
 
   if (dueWorkflows.length === 0) {
-    return NextResponse.json({ ran: 0, message: "No workflows due." });
+    return NextResponse.json({ ran: 0, skipped: 0, message: "No workflows due." });
   }
 
   const results: { id: string; status: string }[] = [];
 
   for (const workflow of dueWorkflows) {
     try {
-      const { status, summary } = await runWorkflow(workflow);
       const nextRunAt = computeNextRunAt(workflow.cronExpression, workflow.timezone, now);
 
-      await Promise.all([
+      // 1. Claim. If nextRunAt cannot move, running the model would only bill it again
+      // on the next tick, so the workflow is skipped and the others carry on.
+      try {
+        await updateAutopilotWorkflowByUserId(workflow.id, workflow.userId, { nextRunAt });
+      } catch (err) {
+        logBookkeepingFailure("autopilot.cron.claim_failed", workflow.id, err);
+        results.push({ id: workflow.id, status: "skipped" });
+        continue;
+      }
+
+      // 2. Run.
+      const { status, summary } = await runWorkflow(workflow);
+
+      // 3. Record. The two writes are independent: one failing must not stop the other.
+      const [runWrite, workflowWrite] = await Promise.allSettled([
         createAutopilotRun({
           workflowId: workflow.id,
           userId: workflow.userId,
@@ -78,25 +106,27 @@ async function handleCron(req: NextRequest) {
         updateAutopilotWorkflowByUserId(workflow.id, workflow.userId, {
           lastRunAt: now,
           lastRunStatus: status,
-          nextRunAt,
         }),
       ]);
+      if (runWrite.status === "rejected") {
+        logBookkeepingFailure("autopilot.cron.run_record_failed", workflow.id, runWrite.reason);
+      }
+      if (workflowWrite.status === "rejected") {
+        logBookkeepingFailure("autopilot.cron.workflow_update_failed", workflow.id, workflowWrite.reason);
+      }
 
-      results.push({ id: workflow.id, status });
+      // Anything not fully recorded counts as failed, so the response flags it.
+      const recorded = runWrite.status === "fulfilled" && workflowWrite.status === "fulfilled";
+      results.push({ id: workflow.id, status: recorded ? status : "failed" });
     } catch (err) {
-      // One workflow's bookkeeping failing must not stop the others.
-      console.error(
-        JSON.stringify({
-          event: "autopilot.cron.workflow_failed",
-          workflowId: workflow.id,
-          error: err instanceof Error ? err.message : String(err),
-        }),
-      );
+      // One workflow must never stop the others.
+      logBookkeepingFailure("autopilot.cron.workflow_failed", workflow.id, err);
       results.push({ id: workflow.id, status: "failed" });
     }
   }
 
-  return NextResponse.json({ ran: results.length, results });
+  const ran = results.filter((result) => result.status !== "skipped").length;
+  return NextResponse.json({ ran, skipped: results.length - ran, results });
 }
 
 export async function GET(req: NextRequest) {
