@@ -90,6 +90,10 @@ The logic lives in `src/lib/chat/`:
 | `two-pass-builder.ts` | two-pass builder orchestration and persistence |
 | `token-budgets.ts` | per-tier token budgets and usage stats (`checkTokenBudget`) |
 
+The model's tools live in `src/lib/tools/`: `registry.ts` lists them (`ToolSpec`) and
+`buildToolsForRequest` is the one place that decides which tools a request gets. A new tool is
+added there, never inline in `route.ts`.
+
 Put new logic in the matching module. A direct edit of `route.ts` is fine for a one-line
 correction or an urgent fix; not for a new feature or a refactor. Read `route.ts` and the
 module before changing either.
