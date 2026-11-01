@@ -22,9 +22,9 @@ function check(name, passed, detail) {
   checks.push({ name, passed, detail });
 }
 
-async function callCron(authHeader) {
+async function callCron(authHeader, method = "POST") {
   const res = await fetch(`${BASE_URL}/api/autopilot/cron`, {
-    method: "POST",
+    method,
     headers: authHeader ? { authorization: authHeader } : undefined,
   });
 
@@ -42,6 +42,10 @@ async function callCron(authHeader) {
 const unauth = await callCron();
 check("cron rejects missing auth", unauth.status === 401, `status=${unauth.status}`);
 
+// Vercel Cron invokes the route with GET.
+const unauthGet = await callCron(undefined, "GET");
+check("cron GET rejects missing auth", unauthGet.status === 401, `status=${unauthGet.status}`);
+
 const wrongAuth = await callCron("Bearer wrong-secret");
 check("cron rejects bad auth", wrongAuth.status === 401, `status=${wrongAuth.status}`);
 
@@ -49,7 +53,8 @@ const cronSecret = process.env.CRON_SECRET;
 if (!cronSecret) {
   check("cron authorized path (skipped)", true, "CRON_SECRET missing; skipping authorized cron invocation check");
 } else {
-  const authorized = await callCron(`Bearer ${cronSecret}`);
+  // One authorized call only: it runs any due workflow for real. GET is what Vercel Cron sends.
+  const authorized = await callCron(`Bearer ${cronSecret}`, "GET");
   const isSuccess = authorized.status === 200 && typeof authorized.json?.ran === "number";
   check("cron accepts valid auth", isSuccess, `status=${authorized.status} ran=${authorized.json?.ran ?? "n/a"}`);
 }
