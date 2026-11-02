@@ -124,6 +124,26 @@ describe("PATCH /api/autopilot/workflows/[id]: the owner's approval", () => {
     });
   });
 
+  it("approving after a refused run also clears the refusal, and only then", async () => {
+    mocks.getAutopilotWorkflowById.mockResolvedValue(existing({ mode: "active", lastRunStatus: "refused" }));
+
+    await patch({ approvePolicy: true });
+
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith("wf-1", OWNER, {
+      policyHash: await currentAutopilotPolicyHash(),
+      lastRunStatus: null,
+    });
+
+    mocks.updateAutopilotWorkflowByUserId.mockClear();
+    mocks.getAutopilotWorkflowById.mockResolvedValue(existing({ mode: "active", lastRunStatus: "failed" }));
+
+    await patch({ approvePolicy: true });
+
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenCalledWith("wf-1", OWNER, {
+      policyHash: await currentAutopilotPolicyHash(),
+    });
+  });
+
   it("rejects a mode that does not exist, and an approvePolicy that is not true", async () => {
     expect((await patch({ mode: "turbo" })).status).toBe(400);
     expect((await patch({ approvePolicy: false })).status).toBe(400);

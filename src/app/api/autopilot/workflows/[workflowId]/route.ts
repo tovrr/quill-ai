@@ -95,6 +95,8 @@ export async function PATCH(request: Request, { params }: Params) {
   // approving it again after a run was refused (policy_changed). Pausing and resuming do not.
   if ((body?.mode === "active" && existing.mode !== "active") || body?.approvePolicy === true) {
     updates.policyHash = await currentAutopilotPolicyHash();
+    // Approving after a refused run clears the refusal, so the page does not offer it again.
+    if (existing.lastRunStatus === "refused") updates.lastRunStatus = null;
   }
 
   if (Object.keys(updates).length === 0) {
