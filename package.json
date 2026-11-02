@@ -83,7 +83,7 @@
     "@streamdown/math": "^1.0.3",
     "@streamdown/mermaid": "^1.0.3",
     "@stripe/react-stripe-js": "^6.9.0",
-    "@stripe/stripe-js": "^9.15.0",
+    "@stripe/stripe-js": "^10.2.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "ai": "^7.0.94",
