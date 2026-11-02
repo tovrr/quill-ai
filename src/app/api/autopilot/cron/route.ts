@@ -27,17 +27,23 @@ import {
 } from "@/lib/data/db-helpers";
 import { computeNextRunAt } from "@/lib/extensions/autopilot";
 import { MAX_WORKFLOWS_PER_INVOCATION, runWorkflow } from "@/lib/autopilot/run-workflow";
-import { describeErrorForLog } from "@/lib/autopilot/errors";
+import { describeErrorForLog, describeUnexpectedErrorForLog } from "@/lib/autopilot/errors";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 /**
- * One line per failed write, keyed by workflow id. The error message is left out on
- * purpose (see describeErrorForLog): it can carry the prompt or the model's answer.
+ * One line per failure, keyed by workflow id. For a failed write the error message is
+ * left out on purpose (see describeErrorForLog): it can carry the prompt or the model's
+ * answer.
  */
-function logBookkeepingFailure(event: string, workflowId: string, err: unknown) {
-  console.error(JSON.stringify({ event, workflowId, ...describeErrorForLog(err) }));
+function logBookkeepingFailure(
+  event: string,
+  workflowId: string,
+  err: unknown,
+  describe: (err: unknown) => object = describeErrorForLog,
+) {
+  console.error(JSON.stringify({ event, workflowId, ...describe(err) }));
 }
 
 function isAuthorized(req: NextRequest): boolean {
@@ -119,8 +125,10 @@ async function handleCron(req: NextRequest) {
       const recorded = runWrite.status === "fulfilled" && workflowWrite.status === "fulfilled";
       results.push({ id: workflow.id, status: recorded ? status : "failed" });
     } catch (err) {
-      // One workflow must never stop the others.
-      logBookkeepingFailure("autopilot.cron.workflow_failed", workflow.id, err);
+      // One workflow must never stop the others. Each database write above has its own
+      // handler and runWorkflow does not throw, so this is a bug in the code: keep its
+      // message so it can be found (see describeUnexpectedErrorForLog).
+      logBookkeepingFailure("autopilot.cron.workflow_failed", workflow.id, err, describeUnexpectedErrorForLog);
       results.push({ id: workflow.id, status: "failed" });
     }
   }

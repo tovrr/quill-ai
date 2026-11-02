@@ -1,8 +1,4 @@
 import { createUIMessageStream, createUIMessageStreamResponse, streamText, stepCountIs, type UIMessage } from "ai";
-import { tool, jsonSchema } from "ai";
-import { executeCode, isExecutionAvailable, getExecutionBackend } from "@/lib/execution/service";
-import { embedText } from "@/lib/rag/embed";
-import { searchChunks } from "@/lib/rag/search";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { buildUserCustomizationPrompt, normalizeUserProfile } from "@/lib/extensions/customization";
@@ -42,83 +38,7 @@ import { resolveModelForMode, type ChatMode } from "@/lib/chat/model-selection";
 import { evaluateChatAccess } from "@/lib/chat/access-gates";
 import { evaluatePolicyRuntime } from "@/lib/chat/policy-runtime";
 import { checkTokenBudget } from "@/lib/chat/token-budgets";
-
-function buildRunCodeTool() {
-  return tool({
-    description:
-      "Execute Python code in a sandboxed environment and return stdout, stderr, and exit code. " +
-      "Use this to run computations, test logic, or validate code. " +
-      "The sandbox has no filesystem persistence between calls.",
-    inputSchema: jsonSchema<{ code: string; language: "python" }>({
-      type: "object",
-      properties: {
-        code: {
-          type: "string",
-          description: "The source code to execute.",
-        },
-        language: {
-          type: "string",
-          enum: ["python"],
-          description: "The programming language. Currently only 'python' is supported.",
-        },
-      },
-      required: ["code", "language"],
-    }),
-    execute: async ({ code, language }: { code: string; language: "python" }) => {
-      const result = await executeCode({ code, language, timeoutMs: 15_000 });
-      return {
-        ok: result.ok,
-        stdout: result.stdout || "(no output)",
-        stderr: result.stderr || undefined,
-        exitCode: result.exitCode,
-        durationMs: result.durationMs,
-        ...(result.error ? { error: result.error } : {}),
-      };
-    },
-  });
-}
-
-function buildSearchKnowledgeBaseTool(userId: string) {
-  return tool({
-    description:
-      "Search the user's personal knowledge base for relevant information. " +
-      "Use this when the user asks about their documents, notes, or any previously ingested content. " +
-      "Returns the most semantically similar text chunks from the knowledge base.",
-    inputSchema: jsonSchema<{ query: string; limit?: number }>({
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "The search query to find relevant knowledge base content.",
-        },
-        limit: {
-          type: "number",
-          description: "Maximum number of results to return (1-10, default 5).",
-        },
-      },
-      required: ["query"],
-    }),
-    execute: async ({ query, limit = 5 }: { query: string; limit?: number }) => {
-      try {
-        const embedding = await embedText(query);
-        const results = await searchChunks(embedding, userId, Math.min(limit, 10));
-        if (results.length === 0) {
-          return { found: false, message: "No relevant content found in the knowledge base." };
-        }
-        return {
-          found: true,
-          results: results.map((r) => ({
-            documentTitle: r.documentTitle,
-            content: r.content,
-            similarity: Math.round(r.similarity * 100) / 100,
-          })),
-        };
-      } catch {
-        return { found: false, message: "Knowledge base search is unavailable (OPENAI_API_KEY not configured)." };
-      }
-    },
-  });
-}
+import { buildToolsForRequest } from "@/lib/tools/registry";
 
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
@@ -664,10 +584,7 @@ export async function POST(req: Request) {
       model: resolvedModel.model,
       system: systemPrompt,
       messages: modelMessages,
-      tools: {
-        ...(canRunCode ? { run_code: buildRunCodeTool() } : {}),
-        ...(userId !== "guest" ? { search_knowledge_base: buildSearchKnowledgeBaseTool(userId) } : {}),
-      },
+      tools: buildToolsForRequest({ userId, canRunCode, tier: userTier }),
       stopWhen: stepCountIs(canRunCode ? 10 : 5),
     };
 

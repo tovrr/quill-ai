@@ -465,6 +465,44 @@ describe("autopilot cron: bookkeeping failures", () => {
     expect(line).not.toContain(SECRET);
   });
 
+  it("logs the message of a bug in the code, which holds no data", async () => {
+    mocks.dueRows = [workflow(1)];
+    // Thrown, not rejected: it escapes the allSettled and reaches the route's outer catch.
+    mocks.createAutopilotRun.mockImplementation(() => {
+      throw new TypeError("Cannot read properties of undefined (reading 'id')");
+    });
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(await res.json()).toMatchObject({ results: [{ id: "wf-1", status: "failed" }] });
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(vi.mocked(console.error).mock.calls[0][0] as string)).toEqual({
+      event: "autopilot.cron.workflow_failed",
+      workflowId: "wf-1",
+      errorName: "TypeError",
+      errorMessage: "Cannot read properties of undefined (reading 'id')",
+    });
+  });
+
+  it("keeps the message out of the log when the unexpected error is a database error", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.createAutopilotRun.mockImplementation(() => {
+      throw drizzleWriteError(MODEL_TEXT);
+    });
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    const line = vi.mocked(console.error).mock.calls[0][0] as string;
+    expect(JSON.parse(line)).toEqual({
+      event: "autopilot.cron.workflow_failed",
+      workflowId: "wf-1",
+      errorName: "DrizzleQueryError",
+      errorCode: "57P01",
+    });
+    expect(line).not.toContain(MODEL_TEXT);
+  });
+
   it("does not put the saved text in the log when the chat cannot be saved", async () => {
     mocks.dueRows = [workflow(1)];
     mocks.saveMessage.mockRejectedValue(drizzleWriteError(MODEL_TEXT));

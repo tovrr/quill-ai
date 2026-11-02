@@ -54,3 +54,35 @@ export function describeErrorForLog(err: unknown): { errorName: string; errorCod
   const errorName = err instanceof Error ? err.name : typeof err;
   return errorCode === undefined ? { errorName } : { errorName, errorCode };
 }
+
+// Built-in classes that report a bug in the code (`undefined.x`, a missing variable, a bad
+// range). Their messages describe the code, not the data. SyntaxError is left out on
+// purpose: `JSON.parse` echoes a piece of its input in the message.
+const CODE_BUG_ERROR_NAMES = new Set(["TypeError", "ReferenceError", "RangeError"]);
+
+const MAX_LOGGED_MESSAGE_LENGTH = 200;
+
+/** A Postgres or Drizzle error carries an SQLSTATE `code`, or the failed query and its parameters. */
+function looksLikeDatabaseError(candidate: unknown): boolean {
+  if (typeof candidate !== "object" || candidate === null) return false;
+  return ["code", "query", "params", "detail"].some((key) => key in candidate);
+}
+
+/**
+ * describeErrorForLog, plus a short `errorMessage` when the failure is a bug in the code
+ * and nothing in its chain looks like a database error. Anything else keeps the
+ * name-and-code form, so a failed write cannot put the prompt or the model's answer in a
+ * log. A Node error with a `code` (ERR_INVALID_ARG_TYPE) is left out too: its message
+ * echoes the value it received.
+ */
+export function describeUnexpectedErrorForLog(err: unknown): {
+  errorName: string;
+  errorCode?: string;
+  errorMessage?: string;
+} {
+  const described = describeErrorForLog(err);
+  if (!(err instanceof Error) || !CODE_BUG_ERROR_NAMES.has(err.name) || someInChain(err, looksLikeDatabaseError)) {
+    return described;
+  }
+  return { ...described, errorMessage: err.message.slice(0, MAX_LOGGED_MESSAGE_LENGTH) };
+}
