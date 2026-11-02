@@ -5,15 +5,27 @@
  * owner: the owner's token budget is checked, the result is saved in a chat that
  * belongs to the owner, and the usage is recorded against the owner. The runner never
  * throws; every failure comes back as a `failed` result with a readable reason.
+ *
+ * Two barriers sit in front of the model. An active workflow runs only under the tool
+ * policy its owner approved (otherwise the run is `refused`, with 0 model and 0 tool
+ * calls). A workflow in observe mode runs as a dry run: it records what it would do and
+ * executes no tool. Loop guards bound the steps of a run that has tools.
  */
 
-import { generateText } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { resolveModelForMode } from "@/lib/chat/model-selection";
 import { checkTokenBudget } from "@/lib/chat/token-budgets";
 import { resolveUserEntitlements } from "@/lib/auth/entitlements";
 import { createChat, saveMessage } from "@/lib/data/db-helpers";
 import { recordModelUsage } from "@/lib/observability/metrics";
 import { describeErrorForLog, isTimeoutOrAbort } from "@/lib/autopilot/errors";
+import { buildLoopGuardMessage, createLoopGuard, type LoopStopReason } from "@/lib/agent/loop-guards";
+import {
+  buildAutopilotTools,
+  checkPolicyApproval,
+  type PolicySource,
+  type RecordedToolCall,
+} from "@/lib/autopilot/tool-policy";
 
 /** Workflows executed per cron invocation; the rest stay due for the next one. */
 export const MAX_WORKFLOWS_PER_INVOCATION = 5;
@@ -24,8 +36,13 @@ export const MAX_WORKFLOWS_PER_INVOCATION = 5;
  */
 export const WORKFLOW_MODEL_TIMEOUT_MS = 50_000;
 
+/** Model steps per run, when the run has tools. The loop guards can cut it shorter. */
+export const AUTOPILOT_MAX_STEPS = 5;
+
 const SUMMARY_MAX_CHARS = 2_000;
 const CHAT_TITLE_MAX_CHARS = 80;
+
+export type WorkflowMode = "observe" | "active";
 
 export type WorkflowRow = {
   id: string;
@@ -34,16 +51,37 @@ export type WorkflowRow = {
   prompt: string;
   cronExpression: string;
   timezone: string;
+  /** Missing means "active": a row from before the column existed. */
+  mode?: WorkflowMode;
+  /** The tool-policy hash the owner approved; null or missing on a workflow that predates it. */
+  policyHash?: string | null;
 };
+
+/** Why a run was refused or ended abnormally; stored on the run. */
+export type RunReasonCode = "policy_changed" | "empty_response" | LoopStopReason;
 
 export type WorkflowRunResult = {
-  status: "success" | "failed";
+  status: "success" | "failed" | "refused";
+  mode: WorkflowMode;
   summary: string;
   chatId?: string;
+  reasonCode?: RunReasonCode;
+  /** The tool calls the model made; in observe mode, the ones it would make. */
+  toolCalls?: RecordedToolCall[];
 };
 
-function failed(summary: string): WorkflowRunResult {
-  return { status: "failed", summary: summary.slice(0, 500) };
+function failed(
+  summary: string,
+  mode: WorkflowMode,
+  extra: { reasonCode?: RunReasonCode; toolCalls?: RecordedToolCall[] } = {},
+): WorkflowRunResult {
+  return {
+    status: "failed",
+    mode,
+    summary: summary.slice(0, 500),
+    ...(extra.reasonCode ? { reasonCode: extra.reasonCode } : {}),
+    ...(extra.toolCalls?.length ? { toolCalls: extra.toolCalls } : {}),
+  };
 }
 
 function errorText(err: unknown): string {
@@ -63,17 +101,39 @@ async function resolveTier(userId: string): Promise<"free" | "pro"> {
   return entitlement.canUsePaidModes ? "pro" : "free";
 }
 
-export async function runWorkflow(workflow: WorkflowRow): Promise<WorkflowRunResult> {
+export async function runWorkflow(workflow: WorkflowRow, policy: PolicySource = {}): Promise<WorkflowRunResult> {
   const { userId } = workflow;
+  const mode = workflow.mode ?? "active";
+  const observe = mode === "observe";
+  const toolCalls: RecordedToolCall[] = [];
 
   try {
+    // An active workflow acts for its owner, so it runs only under the tool policy the
+    // owner approved. An observe run executes no tool, so it runs under the current one.
+    if (!observe) {
+      const approval = await checkPolicyApproval(workflow, policy);
+      if (!approval.ok) {
+        return {
+          status: "refused",
+          mode,
+          reasonCode: "policy_changed",
+          summary:
+            "Refused: the tools Autopilot may use changed after you approved this workflow. " +
+            "Nothing was run. Review it and approve the new policy to resume.",
+        };
+      }
+    }
+
     const tier = await resolveTier(userId);
     const budget = await checkTokenBudget(userId, tier, estimateTokens(workflow.prompt));
     if (!budget.allowed) {
-      return failed(`Token budget exhausted: ${budget.reason ?? "limit reached"}`);
+      return failed(`Token budget exhausted: ${budget.reason ?? "limit reached"}`, mode);
     }
 
     const resolved = await resolveModelForMode("fast", false);
+
+    const tools = buildAutopilotTools({ userId, tier }, { observe, calls: toolCalls }, policy);
+    const guard = createLoopGuard({ label: "autopilot" });
 
     const result = await generateText({
       model: resolved.model,
@@ -83,13 +143,17 @@ export async function runWorkflow(workflow: WorkflowRow): Promise<WorkflowRunRes
         "no questions, no offers to continue, no mention of being scheduled. " +
         `Current date and time (UTC): ${new Date().toISOString()}.`,
       prompt: workflow.prompt,
+      ...(tools
+        ? { tools, stopWhen: [stepCountIs(AUTOPILOT_MAX_STEPS), guard.stopWhen], onStepFinish: guard.onStepFinish }
+        : {}),
       abortSignal: AbortSignal.timeout(WORKFLOW_MODEL_TIMEOUT_MS),
     });
 
     const text = result.text.trim();
 
+    // A dry run leaves no chat behind: the run record is its output.
     let chatId: string | undefined;
-    if (text) {
+    if (text && !observe) {
       try {
         const chat = await createChat(userId, `Autopilot: ${workflow.name}`.slice(0, CHAT_TITLE_MAX_CHARS));
         chatId = chat.id;
@@ -124,14 +188,35 @@ export async function runWorkflow(workflow: WorkflowRow): Promise<WorkflowRunRes
       providerMetadata: result.providerMetadata,
     });
 
-    if (!text) {
-      return failed("The model returned an empty response.");
+    const stopReason = guard.stopReason();
+    if (stopReason) {
+      const partial = text ? `${text}\n\n` : "";
+      return {
+        status: "failed",
+        mode,
+        reasonCode: stopReason,
+        summary: `${partial}${buildLoopGuardMessage(stopReason)}`.slice(0, SUMMARY_MAX_CHARS),
+        chatId,
+        ...(toolCalls.length ? { toolCalls } : {}),
+      };
     }
 
-    return { status: "success", summary: text.slice(0, SUMMARY_MAX_CHARS), chatId };
+    if (!text) {
+      return failed("The model returned an empty response.", mode, { reasonCode: "empty_response", toolCalls });
+    }
+
+    return {
+      status: "success",
+      mode,
+      summary: text.slice(0, SUMMARY_MAX_CHARS),
+      chatId,
+      ...(toolCalls.length ? { toolCalls } : {}),
+    };
   } catch (err) {
     return failed(
       isTimeoutOrAbort(err) ? `The model did not answer within ${WORKFLOW_MODEL_TIMEOUT_MS / 1000} s.` : errorText(err),
+      mode,
+      { toolCalls },
     );
   }
 }

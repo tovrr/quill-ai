@@ -5,6 +5,8 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Loop guards (`src/lib/agent/loop-guards.ts`): the chat route and the Autopilot runner stop a tool loop after `AGENT_MAX_UNUSABLE_STEPS` (default 3) consecutive empty, repeated or fully failed steps and tell the user in plain words; the two-pass builder stops when its rewrite is empty or identical to the draft
+- Autopilot: each workflow stores the hash of the tool policy at the owner's approval and an active workflow is refused (`policy_changed`) when it differs; new workflows start in observe mode (a dry run that records the model's text and the tool calls it would make) until the owner switches them to active. Requires the SQL in `src/db/migrations/2026-11-02-autopilot-policy-observe.sql` (or `db:push`) before deploy
 - Terminal CLI interface (`cli/index.mjs`) with one-shot and REPL modes, plus `/api/cli/chat` authenticated SSE endpoint (`QUILL_CLI_KEY`)
 - CLI regression suite `scripts/test-cli.mjs` with coverage for auth, validation, streaming events, and multi-turn context
 - Tauri v2 desktop app scaffold under `desktop/` with system tray, single-instance behavior, and global hotkey toggle

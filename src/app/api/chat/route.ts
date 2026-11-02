@@ -38,7 +38,12 @@ import { resolveModelForMode, type ChatMode } from "@/lib/chat/model-selection";
 import { evaluateChatAccess } from "@/lib/chat/access-gates";
 import { evaluatePolicyRuntime } from "@/lib/chat/policy-runtime";
 import { checkTokenBudget } from "@/lib/chat/token-budgets";
-import { buildToolsForRequest } from "@/lib/tools/registry";
+import { buildToolsForRequest, GUEST_USER_ID } from "@/lib/tools/registry";
+import {
+  appendNoticeBeforeFinish,
+  createLoopGuard,
+  withLoopGuardNotice,
+} from "@/lib/agent/loop-guards";
 
 export const maxDuration = 60;
 const DEBUG_CHAT_LOGS = process.env.DEBUG_CHAT_LOGS === "true";
@@ -333,7 +338,7 @@ export async function POST(req: Request) {
   let originalMessages: UIMessage[] | undefined;
   try {
     // Get session from Better Auth
-    let userId = "guest";
+    let userId = GUEST_USER_ID;
     let userEmail = "";
     try {
       const sessionData = await auth.api.getSession({
@@ -350,7 +355,7 @@ export async function POST(req: Request) {
     logApiStart(requestContext);
 
     const perMinute = Number(process.env.API_CHAT_REQUESTS_PER_MINUTE ?? "20");
-    const rateLimitKey = userId !== "guest" ? `chat:user:${userId}` : `chat:ip:${requestContext.ip}`;
+    const rateLimitKey = userId !== GUEST_USER_ID ? `chat:user:${userId}` : `chat:ip:${requestContext.ip}`;
     const rateLimit = await checkRateLimit({
       key: rateLimitKey,
       max: perMinute,
@@ -401,7 +406,7 @@ export async function POST(req: Request) {
     }
 
     const id: string = (body.chatId as string) || (body.id as string) || crypto.randomUUID();
-    const shouldPersist = userId !== "guest";
+    const shouldPersist = userId !== GUEST_USER_ID;
     const selectedMode: ChatMode = (body.mode as ChatMode) || "advanced";
     const requestedBuilderTarget = normalizeBuilderTarget(body.builderTarget);
     const requestedBuilderLocks = normalizeBuilderLocks(body.builderLocks ?? DEFAULT_BUILDER_LOCKS);
@@ -580,12 +585,15 @@ export async function POST(req: Request) {
       return withRequestHeaders(createUIMessageStreamResponse({ stream }), requestContext.requestId);
     }
 
+    // Cuts a tool loop that makes no progress (empty, repeated or failing steps).
+    const loopGuard = createLoopGuard({ label: "chat" });
     const streamParams = {
       model: resolvedModel.model,
       system: systemPrompt,
       messages: modelMessages,
       tools: buildToolsForRequest({ userId, canRunCode, tier: userTier }),
-      stopWhen: stepCountIs(canRunCode ? 10 : 5),
+      stopWhen: [stepCountIs(canRunCode ? 10 : 5), loopGuard.stopWhen],
+      onStepFinish: loopGuard.onStepFinish,
     };
 
     if ((resolvedModel.provider === "apex" || resolvedModel.provider === "hermes") && !canRunCode) {
@@ -602,7 +610,10 @@ export async function POST(req: Request) {
             rawText += chunk;
           }
 
-          const sanitizedText = sanitizeAssistantOutputText(rawText) || NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT;
+          const sanitizedText = withLoopGuardNotice(
+            sanitizeAssistantOutputText(rawText) || NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT,
+            loopGuard.stopReason(),
+          );
           writer.write({ type: "text-delta", id: "0", delta: sanitizedText });
 
           writer.write({ type: "text-end", id: "0" });
@@ -650,7 +661,7 @@ export async function POST(req: Request) {
           }
         }
 
-        const persistedText = (text ?? "").trim();
+        const persistedText = withLoopGuardNotice(text ?? "", loopGuard.stopReason());
 
         if (persistedText && shouldPersist) {
           await saveMessage({
@@ -677,9 +688,14 @@ export async function POST(req: Request) {
 
     logApiCompletion(requestContext, { status: 200 });
     return withRequestHeaders(
-      result.toUIMessageStreamResponse({
-        originalMessages,
-        onError: (error) => (error instanceof Error ? error.message : "Chat stream failed"),
+      createUIMessageStreamResponse({
+        stream: appendNoticeBeforeFinish(
+          result.toUIMessageStream({
+            originalMessages,
+            onError: (error) => (error instanceof Error ? error.message : "Chat stream failed"),
+          }),
+          loopGuard.notice,
+        ),
       }),
       requestContext.requestId,
     );

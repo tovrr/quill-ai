@@ -292,6 +292,10 @@ export async function createAutopilotWorkflow(input: {
   prompt: string;
   cronExpression: string;
   timezone: string;
+  /** "observe" (dry run) for a new workflow, until its owner activates it. */
+  mode: "observe" | "active";
+  /** The tool-policy hash the owner approves by creating the workflow. */
+  policyHash: string;
 }) {
   const nextRunAt = computeNextRunAt(input.cronExpression, input.timezone);
   const [row] = await db
@@ -302,6 +306,8 @@ export async function createAutopilotWorkflow(input: {
       prompt: input.prompt,
       cronExpression: input.cronExpression,
       timezone: input.timezone,
+      mode: input.mode,
+      policyHash: input.policyHash,
       nextRunAt,
     })
     .returning();
@@ -318,9 +324,11 @@ export async function updateAutopilotWorkflowByUserId(
     cronExpression: string;
     timezone: string;
     status: "active" | "paused";
+    mode: "observe" | "active";
+    policyHash: string;
     lastRunAt: Date | null;
     nextRunAt: Date | null;
-    lastRunStatus: "success" | "failed" | null;
+    lastRunStatus: "success" | "failed" | "refused" | null;
   }>,
 ) {
   const [row] = await db
@@ -352,7 +360,10 @@ export async function getRecentAutopilotRunsByUserId(userId: string, limit = 20)
 export async function createAutopilotRun(input: {
   workflowId: string;
   userId: string;
-  status: "success" | "failed";
+  status: "success" | "failed" | "refused";
+  mode?: "observe" | "active";
+  reasonCode?: string;
+  toolCalls?: { toolName: string; input: unknown }[];
   summary?: string;
   errorMessage?: string;
 }) {
@@ -362,6 +373,9 @@ export async function createAutopilotRun(input: {
       workflowId: input.workflowId,
       userId: input.userId,
       status: input.status,
+      mode: input.mode ?? "active",
+      reasonCode: input.reasonCode,
+      toolCalls: input.toolCalls,
       summary: input.summary,
       errorMessage: input.errorMessage,
       completedAt: new Date(),

@@ -94,6 +94,15 @@ The model's tools live in `src/lib/tools/`: `registry.ts` lists them (`ToolSpec`
 `buildToolsForRequest` is the one place that decides which tools a request gets. A new tool is
 added there, never inline in `route.ts`.
 
+`src/lib/agent/loop-guards.ts` cuts a tool loop that makes no progress (empty, repeated or failing
+steps; the limit is `AGENT_MAX_UNUSABLE_STEPS`, default 3). The chat route and the Autopilot runner
+both use it; keep it free of runtime imports from `ai`.
+
+Autopilot runs unattended, so its tools are not the chat's: `src/lib/autopilot/tool-policy.ts`
+holds `AUTOPILOT_TOOL_ALLOWLIST` (empty today) and the hash of that policy. Adding a tool to the
+list, or editing a listed tool, changes the hash and refuses every active workflow until its owner
+approves again (`policy_changed`). Say so in the pull request that does it.
+
 Put new logic in the matching module. A direct edit of `route.ts` is fine for a one-line
 correction or an urgent fix; not for a new feature or a refactor. Read `route.ts` and the
 module before changing either.

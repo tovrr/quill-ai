@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const SECRET = "test-cron-secret";
@@ -68,7 +68,16 @@ vi.mock("@/db", () => {
   return { db: chain };
 });
 
-vi.mock("ai", () => ({ generateText: mocks.generateText }));
+// Only generateText is faked: the tool registry (loaded through the Autopilot tool policy)
+// builds its tools with the real tool() and jsonSchema().
+vi.mock("ai", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("ai")>()),
+  generateText: mocks.generateText,
+}));
+// The registry's tool modules are never called here; stub what they import.
+vi.mock("@/lib/execution/service", () => ({ executeCode: vi.fn() }));
+vi.mock("@/lib/rag/embed", () => ({ embedText: vi.fn() }));
+vi.mock("@/lib/rag/search", () => ({ searchChunks: vi.fn() }));
 vi.mock("@/lib/chat/model-selection", () => ({ resolveModelForMode: mocks.resolveModelForMode }));
 vi.mock("@/lib/chat/token-budgets", () => ({ checkTokenBudget: mocks.checkTokenBudget }));
 vi.mock("@/lib/auth/entitlements", () => ({ resolveUserEntitlements: mocks.resolveUserEntitlements }));
@@ -80,8 +89,12 @@ vi.mock("@/lib/data/db-helpers", () => ({
   updateAutopilotWorkflowByUserId: mocks.updateAutopilotWorkflowByUserId,
 }));
 
+import { jsonSchema, tool } from "ai";
 import { GET, POST } from "@/app/api/autopilot/cron/route";
 import { MAX_WORKFLOWS_PER_INVOCATION } from "@/lib/autopilot/run-workflow";
+import { AUTOPILOT_TOOL_ALLOWLIST, currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
+import { buildLoopGuardMessage } from "@/lib/agent/loop-guards";
+import { TOOL_REGISTRY, type ToolSpec } from "@/lib/tools/registry";
 
 function workflow(n: number, overrides: Partial<DueRow> = {}): DueRow {
   return {
@@ -602,5 +615,292 @@ describe("autopilot cron: bounded batch", () => {
     expect(mocks.generateText.mock.calls.map(([args]) => args.prompt)).toEqual(
       [1, 2, 3, 4, 5].map((n) => workflow(n).prompt),
     );
+  });
+});
+
+// ─── Tool policy, observe mode, loop guards ──────────────────────────────────────────
+
+const toolExecute = vi.fn();
+
+function fakeAutopilotTool(): ToolSpec {
+  const inputSchema = jsonSchema<{ q: string }>({ type: "object", properties: { q: { type: "string" } }, required: ["q"] });
+  return {
+    name: "fake_read",
+    description: "Reads one thing from the owner's own data and returns it.",
+    inputSchema,
+    risk: "read",
+    requires: { auth: true, paid: false, codeExecution: false },
+    approval: "none",
+    build: () => tool({ description: "Reads one thing.", inputSchema, execute: async (input) => toolExecute(input) }),
+  };
+}
+
+type Callable = { execute: (input: unknown, options: unknown) => Promise<unknown> };
+
+/**
+ * Makes `fake_read` part of the live registry and of the Autopilot allowlist, the way a
+ * later change to the code would, and removes it afterwards. Returns the spec so a test
+ * can edit it "after the owner approved".
+ */
+function installFakeTool(): ToolSpec {
+  const spec = fakeAutopilotTool();
+  (TOOL_REGISTRY as ToolSpec[]).push(spec);
+  (AUTOPILOT_TOOL_ALLOWLIST as string[]).push(spec.name);
+  return spec;
+}
+
+function uninstallFakeTool() {
+  const registry = TOOL_REGISTRY as ToolSpec[];
+  const allowlist = AUTOPILOT_TOOL_ALLOWLIST as string[];
+  const at = registry.findIndex((spec) => spec.name === "fake_read");
+  if (at >= 0) registry.splice(at, 1);
+  const listed = allowlist.indexOf("fake_read");
+  if (listed >= 0) allowlist.splice(listed, 1);
+}
+
+afterEach(uninstallFakeTool);
+
+const lastRun = () => mocks.createAutopilotRun.mock.calls.at(-1)?.[0];
+
+describe("autopilot cron: tool policy hash", () => {
+  it("refuses a run after the tool registry changed since the owner approved, with 0 model and 0 tool calls", async () => {
+    const spec = installFakeTool();
+    const approved = await currentAutopilotPolicyHash();
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: approved })];
+
+    // Same policy as approved: the workflow runs.
+    let res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    expect(await res.json()).toMatchObject({ results: [{ id: "wf-1", status: "success" }] });
+    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+
+    // The registry changes after approval.
+    vi.clearAllMocks();
+    mocks.generateText.mockResolvedValue({ text: MODEL_TEXT, totalUsage: {}, providerMetadata: undefined });
+    mocks.createAutopilotRun.mockResolvedValue({ id: "run-2" });
+    mocks.updateAutopilotWorkflowByUserId.mockResolvedValue({ id: "wf" });
+    mocks.resolveUserEntitlements.mockResolvedValue({ canUsePaidModes: false });
+    spec.description = "Reads one thing from the owner's own data, and now also writes a log of it.";
+
+    res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ran: 1, results: [{ id: "wf-1", status: "refused" }] });
+
+    expect(mocks.generateText).not.toHaveBeenCalled();
+    expect(toolExecute).not.toHaveBeenCalled();
+    expect(mocks.checkTokenBudget).not.toHaveBeenCalled();
+    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.recordModelUsage).not.toHaveBeenCalled();
+
+    expect(lastRun()).toMatchObject({
+      workflowId: "wf-1",
+      userId: "owner-1",
+      status: "refused",
+      mode: "active",
+      reasonCode: "policy_changed",
+    });
+    expect(lastRun().summary).toMatch(/^Refused: the tools Autopilot may use changed/);
+    expect(lastRun().errorMessage).toBeUndefined();
+    expect(mocks.updateAutopilotWorkflowByUserId).toHaveBeenLastCalledWith(
+      "wf-1",
+      "owner-1",
+      expect.objectContaining({ lastRunStatus: "refused" }),
+    );
+  });
+
+  it("refuses an approved workflow when a tool is added to the policy", async () => {
+    const approved = await currentAutopilotPolicyHash();
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: approved })];
+    installFakeTool();
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(mocks.generateText).not.toHaveBeenCalled();
+    expect(lastRun()).toMatchObject({ status: "refused", reasonCode: "policy_changed" });
+  });
+
+  it("keeps running a workflow that predates the hash (no stored hash) while the policy is empty", async () => {
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: null })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+    expect(lastRun()).toMatchObject({ status: "success", mode: "active" });
+    expect(lastRun().reasonCode).toBeUndefined();
+  });
+
+  it("refuses a workflow that predates the hash once the policy gains a tool", async () => {
+    installFakeTool();
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: null })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(mocks.generateText).not.toHaveBeenCalled();
+    expect(lastRun()).toMatchObject({ status: "refused", reasonCode: "policy_changed" });
+  });
+
+  it("refuses only the workflow whose policy changed, and the others still run", async () => {
+    installFakeTool();
+    const current = await currentAutopilotPolicyHash();
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: null }), workflow(2, { mode: "active", policyHash: current })];
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(await res.json()).toMatchObject({
+      ran: 2,
+      results: [
+        { id: "wf-1", status: "refused" },
+        { id: "wf-2", status: "success" },
+      ],
+    });
+    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("autopilot cron: observe mode", () => {
+  // Stands in for the SDK: it offers the model's tool call to the tool's own execute.
+  function modelCallsFakeRead() {
+    mocks.generateText.mockImplementation(async (args: { tools?: Record<string, Callable> }) => {
+      await args.tools?.fake_read.execute({ q: "weekly revenue" }, { toolCallId: "c1", messages: [] });
+      return { text: "Plan: look up the weekly revenue, then summarize it.", totalUsage: {}, providerMetadata: undefined };
+    });
+  }
+
+  it("records the model's text and the tool call it would make, and executes nothing", async () => {
+    installFakeTool();
+    modelCallsFakeRead();
+    mocks.dueRows = [workflow(1, { mode: "observe", policyHash: await currentAutopilotPolicyHash() })];
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    expect(await res.json()).toMatchObject({ ran: 1, results: [{ id: "wf-1", status: "success" }] });
+
+    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+    expect(toolExecute).not.toHaveBeenCalled();
+    expect(lastRun()).toMatchObject({
+      status: "success",
+      mode: "observe",
+      summary: "Plan: look up the weekly revenue, then summarize it.",
+      toolCalls: [{ toolName: "fake_read", input: { q: "weekly revenue" } }],
+    });
+  });
+
+  it("leaves no chat behind, but records the usage it cost", async () => {
+    mocks.dueRows = [workflow(1, { mode: "observe", policyHash: null })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.saveMessage).not.toHaveBeenCalled();
+    expect(mocks.recordModelUsage).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner-1", chatId: undefined }));
+    expect(lastRun()).toMatchObject({ status: "success", mode: "observe", summary: MODEL_TEXT });
+  });
+
+  it("is a dry run under the policy in force, so a changed policy does not refuse it", async () => {
+    installFakeTool();
+    mocks.dueRows = [workflow(1, { mode: "observe", policyHash: null })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+    expect(lastRun()).toMatchObject({ status: "success", mode: "observe" });
+  });
+
+  it("runs the tool for real once the workflow is active", async () => {
+    installFakeTool();
+    toolExecute.mockResolvedValue({ found: true });
+    modelCallsFakeRead();
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: await currentAutopilotPolicyHash() })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(toolExecute).toHaveBeenCalledTimes(1);
+    expect(toolExecute).toHaveBeenCalledWith({ q: "weekly revenue" });
+    expect(lastRun()).toMatchObject({
+      status: "success",
+      mode: "active",
+      toolCalls: [{ toolName: "fake_read", input: { q: "weekly revenue" } }],
+    });
+    expect(mocks.createChat).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("autopilot cron: loop guards record their code on the run", () => {
+  type Step = { text: string; toolCalls: { toolName: string; input: unknown }[]; content: { type: string }[] };
+  const emptyStep: Step = { text: "", toolCalls: [], content: [] };
+  const callStep = (input: unknown, failed = false): Step => ({
+    text: "",
+    toolCalls: [{ toolName: "fake_read", input }],
+    content: [{ type: failed ? "tool-error" : "tool-result" }],
+  });
+
+  // Stands in for the SDK loop: after each step it calls onStepFinish, then the stop conditions.
+  function modelTakes(steps: Step[]) {
+    mocks.generateText.mockImplementation(
+      async (args: {
+        stopWhen: Array<(options: { steps: Step[] }) => boolean | PromiseLike<boolean>>;
+        onStepFinish: (step: Step) => void;
+      }) => {
+        const taken: Step[] = [];
+        for (const step of steps) {
+          taken.push(step);
+          args.onStepFinish(step);
+          const stops = await Promise.all(args.stopWhen.map((condition) => condition({ steps: taken })));
+          if (stops.some(Boolean)) break;
+        }
+        return { text: "", totalUsage: {}, providerMetadata: undefined };
+      },
+    );
+  }
+
+  const cases: Array<[string, string, Step[]]> = [
+    ["3 empty steps", "empty_steps", [emptyStep, emptyStep, emptyStep, emptyStep]],
+    ["the same tool and arguments 3 times", "repeated_steps", [callStep({ q: "a" }), callStep({ q: "a" }), callStep({ q: "a" }), callStep({ q: "a" })]],
+    ["3 failures in a row", "tool_failures", [callStep({ q: "a" }, true), callStep({ q: "b" }, true), callStep({ q: "c" }, true), callStep({ q: "d" }, true)]],
+  ];
+
+  it.each(cases)("%s: the run stops, is failed, and records %s with a readable message", async (_label, code, steps) => {
+    installFakeTool();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    modelTakes(steps);
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: await currentAutopilotPolicyHash() })];
+
+    const res = await GET(cronRequest("GET", `Bearer ${SECRET}`));
+    expect(await res.json()).toMatchObject({ results: [{ id: "wf-1", status: "failed" }] });
+
+    expect(lastRun()).toMatchObject({
+      status: "failed",
+      mode: "active",
+      reasonCode: code,
+      summary: buildLoopGuardMessage(code as "empty_steps"),
+    });
+    expect(lastRun().errorMessage).toBe(lastRun().summary);
+    expect(lastRun().summary).not.toMatch(/Error|undefined/);
+  });
+
+  it("does not stop a run that makes progress", async () => {
+    installFakeTool();
+    mocks.generateText.mockImplementation(
+      async (args: { stopWhen: Array<(options: { steps: Step[] }) => boolean | PromiseLike<boolean>> }) => {
+        const taken = [callStep({ q: "a" }), callStep({ q: "b" }), callStep({ q: "c" })];
+        for (let n = 1; n <= taken.length; n++) {
+          const stops = await Promise.all(args.stopWhen.map((condition) => condition({ steps: taken.slice(0, n) })));
+          expect(stops.some(Boolean)).toBe(false);
+        }
+        return { text: MODEL_TEXT, totalUsage: {}, providerMetadata: undefined };
+      },
+    );
+    mocks.dueRows = [workflow(1, { mode: "active", policyHash: await currentAutopilotPolicyHash() })];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(lastRun()).toMatchObject({ status: "success", summary: MODEL_TEXT });
+  });
+
+  it("records empty_response when a model with no tools returns nothing", async () => {
+    mocks.generateText.mockResolvedValue({ text: "   ", totalUsage: {}, providerMetadata: undefined });
+    mocks.dueRows = [workflow(1)];
+
+    await GET(cronRequest("GET", `Bearer ${SECRET}`));
+
+    expect(lastRun()).toMatchObject({ status: "failed", reasonCode: "empty_response", summary: "The model returned an empty response." });
   });
 });

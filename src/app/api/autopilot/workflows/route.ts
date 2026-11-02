@@ -9,6 +9,7 @@ import {
   normalizeWorkflowName,
   normalizeWorkflowPrompt,
 } from "@/lib/extensions/autopilot";
+import { currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -61,12 +62,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // A new workflow starts in observe mode (a dry run) under the tool policy in force now;
+  // its owner switches it to active (PATCH mode) once the recorded runs look right.
   const workflow = await createAutopilotWorkflow({
     userId,
     name,
     prompt,
     cronExpression,
     timezone,
+    mode: "observe",
+    policyHash: await currentAutopilotPolicyHash(),
   });
 
   return NextResponse.json(

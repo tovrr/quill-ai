@@ -6,6 +6,7 @@ import { recordBuilderMetric } from "@/lib/builder/metrics";
 import { analyzeArtifactQuality, parseBuilderArtifact, type BuilderTarget } from "@/lib/builder/artifacts";
 import { NON_RENDERABLE_ASSISTANT_FALLBACK_TEXT, sanitizeAssistantOutputText } from "@/lib/ai/assistant-message-utils";
 import { validateGeneratedModule } from "@/lib/tools/validator";
+import { classifyRewrite } from "@/lib/agent/loop-guards";
 
 type ChatMode = "fast" | "thinking" | "advanced";
 
@@ -210,9 +211,17 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
       aggregatedUsage = mergeUsage(aggregatedUsage, await rewriteResult.usage);
 
       let finalMetadata = await rewriteResult.providerMetadata;
+
+      // A rewrite that is empty, or the same as the draft, adds nothing: keep the draft
+      // and skip the repair and quality passes, which would only spend more calls on it.
+      const rewriteStop = classifyRewrite(draftText, finalText);
+      if (rewriteStop) {
+        console.warn(JSON.stringify({ event: "builder.loop_guard.rewrite_stopped", code: rewriteStop }));
+        finalText = draftText;
+      }
       let artifact = parseBuilderArtifact(finalText);
 
-      if (!artifact) {
+      if (!artifact && !rewriteStop) {
         const repairResult = streamText({
           model,
           system: systemPrompt,
@@ -234,7 +243,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         }
       }
 
-      if (artifact) {
+      if (artifact && !rewriteStop) {
         const quality = analyzeArtifactQuality(artifact);
         if (quality.score < qualityRetryThreshold) {
           const qualityRetryPrompt = [
@@ -349,6 +358,7 @@ export function buildTwoPassBuilderStream(params: TwoPassBuilderParams) {
         providerMetadata: {
           ...finalMetadata,
           builderTwoPass: true,
+          ...(rewriteStop ? { builderLoopGuard: rewriteStop } : {}),
           artifactValidation: artifactValidationResult,
         },
       });
