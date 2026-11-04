@@ -7,6 +7,10 @@
  * MAX_WORKFLOWS_PER_INVOCATION per invocation, oldest first. Vercel invokes cron
  * jobs with GET, so GET is the handler that matters; POST stays for manual runs.
  *
+ * An active workflow runs only under the tool policy its owner approved; otherwise the
+ * run is recorded as `refused` (`policy_changed`) and nothing is called. A workflow in
+ * observe mode runs as a dry run (see src/lib/autopilot/run-workflow.ts).
+ *
  * Per workflow: (1) claim it by moving nextRunAt to its next slot, (2) run it,
  * (3) record the run and the last-run fields, each write on its own. The claim comes
  * first so a database that keeps refusing the write cannot get the workflow picked
@@ -98,7 +102,7 @@ async function handleCron(req: NextRequest) {
       }
 
       // 2. Run.
-      const { status, summary } = await runWorkflow(workflow);
+      const { status, summary, mode, reasonCode, toolCalls } = await runWorkflow(workflow);
 
       // 3. Record. The two writes are independent: one failing must not stop the other.
       const [runWrite, workflowWrite] = await Promise.allSettled([
@@ -106,6 +110,9 @@ async function handleCron(req: NextRequest) {
           workflowId: workflow.id,
           userId: workflow.userId,
           status,
+          mode,
+          reasonCode,
+          toolCalls,
           summary,
           ...(status === "failed" ? { errorMessage: summary } : {}),
         }),

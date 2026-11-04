@@ -39,8 +39,8 @@ export type ToolSpec = {
   build: (ctx: ToolContext) => ToolSet[string];
 };
 
-// The id /api/chat gives a request that has no session.
-const GUEST_USER_ID = "guest";
+/** The id /api/chat gives a request that has no session; the chat route and the registry share it. */
+export const GUEST_USER_ID = "guest";
 
 /** Registration order is the order of the tools the model receives. */
 export const TOOL_REGISTRY: readonly ToolSpec[] = [
@@ -72,13 +72,20 @@ function isToolAllowed(spec: ToolSpec, ctx: ToolContext): boolean {
   return true;
 }
 
-/** The tools the model may call on this request, built for this user. */
-export function buildToolsForRequest(ctx: ToolContext): ToolSet {
+/** The specs of the tools this context may use, in registration order. */
+export function selectToolSpecs(ctx: ToolContext, registry: readonly ToolSpec[] = TOOL_REGISTRY): ToolSpec[] {
+  return registry.filter((spec) => isToolAllowed(spec, ctx));
+}
+
+/**
+ * The tools the model may call on this request, built for this user. `registry` is the
+ * list to choose from: the whole registry for a chat request, a narrower one for
+ * Autopilot (see src/lib/autopilot/tool-policy.ts).
+ */
+export function buildToolsForRequest(ctx: ToolContext, registry: readonly ToolSpec[] = TOOL_REGISTRY): ToolSet {
   const tools: ToolSet = {};
-  for (const spec of TOOL_REGISTRY) {
-    if (isToolAllowed(spec, ctx)) {
-      tools[spec.name] = spec.build(ctx);
-    }
+  for (const spec of selectToolSpecs(ctx, registry)) {
+    tools[spec.name] = spec.build(ctx);
   }
   return tools;
 }

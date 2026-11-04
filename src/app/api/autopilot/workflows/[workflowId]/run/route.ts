@@ -34,6 +34,7 @@ export async function POST(_: Request, { params }: Params) {
     workflowId,
     userId,
     status: "success",
+    mode: workflow.mode,
     summary: "Manual run recorded. Execution hook can now be connected to your agent pipeline.",
   });
 

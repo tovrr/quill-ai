@@ -12,6 +12,7 @@ import {
   normalizeWorkflowName,
   normalizeWorkflowPrompt,
 } from "@/lib/extensions/autopilot";
+import { currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,8 @@ export async function PATCH(request: Request, { params }: Params) {
         cronExpression?: unknown;
         timezone?: unknown;
         status?: unknown;
+        mode?: unknown;
+        approvePolicy?: unknown;
       }
     | null;
 
@@ -75,6 +78,25 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
     updates.status = body.status;
+  }
+
+  if (body?.mode !== undefined) {
+    if (body.mode !== "observe" && body.mode !== "active") {
+      return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
+    }
+    updates.mode = body.mode;
+  }
+
+  if (body?.approvePolicy !== undefined && body.approvePolicy !== true) {
+    return NextResponse.json({ error: "Invalid approvePolicy" }, { status: 400 });
+  }
+
+  // The owner approves the tool policy in force by switching a workflow to active, or by
+  // approving it again after a run was refused (policy_changed). Pausing and resuming do not.
+  if ((body?.mode === "active" && existing.mode !== "active") || body?.approvePolicy === true) {
+    updates.policyHash = await currentAutopilotPolicyHash();
+    // Approving after a refused run clears the refusal, so the page does not offer it again.
+    if (existing.lastRunStatus === "refused") updates.lastRunStatus = null;
   }
 
   if (Object.keys(updates).length === 0) {

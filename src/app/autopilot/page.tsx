@@ -33,16 +33,20 @@ interface Workflow {
   cronExpression: string;
   timezone: string;
   status: "active" | "paused";
+  /** "observe" is a dry run: it records what it would do and executes no tool. */
+  mode: "observe" | "active";
   lastRunAt: string | null;
   nextRunAt: string | null;
-  lastRunStatus: "success" | "failed" | null;
+  lastRunStatus: "success" | "failed" | "refused" | null;
   createdAt: string;
 }
 
 interface Run {
   id: string;
   workflowId: string;
-  status: "success" | "failed";
+  status: "success" | "failed" | "refused";
+  mode?: "observe" | "active";
+  toolCalls?: { toolName: string }[] | null;
   summary: string | null;
   errorMessage: string | null;
   startedAt: string;
@@ -176,7 +180,7 @@ export default function AutopilotPage() {
       }
       setForm(DEFAULT_FORM);
       setShowNewForm(false);
-      showToast(`"${form.name}" created`);
+      showToast(`"${form.name}" created as a dry run`);
     } catch {
       setFormError("Network error. Please try again.");
     } finally {
@@ -197,6 +201,45 @@ export default function AutopilotPage() {
         setWorkflows((prev) =>
           prev.map((w) => (w.id === workflow.id ? { ...w, status: nextStatus } : w))
         );
+      }
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  // Switching a dry run to active is the owner's approval: the server stores the tool
+  // policy in force at that moment, and a later change of policy refuses the runs.
+  async function handleActivate(workflow: Workflow) {
+    if (!window.confirm(`Switch "${workflow.name}" to active? Its next run will execute for real.`)) return;
+    setActioningId(workflow.id);
+    try {
+      const res = await fetch(`/api/autopilot/workflows/${workflow.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "active" }),
+      });
+      if (res.ok) {
+        setWorkflows((prev) => prev.map((w) => (w.id === workflow.id ? { ...w, mode: "active" } : w)));
+        showToast(`"${workflow.name}" is now active`);
+      }
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  // After a run was refused because the tools Autopilot may use changed.
+  async function handleApprovePolicy(workflow: Workflow) {
+    if (!window.confirm(`Approve the current tool policy for "${workflow.name}" and let it run again?`)) return;
+    setActioningId(workflow.id);
+    try {
+      const res = await fetch(`/api/autopilot/workflows/${workflow.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvePolicy: true }),
+      });
+      if (res.ok) {
+        setWorkflows((prev) => prev.map((w) => (w.id === workflow.id ? { ...w, lastRunStatus: null } : w)));
+        showToast(`"${workflow.name}" approved`);
       }
     } finally {
       setActioningId(null);
@@ -476,6 +519,11 @@ export default function AutopilotPage() {
                         >
                           {workflow.status}
                         </span>
+                        {workflow.mode === "observe" && (
+                          <span className="rounded border border-quill-border px-1.5 py-0.5 text-xs font-medium text-quill-muted">
+                            dry run
+                          </span>
+                        )}
                       </div>
                       <p className="line-clamp-2 text-xs text-quill-muted">{workflow.prompt}</p>
                       <div className="flex flex-wrap gap-3 pt-1 text-xs text-quill-muted">
@@ -502,6 +550,37 @@ export default function AutopilotPage() {
                           </span>
                         )}
                       </div>
+
+                      {workflow.mode === "observe" && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-quill-muted">
+                          <span>Runs record what they would do and execute nothing.</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isActioning}
+                            onClick={() => { void handleActivate(workflow); }}
+                            className="h-7 rounded-lg px-2 text-xs"
+                          >
+                            Switch to active
+                          </Button>
+                        </div>
+                      )}
+                      {workflow.lastRunStatus === "refused" && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-quill-accent">
+                          <span>The tools Autopilot may use changed. Nothing ran.</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isActioning}
+                            onClick={() => { void handleApprovePolicy(workflow); }}
+                            className="h-7 rounded-lg px-2 text-xs"
+                          >
+                            Approve and resume
+                          </Button>
+                        </div>
+                      )}
 
                       {/* Last run summary inline */}
                       {lastRun?.summary && (
@@ -582,9 +661,15 @@ export default function AutopilotPage() {
                             {workflow?.name ?? "Unknown workflow"}
                           </span>
                           <span className="text-xs text-quill-muted">{formatRelativeTime(run.startedAt)}</span>
+                          {run.mode === "observe" && <span className="text-xs text-quill-muted">dry run</span>}
                         </div>
                         {run.summary && (
                           <p className="mt-0.5 text-xs text-quill-muted line-clamp-2">{run.summary}</p>
+                        )}
+                        {run.toolCalls && run.toolCalls.length > 0 && (
+                          <p className="mt-0.5 text-xs text-quill-muted line-clamp-1">
+                            {run.mode === "observe" ? "Would call" : "Called"}: {run.toolCalls.map((call) => call.toolName).join(", ")}
+                          </p>
                         )}
                         {run.errorMessage && (
                           <p className="mt-0.5 text-xs text-quill-accent line-clamp-1">{run.errorMessage}</p>

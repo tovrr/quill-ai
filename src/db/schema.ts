@@ -213,9 +213,18 @@ export const autopilotWorkflows = pgTable(
     status: varchar("status", { enum: ["active", "paused"] })
       .notNull()
       .default("active"),
+    // "observe" records what a run would do and executes no tool; "active" runs for real.
+    // The column default is "active" on purpose: it keeps every workflow created before the
+    // column existed running as it did. New workflows are created in "observe" by the API.
+    mode: varchar("mode", { enum: ["observe", "active"] })
+      .notNull()
+      .default("active"),
+    // Hash of the Autopilot tool policy at the owner's approval (src/lib/autopilot/tool-policy.ts).
+    // NULL on a workflow that predates it: it was approved while Autopilot had no tools.
+    policyHash: varchar("policyHash"),
     lastRunAt: timestamp("lastRunAt", { mode: "date" }),
     nextRunAt: timestamp("nextRunAt", { mode: "date" }),
-    lastRunStatus: varchar("lastRunStatus", { enum: ["success", "failed"] }),
+    lastRunStatus: varchar("lastRunStatus", { enum: ["success", "failed", "refused"] }),
     createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`),
   },
@@ -238,7 +247,16 @@ export const autopilotRuns = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    status: varchar("status", { enum: ["success", "failed"] }).notNull(),
+    status: varchar("status", { enum: ["success", "failed", "refused"] }).notNull(),
+    // The mode the run executed in. An "observe" run executed no tool.
+    mode: varchar("mode", { enum: ["observe", "active"] })
+      .notNull()
+      .default("active"),
+    // Why a run was refused or cut: policy_changed, empty_steps, repeated_steps,
+    // tool_failures, empty_response. NULL for an ordinary run.
+    reasonCode: varchar("reasonCode"),
+    // The tool calls the model made ({ toolName, input }[]); in observe mode, the ones it would make.
+    toolCalls: jsonb("toolCalls"),
     summary: text("summary"),
     errorMessage: text("errorMessage"),
     startedAt: timestamp("startedAt").default(sql`CURRENT_TIMESTAMP`),

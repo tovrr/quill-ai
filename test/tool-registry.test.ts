@@ -12,7 +12,7 @@ vi.mock("@/lib/execution/service", () => ({ executeCode: mocks.executeCode }));
 vi.mock("@/lib/rag/embed", () => ({ embedText: mocks.embedText }));
 vi.mock("@/lib/rag/search", () => ({ searchChunks: mocks.searchChunks }));
 
-import { buildToolsForRequest, TOOL_REGISTRY, type ToolContext } from "@/lib/tools/registry";
+import { buildToolsForRequest, GUEST_USER_ID, selectToolSpecs, TOOL_REGISTRY, type ToolContext, type ToolSpec } from "@/lib/tools/registry";
 
 const ALLOWED_RISKS = ["read", "network", "exec", "write"];
 const TIERS: ToolContext["tier"][] = ["free", "pro"];
@@ -187,5 +187,40 @@ describe("search_knowledge_base tool", () => {
       found: false,
       message: "Knowledge base search is unavailable (OPENAI_API_KEY not configured).",
     });
+  });
+});
+
+describe("the guest id", () => {
+  it("is the id /api/chat gives a request with no session", () => {
+    expect(GUEST_USER_ID).toBe("guest");
+  });
+
+  it("gets no tool that needs a signed-in user, whatever the constant says", () => {
+    const names = Object.keys(buildToolsForRequest({ userId: GUEST_USER_ID, canRunCode: false, tier: "pro" }));
+    expect(names).not.toContain("search_knowledge_base");
+  });
+});
+
+describe("a tool that needs a paid plan", () => {
+  const paidSpec: ToolSpec = {
+    ...TOOL_REGISTRY[1],
+    name: "fake_paid_tool",
+    requires: { auth: true, paid: true, codeExecution: false },
+    build: () => ({ description: "A paid tool.", inputSchema: TOOL_REGISTRY[1].inputSchema }) as ReturnType<ToolSpec["build"]>,
+  };
+  const registry = [...TOOL_REGISTRY, paidSpec];
+
+  it("is given to a pro user and not to a free one", () => {
+    expect(Object.keys(buildToolsForRequest({ userId: "user-1", canRunCode: false, tier: "pro" }, registry))).toContain("fake_paid_tool");
+    expect(Object.keys(buildToolsForRequest({ userId: "user-1", canRunCode: false, tier: "free" }, registry))).not.toContain("fake_paid_tool");
+  });
+
+  it("is still withheld from a guest on a pro tier, because it also needs a sign-in", () => {
+    const specs = selectToolSpecs({ userId: GUEST_USER_ID, canRunCode: true, tier: "pro" }, registry);
+    expect(specs.map((spec) => spec.name)).not.toContain("fake_paid_tool");
+  });
+
+  it("does not change what the real registry gives when no registry is passed", () => {
+    expect(Object.keys(buildToolsForRequest({ userId: "user-1", canRunCode: true, tier: "pro" }))).toEqual(["run_code", "search_knowledge_base"]);
   });
 });
