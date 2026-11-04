@@ -21,6 +21,9 @@
     "builder",
     "llm"
   ],
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "cross-env NEXT_DISABLE_TURBOPACK=1 next dev",
@@ -149,6 +152,6 @@
     "tailwindcss": "^4.1.17",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.5"
   }
 }
