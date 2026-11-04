@@ -23,9 +23,11 @@ vi.mock("@/lib/execution/service", () => ({ executeCode: vi.fn() }));
 vi.mock("@/lib/rag/embed", () => ({ embedText: vi.fn() }));
 vi.mock("@/lib/rag/search", () => ({ searchChunks: vi.fn() }));
 
-import { POST } from "@/app/api/autopilot/workflows/route";
-import { PATCH } from "@/app/api/autopilot/workflows/[workflowId]/route";
+import { GET, POST } from "@/app/api/autopilot/workflows/route";
+import { DELETE, PATCH } from "@/app/api/autopilot/workflows/[workflowId]/route";
 import { NO_TOOLS_POLICY_HASH, currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
+import { AUTOPILOT_MIGRATION_FILE } from "@/lib/autopilot/schema-guard";
+import { missingColumnError, postgresError } from "./helpers/db-errors";
 
 const OWNER = "owner-1";
 
@@ -49,6 +51,7 @@ const existing = (overrides: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => {});
   mocks.getSession.mockResolvedValue({ user: { id: OWNER } });
   mocks.createAutopilotWorkflow.mockImplementation(async (input: Record<string, unknown>) => ({ id: "wf-new", ...input }));
   mocks.getAutopilotWorkflowById.mockResolvedValue(existing());
@@ -156,5 +159,59 @@ describe("PATCH /api/autopilot/workflows/[id]: the owner's approval", () => {
 
     expect((await patch({ mode: "active" })).status).toBe(404);
     expect(mocks.updateAutopilotWorkflowByUserId).not.toHaveBeenCalled();
+  });
+});
+
+describe("a database behind the code (an Autopilot column is missing)", () => {
+  const validPost = () => POST(json("POST", { name: "Digest", prompt: "Summarize the news", cronExpression: "0 8 * * *" }));
+  const remove = () => DELETE(json("DELETE", undefined), { params: Promise.resolve({ workflowId: "wf-1" }) });
+
+  // Each case: the call, and how to make its first database query fail with a given error.
+  const calls: [string, () => Promise<Response>, (err: Error) => void][] = [
+    ["GET /workflows", () => GET(), (err) => mocks.getAutopilotWorkflowsByUserId.mockRejectedValue(err)],
+    ["POST /workflows", validPost, (err) => mocks.createAutopilotWorkflow.mockRejectedValue(err)],
+    ["PATCH /workflows/[id]", () => patch({ status: "paused" }), (err) => mocks.getAutopilotWorkflowById.mockRejectedValue(err)],
+    ["DELETE /workflows/[id]", remove, (err) => mocks.deleteAutopilotWorkflowByUserId.mockRejectedValue(err)],
+  ];
+
+  it.each(calls)("%s answers 503 naming the migration file, and logs it once", async (_name, call, failWith) => {
+    failWith(missingColumnError());
+
+    const res = await call();
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({
+      code: "autopilot_schema_outdated",
+      migration: AUTOPILOT_MIGRATION_FILE,
+      error: expect.stringContaining(AUTOPILOT_MIGRATION_FILE),
+    });
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(vi.mocked(console.error).mock.calls[0][0] as string)).toMatchObject({
+      event: "autopilot.schema.outdated",
+      migration: AUTOPILOT_MIGRATION_FILE,
+      errorCode: "42703",
+    });
+  });
+
+  it.each(calls)("%s does not hide another database error", async (_name, call, failWith) => {
+    failWith(postgresError("57P01", "connection terminated"));
+
+    await expect(call()).rejects.toThrow("connection terminated");
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("does not blame the Autopilot migration for a missing column of another table", async () => {
+    mocks.getAutopilotWorkflowsByUserId.mockRejectedValue(missingColumnError("chat", "title"));
+
+    await expect(GET()).rejects.toThrow();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("still answers 401 before touching the database", async () => {
+    mocks.getSession.mockResolvedValue(null);
+    mocks.getAutopilotWorkflowsByUserId.mockRejectedValue(missingColumnError());
+
+    expect((await GET()).status).toBe(401);
+    expect(mocks.getAutopilotWorkflowsByUserId).not.toHaveBeenCalled();
   });
 });

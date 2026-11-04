@@ -13,6 +13,7 @@ import {
   normalizeWorkflowPrompt,
 } from "@/lib/extensions/autopilot";
 import { currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
+import { guardAutopilotSchema } from "@/lib/autopilot/schema-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,16 @@ async function getSessionUserId() {
   return sessionData?.user?.id ?? null;
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+// A missing Autopilot column answers 503 with the migration to run (see schema-guard.ts).
+export async function PATCH(request: Request, context: Params) {
+  return guardAutopilotSchema(() => updateWorkflow(request, context));
+}
+
+export async function DELETE(request: Request, context: Params) {
+  return guardAutopilotSchema(() => deleteWorkflow(request, context));
+}
+
+async function updateWorkflow(request: Request, { params }: Params) {
   const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -111,7 +121,7 @@ export async function PATCH(request: Request, { params }: Params) {
   return NextResponse.json({ workflow }, { status: 200 });
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+async function deleteWorkflow(_: Request, { params }: Params) {
   const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

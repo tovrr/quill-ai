@@ -86,3 +86,35 @@ export function describeUnexpectedErrorForLog(err: unknown): {
   }
   return { ...described, errorMessage: err.message.slice(0, MAX_LOGGED_MESSAGE_LENGTH) };
 }
+
+// Postgres SQLSTATE 42703: undefined_column.
+const UNDEFINED_COLUMN_CODE = "42703";
+
+// The two tables the Autopilot code reads and writes, as they appear in the SQL Drizzle sends.
+const AUTOPILOT_TABLE_PATTERN = /\bautopilot_(?:workflow|run)\b/;
+
+/**
+ * True when a query failed because an Autopilot column does not exist yet: the code was
+ * deployed before the SQL that adds the column was run (see AUTOPILOT_MIGRATION_FILE).
+ *
+ * On neon-http the SQLSTATE sits on the driver's error (`code`), wrapped by the
+ * DrizzleQueryError that Drizzle throws, so the whole `cause` chain is searched. When the
+ * chain carries the failed SQL (`query`), that SQL must name an Autopilot table: a missing
+ * column of another table is not this migration's fault and must not be reported as such.
+ * A bare driver error has no SQL to check; the guard only wraps Autopilot handlers.
+ */
+export function isMissingAutopilotColumn(err: unknown): boolean {
+  const hasUndefinedColumnCode = someInChain(err, (candidate) => {
+    const code = typeof candidate === "object" && candidate !== null ? (candidate as { code?: unknown }).code : undefined;
+    return (typeof code === "string" || typeof code === "number") && String(code) === UNDEFINED_COLUMN_CODE;
+  });
+  if (!hasUndefinedColumnCode) return false;
+
+  let failedQuery: string | undefined;
+  someInChain(err, (candidate) => {
+    const query = typeof candidate === "object" && candidate !== null ? (candidate as { query?: unknown }).query : undefined;
+    if (typeof query === "string") failedQuery = query;
+    return failedQuery !== undefined;
+  });
+  return failedQuery === undefined || AUTOPILOT_TABLE_PATTERN.test(failedQuery);
+}

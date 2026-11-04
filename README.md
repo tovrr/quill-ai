@@ -166,6 +166,9 @@ Database scripts:
 - `npm run db:push`
 - `npm run db:studio`
 
+A change that adds a column needs its SQL (`src/db/migrations/`) or `db:push` applied **before** the pull
+request is merged: see the release checklist in `DEPLOYMENT_CHECKLIST.md` (section 3).
+
 ## Terminal CLI
 
 Quill includes a terminal client in `cli/index.mjs` backed by `POST /api/cli/chat`.

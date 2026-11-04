@@ -42,6 +42,24 @@ Optional (feature flags/cost control):
 - Apply schema updates: `npm run db:push`
 - Verify chat/message tables are healthy via Drizzle Studio: `npm run db:studio`
 
+### Release checklist: a change that adds a database column
+
+There is no migration runner: nothing applies a column for you on deploy, and `main` is the release branch.
+The Autopilot cron and API read every column of `autopilot_workflow` and `autopilot_run`, so code that
+selects a column the database does not have yet breaks Autopilot for every user.
+
+1. Add the SQL for the column under `src/db/migrations/` (additive and idempotent: `ADD COLUMN IF NOT EXISTS`),
+   or have `npm run db:push` ready for the same change.
+2. **Run the SQL (or `npm run db:push`) on the production database BEFORE merging the pull request.**
+   A column that nothing reads yet is harmless; code that reads a missing column is not.
+3. Merge, then check `GET /api/autopilot/runs` while signed in, and the next cron run in the Vercel logs.
+4. If a release adds an Autopilot column, point `AUTOPILOT_MIGRATION_FILE` in
+   `src/lib/autopilot/schema-guard.ts` at the newest SQL file, so the error below names the right one.
+
+If the order was wrong, the Autopilot routes (the cron included) answer `503` with
+`code: "autopilot_schema_outdated"` and the SQL file to run, and log `autopilot.schema.outdated` once per failed
+request. The rest of the app is not affected. Run the file named in the answer, then retry.
+
 ## 4) API Hardening Verification
 
 ```bash

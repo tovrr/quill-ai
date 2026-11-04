@@ -22,7 +22,7 @@ import { describeErrorForLog, isTimeoutOrAbort } from "@/lib/autopilot/errors";
 import { buildLoopGuardMessage, createLoopGuard, type LoopStopReason } from "@/lib/agent/loop-guards";
 import {
   buildAutopilotTools,
-  checkPolicyApproval,
+  refuseIfPolicyChanged,
   type PolicySource,
   type RecordedToolCall,
 } from "@/lib/autopilot/tool-policy";
@@ -110,19 +110,8 @@ export async function runWorkflow(workflow: WorkflowRow, policy: PolicySource = 
   try {
     // An active workflow acts for its owner, so it runs only under the tool policy the
     // owner approved. An observe run executes no tool, so it runs under the current one.
-    if (!observe) {
-      const approval = await checkPolicyApproval(workflow, policy);
-      if (!approval.ok) {
-        return {
-          status: "refused",
-          mode,
-          reasonCode: "policy_changed",
-          summary:
-            "Refused: the tools Autopilot may use changed after you approved this workflow. " +
-            "Nothing was run. Review it and approve the new policy to resume.",
-        };
-      }
-    }
+    const refusal = await refuseIfPolicyChanged(workflow, policy);
+    if (refusal) return refusal;
 
     const tier = await resolveTier(userId);
     const budget = await checkTokenBudget(userId, tier, estimateTokens(workflow.prompt));

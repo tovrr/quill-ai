@@ -4,7 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Autopilot "Run now" runs the same tool-policy check as the cron (`refuseIfPolicyChanged`): a workflow approved under another policy gets a `refused` run (`policy_changed`) and keeps its `refused` status, instead of a placeholder `success` that hid "Approve and resume"
+- Autopilot page: switching to active, approving the policy and "Run now" show the API's error (or a network error) in a toast when the call fails
+
 ### Added
+- Autopilot schema guard (`src/lib/autopilot/schema-guard.ts`): when the database lacks an Autopilot column (Postgres 42703 on `autopilot_workflow` / `autopilot_run`), the Autopilot API and the cron answer `503` with `code: "autopilot_schema_outdated"` and the SQL file to run, and log `autopilot.schema.outdated`, instead of an opaque 500. A "Release checklist" in `DEPLOYMENT_CHECKLIST.md` says to run the SQL before merging a change that adds a column
+- One canonical-JSON helper (`src/lib/canonical-json.ts`) for the loop-guard repeat key and the Autopilot tool-policy hash; the hash of the empty policy is unchanged
 - Loop guards (`src/lib/agent/loop-guards.ts`): the chat route and the Autopilot runner stop a tool loop after `AGENT_MAX_UNUSABLE_STEPS` (default 3) consecutive empty, repeated or fully failed steps and tell the user in plain words; the two-pass builder stops when its rewrite is empty or identical to the draft
 - Autopilot: each workflow stores the hash of the tool policy at the owner's approval and an active workflow is refused (`policy_changed`) when it differs; new workflows start in observe mode (a dry run that records the model's text and the tool calls it would make) until the owner switches them to active. Requires the SQL in `src/db/migrations/2026-11-02-autopilot-policy-observe.sql` (or `db:push`) before deploy
 - Terminal CLI interface (`cli/index.mjs`) with one-shot and REPL modes, plus `/api/cli/chat` authenticated SSE endpoint (`QUILL_CLI_KEY`)

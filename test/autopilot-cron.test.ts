@@ -17,6 +17,8 @@ type OrderSpec = { dir: "asc" | "desc"; column: string };
 
 const mocks = vi.hoisted(() => ({
   dueRows: [] as unknown[],
+  /** When set, the due-workflows query rejects with it. */
+  dueQueryError: undefined as unknown,
   limit: vi.fn(),
   generateText: vi.fn(),
   resolveModelForMode: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock("@/db", () => {
     },
     limit: (n: number) => {
       mocks.limit(n);
+      if (mocks.dueQueryError) return Promise.reject(mocks.dueQueryError);
       const rows = [...(mocks.dueRows as Record<string, unknown>[])];
       for (const { dir, column } of [...order].reverse()) {
         const sign = dir === "asc" ? 1 : -1;
@@ -95,6 +98,8 @@ import { MAX_WORKFLOWS_PER_INVOCATION } from "@/lib/autopilot/run-workflow";
 import { AUTOPILOT_TOOL_ALLOWLIST, currentAutopilotPolicyHash } from "@/lib/autopilot/tool-policy";
 import { buildLoopGuardMessage } from "@/lib/agent/loop-guards";
 import { TOOL_REGISTRY, type ToolSpec } from "@/lib/tools/registry";
+import { AUTOPILOT_MIGRATION_FILE } from "@/lib/autopilot/schema-guard";
+import { missingColumnError, postgresError } from "./helpers/db-errors";
 
 function workflow(n: number, overrides: Partial<DueRow> = {}): DueRow {
   return {
@@ -126,6 +131,7 @@ beforeEach(() => {
   process.env.CRON_SECRET = SECRET;
 
   mocks.dueRows = [];
+  mocks.dueQueryError = undefined;
   mocks.resolveUserEntitlements.mockResolvedValue({ canUsePaidModes: false });
   mocks.checkTokenBudget.mockResolvedValue({ allowed: true, dailyUsed: 0, monthlyUsed: 0 });
   mocks.resolveModelForMode.mockResolvedValue({ model: { id: "fake-model" }, provider: "google", modelId: "fake-model-id" });
@@ -902,5 +908,85 @@ describe("autopilot cron: loop guards record their code on the run", () => {
     await GET(cronRequest("GET", `Bearer ${SECRET}`));
 
     expect(lastRun()).toMatchObject({ status: "failed", reasonCode: "empty_response", summary: "The model returned an empty response." });
+  });
+});
+
+describe("autopilot cron: a database behind the code", () => {
+  const authorized = (method: "GET" | "POST") => cronRequest(method, `Bearer ${SECRET}`);
+
+  it.each(["GET", "POST"] as const)(
+    "%s answers 503 naming the migration file, logs it, and calls no model, when an Autopilot column is missing",
+    async (method) => {
+      mocks.dueQueryError = missingColumnError("autopilot_workflow", "policyHash");
+      const handler = method === "GET" ? GET : POST;
+
+      const res = await handler(authorized(method));
+
+      expect(res.status).toBe(503);
+      const body = await res.json();
+      expect(body).toMatchObject({ code: "autopilot_schema_outdated", migration: AUTOPILOT_MIGRATION_FILE });
+      expect(body.migration).toMatch(/^src\/db\/migrations\/.+\.sql$/);
+      expect(body.error).toContain(AUTOPILOT_MIGRATION_FILE);
+
+      expect(mocks.generateText).not.toHaveBeenCalled();
+      expect(mocks.createChat).not.toHaveBeenCalled();
+      expect(mocks.createAutopilotRun).not.toHaveBeenCalled();
+
+      // One log line, with the file to run, the error class and the SQLSTATE; no SQL, no params.
+      expect(console.error).toHaveBeenCalledTimes(1);
+      const line = vi.mocked(console.error).mock.calls[0][0] as string;
+      expect(JSON.parse(line)).toEqual({
+        event: "autopilot.schema.outdated",
+        migration: AUTOPILOT_MIGRATION_FILE,
+        errorName: expect.any(String),
+        errorCode: "42703",
+      });
+      expect(line).not.toContain("select");
+      expect(line).not.toContain("wf-1");
+    },
+  );
+
+  it("still answers 401 first: an unauthenticated caller learns nothing about the schema", async () => {
+    mocks.dueQueryError = missingColumnError();
+
+    const res = await GET(cronRequest("GET"));
+
+    expect(res.status).toBe(401);
+    expect(mocks.limit).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("does not hide another database error: it is thrown again", async () => {
+    mocks.dueQueryError = postgresError("57P01", "connection terminated");
+
+    await expect(GET(authorized("GET"))).rejects.toThrow("connection terminated");
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("does not blame the Autopilot migration for a missing column of another table", async () => {
+    mocks.dueQueryError = missingColumnError("chat", "title");
+
+    await expect(GET(authorized("GET"))).rejects.toThrow();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("names the migration in the log when a write fails later on a missing column, and still answers 200", async () => {
+    mocks.dueRows = [workflow(1)];
+    mocks.createAutopilotRun.mockRejectedValue(missingColumnError("autopilot_run", "reasonCode"));
+
+    const res = await GET(authorized("GET"));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ results: [{ id: "wf-1", status: "failed" }] });
+    const lines = vi.mocked(console.error).mock.calls.map((call) => JSON.parse(call[0] as string));
+    expect(lines).toEqual([
+      {
+        event: "autopilot.cron.run_record_failed",
+        workflowId: "wf-1",
+        migration: AUTOPILOT_MIGRATION_FILE,
+        errorName: expect.any(String),
+        errorCode: "42703",
+      },
+    ]);
   });
 });

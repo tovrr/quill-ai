@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers as nextHeaders } from "next/headers";
 import { getRecentAutopilotRunsByUserId } from "@/lib/data/db-helpers";
+import { guardAutopilotSchema } from "@/lib/autopilot/schema-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,12 @@ async function getSessionUserId() {
   return sessionData?.user?.id ?? null;
 }
 
+// A missing Autopilot column answers 503 with the migration to run (see schema-guard.ts).
 export async function GET(request: Request) {
+  return guardAutopilotSchema(() => listRuns(request));
+}
+
+async function listRuns(request: Request) {
   const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
