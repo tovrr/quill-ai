@@ -12,6 +12,7 @@
  */
 
 import type { StopCondition } from "ai";
+import { canonicalJson } from "@/lib/canonical-json";
 
 /** Why a loop was cut. Recorded on the Autopilot run and in the log. */
 export type LoopStopReason = "empty_steps" | "repeated_steps" | "tool_failures";
@@ -57,23 +58,11 @@ export function readMaxUnusableSteps(env: Record<string, string | undefined> = p
   return Number.isSafeInteger(value) && value >= 1 ? value : DEFAULT_MAX_UNUSABLE_STEPS;
 }
 
-// JSON with the keys of every object sorted, so the same arguments give the same string.
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  if (typeof value === "object" && value !== null) {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, inner]) => inner !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    return `{${entries.map(([key, inner]) => `${JSON.stringify(key)}:${stableStringify(inner)}`).join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
-
 /** The identity of a step for repeat detection: its tool calls when it has any, else its text. */
 function stepKey(step: LoopStep): string {
   const calls = step.toolCalls ?? [];
   if (calls.length > 0) {
-    return `calls:${calls.map((call) => `${call.toolName}(${stableStringify(call.input)})`).join(";")}`;
+    return `calls:${calls.map((call) => `${call.toolName}(${canonicalJson(call.input)})`).join(";")}`;
   }
   const text = (step.text ?? "").trim();
   return text ? `text:${text}` : "";

@@ -16,6 +16,7 @@ import {
   checkPolicyApproval,
   computeToolPolicyHash,
   currentAutopilotPolicyHash,
+  refuseIfPolicyChanged,
   type RecordedToolCall,
 } from "@/lib/autopilot/tool-policy";
 import type { ToolSpec } from "@/lib/tools/registry";
@@ -49,6 +50,16 @@ beforeEach(() => {
 describe("the empty policy (what every workflow was approved under before the hash existed)", () => {
   it("has a pinned hash that is the hash of no tool", async () => {
     expect(await computeToolPolicyHash([])).toBe(NO_TOOLS_POLICY_HASH);
+  });
+
+  // The literal below was copied from the code before the canonical-JSON helper was shared
+  // (b4ec5a8), not computed: if the helper ever changes how it writes JSON, every stored
+  // hash stops matching and every active workflow is refused, so this must fail loudly.
+  it("keeps the hash of the empty policy that every stored workflow was approved under", async () => {
+    const STORED_HASH = "8ace068ed2f4ef0dea8b8cea71e84bff8fcdbf629cf97ba2dd0bb9c0d7bdb8b6";
+    expect(await computeToolPolicyHash([])).toBe(STORED_HASH);
+    expect(await currentAutopilotPolicyHash()).toBe(STORED_HASH);
+    expect(NO_TOOLS_POLICY_HASH).toBe(STORED_HASH);
   });
 
   it("is the policy in force today: Autopilot offers no tool", async () => {
@@ -202,5 +213,39 @@ describe("buildAutopilotTools", () => {
   it("never offers a tool that needs code execution, whatever the allowlist says", () => {
     const exec = fakeSpec({ name: "runs_code", risk: "exec", requires: { auth: false, paid: false, codeExecution: true } });
     expect(buildAutopilotTools(OWNER, { observe: false, calls: [] }, { registry: [exec], allowlist: ["runs_code"] })).toBeUndefined();
+  });
+});
+
+describe("refuseIfPolicyChanged (the gate the cron and Run now share)", () => {
+  const withTool = { registry: [fakeSpec()], allowlist: ["fake_read"] };
+
+  it("lets an active workflow approved under the policy in force go on", async () => {
+    expect(await refuseIfPolicyChanged({ mode: "active", policyHash: NO_TOOLS_POLICY_HASH })).toBeNull();
+    expect(await refuseIfPolicyChanged({ mode: "active", policyHash: null })).toBeNull();
+  });
+
+  it("refuses an active workflow approved under another policy, as policy_changed", async () => {
+    const refusal = await refuseIfPolicyChanged({ mode: "active", policyHash: "approved-under-an-older-policy" });
+
+    expect(refusal).toEqual({
+      status: "refused",
+      mode: "active",
+      reasonCode: "policy_changed",
+      summary: expect.stringMatching(/^Refused: the tools Autopilot may use changed after you approved this workflow\./),
+    });
+  });
+
+  it("reads a workflow with no mode as active", async () => {
+    expect(await refuseIfPolicyChanged({ policyHash: "stale" })).toMatchObject({ status: "refused" });
+  });
+
+  it("never refuses a dry run: it executes no tool, so it runs under the policy in force", async () => {
+    expect(await refuseIfPolicyChanged({ mode: "observe", policyHash: "stale" })).toBeNull();
+  });
+
+  it("refuses a workflow with no stored hash once the policy gains a tool", async () => {
+    expect(await refuseIfPolicyChanged({ mode: "active", policyHash: null }, withTool)).toMatchObject({
+      reasonCode: "policy_changed",
+    });
   });
 });

@@ -17,6 +17,10 @@
  * (and billed) again on every tick: when the claim fails the model is not called. The
  * cost is at-most-once delivery: a run lost after the claim waits for its next slot.
  *
+ * When the database is behind the code (an Autopilot column is missing, Postgres 42703),
+ * the due-workflows query fails: the route answers 503 and names the migration file
+ * instead of a bare 500 (see src/lib/autopilot/schema-guard.ts).
+ *
  * Protected by CRON_SECRET — Vercel injects Authorization: Bearer <secret>
  * automatically for cron invocations.
  */
@@ -31,7 +35,12 @@ import {
 } from "@/lib/data/db-helpers";
 import { computeNextRunAt } from "@/lib/extensions/autopilot";
 import { MAX_WORKFLOWS_PER_INVOCATION, runWorkflow } from "@/lib/autopilot/run-workflow";
-import { describeErrorForLog, describeUnexpectedErrorForLog } from "@/lib/autopilot/errors";
+import {
+  describeErrorForLog,
+  describeUnexpectedErrorForLog,
+  isMissingAutopilotColumn,
+} from "@/lib/autopilot/errors";
+import { AUTOPILOT_MIGRATION_FILE, guardAutopilotSchema } from "@/lib/autopilot/schema-guard";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -47,7 +56,9 @@ function logBookkeepingFailure(
   err: unknown,
   describe: (err: unknown) => object = describeErrorForLog,
 ) {
-  console.error(JSON.stringify({ event, workflowId, ...describe(err) }));
+  // A write that failed on a missing Autopilot column says which SQL to run.
+  const migration = isMissingAutopilotColumn(err) ? { migration: AUTOPILOT_MIGRATION_FILE } : {};
+  console.error(JSON.stringify({ event, workflowId, ...migration, ...describe(err) }));
 }
 
 function isAuthorized(req: NextRequest): boolean {
@@ -62,6 +73,10 @@ async function handleCron(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  return guardAutopilotSchema(runDueWorkflows);
+}
+
+async function runDueWorkflows() {
   const now = new Date();
 
   // Active workflows due for execution, oldest first. The slice also bounds the

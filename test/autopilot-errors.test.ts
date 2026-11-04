@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { describeErrorForLog, describeUnexpectedErrorForLog, isTimeoutOrAbort } from "@/lib/autopilot/errors";
+import {
+  describeErrorForLog,
+  describeUnexpectedErrorForLog,
+  isMissingAutopilotColumn,
+  isTimeoutOrAbort,
+} from "@/lib/autopilot/errors";
+import { missingColumnError, postgresError } from "./helpers/db-errors";
 
 const LEAK = "the user's prompt, or the model's answer";
 
@@ -184,5 +190,49 @@ describe("describeUnexpectedErrorForLog", () => {
   it("names the type of a value that is not an Error", () => {
     expect(describeUnexpectedErrorForLog(LEAK)).toEqual({ errorName: "string" });
     expect(describeUnexpectedErrorForLog(null)).toEqual({ errorName: "object" });
+  });
+});
+
+describe("isMissingAutopilotColumn", () => {
+  it("recognises the error neon-http gives: a DrizzleQueryError whose cause carries 42703", () => {
+    expect(isMissingAutopilotColumn(missingColumnError("autopilot_workflow", "policyHash"))).toBe(true);
+    expect(isMissingAutopilotColumn(missingColumnError("autopilot_run", "toolCalls"))).toBe(true);
+  });
+
+  it("recognises a bare driver error, which carries no SQL to check", () => {
+    expect(isMissingAutopilotColumn(postgresError("42703", 'column "mode" does not exist'))).toBe(true);
+  });
+
+  it("finds the code deeper in the chain, and under a lastError", () => {
+    expect(isMissingAutopilotColumn(wrap(postgresError("42703", "x"), 3))).toBe(true);
+    expect(isMissingAutopilotColumn(wrap(postgresError("42703", "x"), 1, "lastError"))).toBe(true);
+  });
+
+  it("reads a numeric code too", () => {
+    expect(isMissingAutopilotColumn(withCode(42703))).toBe(true);
+  });
+
+  it("does not take another SQLSTATE for a missing column", () => {
+    for (const code of ["42P01", "23505", "57P01", "42704", ""]) {
+      expect(isMissingAutopilotColumn(postgresError(code, "other"))).toBe(false);
+    }
+  });
+
+  it("does not take a missing column of another table for this migration's", () => {
+    expect(isMissingAutopilotColumn(missingColumnError("chat", "title"))).toBe(false);
+    expect(isMissingAutopilotColumn(missingColumnError("autopilot_workflow_archive", "title"))).toBe(false);
+  });
+
+  it("does not take a plain error, a timeout, or a value that is not an error for one", () => {
+    expect(isMissingAutopilotColumn(new Error("42703"))).toBe(false);
+    expect(isMissingAutopilotColumn(named("TimeoutError"))).toBe(false);
+    expect(isMissingAutopilotColumn(undefined)).toBe(false);
+    expect(isMissingAutopilotColumn(null)).toBe(false);
+    expect(isMissingAutopilotColumn("42703")).toBe(false);
+  });
+
+  it("stops on an error that wraps itself", () => {
+    expect(isMissingAutopilotColumn(selfReferencing("cause"))).toBe(false);
+    expect(isMissingAutopilotColumn(selfReferencing("lastError"))).toBe(false);
   });
 });

@@ -84,6 +84,20 @@ function formatUpcomingTime(dateString: string | null): string {
   return `in ${days}d`;
 }
 
+type Toast = { message: string; tone: "success" | "error" };
+
+const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
+
+/** What an API refusal says, from its `error` field; the fallback when the body is not JSON. */
+async function readApiError(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: unknown };
+    return typeof data.error === "string" && data.error ? data.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 type FormState = {
   name: string;
   prompt: string;
@@ -110,7 +124,7 @@ export default function AutopilotPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSaving, setFormSaving] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   // Session gate
   useEffect(() => {
@@ -155,9 +169,10 @@ export default function AutopilotPage() {
     };
   }, [sessionStatus]);
 
-  function showToast(message: string) {
-    setSuccessToast(message);
-    setTimeout(() => setSuccessToast(null), 2500);
+  function showToast(message: string, tone: Toast["tone"] = "success") {
+    setToast({ message, tone });
+    // An error stays on screen longer: it is a sentence to read, not a confirmation.
+    setTimeout(() => setToast(null), tone === "error" ? 6000 : 2500);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -221,7 +236,11 @@ export default function AutopilotPage() {
       if (res.ok) {
         setWorkflows((prev) => prev.map((w) => (w.id === workflow.id ? { ...w, mode: "active" } : w)));
         showToast(`"${workflow.name}" is now active`);
+      } else {
+        showToast(await readApiError(res, `Could not switch "${workflow.name}" to active.`), "error");
       }
+    } catch {
+      showToast(NETWORK_ERROR_MESSAGE, "error");
     } finally {
       setActioningId(null);
     }
@@ -240,7 +259,11 @@ export default function AutopilotPage() {
       if (res.ok) {
         setWorkflows((prev) => prev.map((w) => (w.id === workflow.id ? { ...w, lastRunStatus: null } : w)));
         showToast(`"${workflow.name}" approved`);
+      } else {
+        showToast(await readApiError(res, `Could not approve "${workflow.name}".`), "error");
       }
+    } catch {
+      showToast(NETWORK_ERROR_MESSAGE, "error");
     } finally {
       setActioningId(null);
     }
@@ -252,18 +275,28 @@ export default function AutopilotPage() {
       const res = await fetch(`/api/autopilot/workflows/${workflow.id}/run`, {
         method: "POST",
       });
-      const data = await res.json() as { run?: Run; error?: string };
-      if (res.ok && data.run) {
-        setRuns((prev) => [data.run!, ...prev.slice(0, 19)]);
-        setWorkflows((prev) =>
-          prev.map((w) =>
-            w.id === workflow.id
-              ? { ...w, lastRunAt: data.run!.startedAt, lastRunStatus: "success" }
-              : w
-          )
-        );
+      if (!res.ok) {
+        showToast(await readApiError(res, `Could not run "${workflow.name}".`), "error");
+        return;
+      }
+      const data = await res.json() as { run?: Run };
+      const run = data.run;
+      if (!run) {
+        showToast(`Could not run "${workflow.name}".`, "error");
+        return;
+      }
+      setRuns((prev) => [run, ...prev.slice(0, 19)]);
+      // The status the server recorded: a refused run keeps "Approve and resume" on screen.
+      setWorkflows((prev) =>
+        prev.map((w) => (w.id === workflow.id ? { ...w, lastRunAt: run.startedAt, lastRunStatus: run.status } : w))
+      );
+      if (run.status === "refused") {
+        showToast(`"${workflow.name}" was not run: the tools Autopilot may use changed. Approve it to resume.`, "error");
+      } else {
         showToast(`"${workflow.name}" run complete`);
       }
+    } catch {
+      showToast(NETWORK_ERROR_MESSAGE, "error");
     } finally {
       setActioningId(null);
     }
@@ -684,10 +717,17 @@ export default function AutopilotPage() {
         </main>
       </div>
 
-      {/* Success toast */}
-      {successToast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-quill-green/30 bg-quill-surface px-4 py-2 text-xs font-medium text-quill-green shadow-lg">
-          {successToast}
+      {/* Toast: a confirmation, or the error of a call that failed */}
+      {toast && (
+        <div
+          role={toast.tone === "error" ? "alert" : "status"}
+          className={`fixed bottom-6 left-1/2 z-50 max-w-[90vw] -translate-x-1/2 rounded-lg border bg-quill-surface px-4 py-2 text-xs font-medium shadow-lg ${
+            toast.tone === "error"
+              ? "border-quill-accent/30 text-quill-accent"
+              : "border-quill-green/30 text-quill-green"
+          }`}
+        >
+          {toast.message}
         </div>
       )}
     </div>

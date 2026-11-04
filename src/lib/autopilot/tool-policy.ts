@@ -13,6 +13,7 @@
 
 import { createHash } from "node:crypto";
 import type { ToolSet } from "ai";
+import { canonicalJson } from "@/lib/canonical-json";
 import {
   TOOL_REGISTRY,
   buildToolsForRequest,
@@ -56,18 +57,6 @@ export function autopilotToolSpecs({ registry = TOOL_REGISTRY, allowlist = AUTOP
   return registry.filter((spec) => allowlist.includes(spec.name) && spec.approval === "none");
 }
 
-// JSON with the keys of every object sorted, so the same policy always gives the same text.
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (typeof value === "object" && value !== null) {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, inner]) => inner !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    return `{${entries.map(([key, inner]) => `${JSON.stringify(key)}:${canonicalJson(inner)}`).join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
-
 /**
  * The hash of a list of tool specs. For each tool it covers what the model and the rules
  * see: name, description, risk, requirements (auth, paid, codeExecution), approval and
@@ -105,6 +94,35 @@ export async function checkPolicyApproval(
   const approvedHash = workflow.policyHash ?? NO_TOOLS_POLICY_HASH;
   const currentHash = await currentAutopilotPolicyHash(source);
   return approvedHash === currentHash ? { ok: true } : { ok: false, approvedHash, currentHash };
+}
+
+/** A run that was not started because the tool policy changed after the owner approved it. */
+export type PolicyRefusal = {
+  status: "refused";
+  mode: "active";
+  reasonCode: "policy_changed";
+  summary: string;
+};
+
+const POLICY_CHANGED_SUMMARY =
+  "Refused: the tools Autopilot may use changed after you approved this workflow. " +
+  "Nothing was run. Review it and approve the new policy to resume.";
+
+/**
+ * The one gate in front of an unattended run, shared by the cron runner and "Run now" so
+ * that the check and the refusal text cannot drift apart. Returns the refusal to record
+ * when an active workflow was approved under another policy, and null when the run may go
+ * on. A workflow in observe mode is never refused: a dry run executes no tool, so it runs
+ * under the policy in force.
+ */
+export async function refuseIfPolicyChanged(
+  workflow: { mode?: "observe" | "active"; policyHash?: string | null },
+  source: PolicySource = {},
+): Promise<PolicyRefusal | null> {
+  if ((workflow.mode ?? "active") === "observe") return null;
+  const approval = await checkPolicyApproval(workflow, source);
+  if (approval.ok) return null;
+  return { status: "refused", mode: "active", reasonCode: "policy_changed", summary: POLICY_CHANGED_SUMMARY };
 }
 
 /** A tool call the model made during a run. */
